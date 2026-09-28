@@ -187,6 +187,8 @@ const MT={
 };
 const MT_LIST=['zombie','skel','hound','boss','egg','tentacle','guard','clone'];
 const WIND_LIST=['','melee','shoot','charge','slam','ring','cast'];
+// 타격음 종류 (서버가 번호로 보냄)
+const EL_LIST=['slash','blunt','heavy','arrow','magic','zap','fire','ice','holy','poison','void','quake'];
 const PROJ_LIST=['arrow','parrow','bolt','holy','fire','orb','pierce','shieldp','poison','frostorb','holybeam','ice','web','page','void','fireb'];
 
 // ---------- 테마 · 보스 ----------
@@ -269,11 +271,12 @@ const WEAPONS={
 };
 const ARMORS=[{n:'가죽 갑옷',a:0.8,kind:'leather'},{n:'사슬 갑옷',a:1,kind:'chain'},{n:'판금 갑옷',a:1.3,ms:-3,kind:'plate'},{n:'룬 로브',a:0.6,mp:10,kind:'robe'}];
 const GEMS=['r','c','z','p','y'];
-function rollRarity(R,bonus){const x=R()*100-bonus;return x<2.5?3:x<12?2:x<42?1:0;}
-function genItem(L,fam,minR,bonus,R){
+// 등급: 0 일반, 1 마법, 2 희귀(영웅), 3 전설 — 전설은 maxR=3일 때(보스)만 나온다
+function rollRarity(R,bonus,maxR){const x=R()*100-bonus;const r=x<2?3:x<7?2:x<35?1:0;return Math.min(maxR==null?2:maxR,r);}
+function genItem(L,fam,minR,bonus,R,maxR){
   R=R||Math.random;minR=minR||0;bonus=bonus||0;
   const slot=pk(R,['weapon','weapon','armor','armor','ring']);
-  let rar=Math.max(minR,rollRarity(R,bonus));if(slot==='ring'&&rar===0)rar=1;
+  let rar=Math.max(minR,rollRarity(R,bonus,maxR));if(slot==='ring'&&rar===0)rar=1;
   const it={id:rid(),slot,rar,L,base:{},aff:[]};
   if(slot==='weapon'){const b=pk(R,WEAPONS[fam]);it.fam=fam;it.kind=b.kind;it.bn=b.n;it.base.dmg=Math.max(1,Math.round((3+L*1.6)*b.d*(0.85+R()*0.3)));if(b.as)it.base.as=b.as;if(b.mp)it.base.mp=b.mp;}
   else if(slot==='armor'){const b=pk(R,ARMORS);it.kind=b.kind;it.bn=b.n;it.base.armor=Math.max(1,Math.round((4+L*3)*b.a*(0.85+R()*0.3)));if(b.ms)it.base.ms=b.ms;if(b.mp)it.base.mp=b.mp;}
@@ -328,7 +331,7 @@ function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
 const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,
-  CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,WIND_LIST,PROJ_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
+  CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
   THEMES,FINAL_BOSS,themeOf,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
 })(typeof self!=='undefined'?self:this);
