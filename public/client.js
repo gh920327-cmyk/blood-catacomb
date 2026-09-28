@@ -311,19 +311,34 @@ function startMusic(){if(MUS)return;
   const t=AC.currentTime;MUS={out,rev,dry,dl,dF,drones,chordT:t+0.3,ci:0,mel:t+4,drip:t+6,beat:t+1,mode:'',prof:'',cur:null};
   setInterval(musicTick,120);}
 // 테마별 음악: 근음, 화음(반음 단위), 멜로디 음색, 주변음, 보스 박자
+// ---- 테마별 배경음: 스텝 시퀀서(템포·음계·베이스·멜로디·타악기·악기가 전부 테마마다 다름) ----
+const SCALES={minor:[0,2,3,5,7,8,10],phryg:[0,1,3,5,7,8,10],dorian:[0,2,3,5,7,9,10],harm:[0,2,3,5,7,8,11],locr:[0,1,3,5,6,8,10],lyd:[0,2,4,6,7,9,11],whole:[0,2,4,6,8,10,12]};
+const _=null;
 const MPROF={
-  town:{root:55,cut:300,ch:[[0,3,7],[-2,2,5],[-4,0,3],[-5,-1,2]],mel:'bell',amb:'drip',rate:[1,1.5,2]},
-  0:{root:55,cut:240,ch:[[0,3,7],[-4,0,3],[-7,-4,0],[-5,-1,2]],mel:'bell',amb:'drip',rate:[1,1.5,2,3],beat:0.9},
-  1:{root:61.7,cut:380,ch:[[0,3,7,14],[-2,2,5,10],[-4,0,3,10],[-5,-2,2,7]],mel:'glass',amb:'wind',rate:[1.5,2,3],beat:1.0},
-  2:{root:49,cut:200,ch:[[0,3,7],[1,5,8],[0,3,7],[-2,1,5]],mel:'horn',amb:'crackle',rate:[1,2,2],beat:0.75},
-  3:{root:51.9,cut:220,ch:[[0,3,6],[1,4,8],[-1,3,6],[0,3,7]],mel:'pluck',amb:'bubble',rate:[0.5,1,1.5],beat:0.85},
-  4:{root:58.3,cut:320,ch:[[0,3,7,9],[-2,2,5,9],[-5,-2,2,5],[-7,-3,0,4]],mel:'bell',amb:'drip',rate:[1.5,2,3],beat:1.0,wet:1},
-  5:{root:46.2,cut:210,ch:[[0,3,7],[0,3,8],[0,4,7],[-1,3,6]],mel:'pluck',amb:'skitter',rate:[0.25,0.5,0.5,1],beat:0.7},
-  6:{root:65.4,cut:360,ch:[[0,3,7],[2,5,9],[3,7,10],[-2,2,5]],mel:'chime',amb:'tick',rate:[0.5,0.5,1],beat:0.6},
-  7:{root:55,cut:280,ch:[[0,3,7],[-4,0,3],[-1,2,5,8],[-5,-1,2]],mel:'musicbox',amb:'whisper',rate:[0.5,1,1,2],beat:0.95},
-  8:{root:73.4,cut:340,ch:[[0,3,7],[-2,2,5],[-4,0,3],[-2,2,5]],mel:'horn',amb:'thunder',rate:[1,1.5,2],beat:0.7},
-  9:{root:41.2,cut:180,ch:[[0,1,6],[0,5,6],[-1,0,6],[1,6,7]],mel:'glass',amb:'hum',rate:[2,3,4],beat:0.8},
+  town:{root:55,sc:'dorian',bpm:84,bar:8,chords:[0,3,4,0],pad:'warm',cut:320,bass:{ins:'pluck',p:[0,_,4,_,7,_,4,_]},lead:{ins:'harp',ph:[[7,_,9,_,11,_,9,7],[9,_,7,_,4,_,_,_],[11,_,12,11,9,_,7,_],[7,_,_,4,7,_,_,_]]},dr:{},amb:'drip',boss:{}},
+  0:{root:55,sc:'minor',bpm:62,bar:8,chords:[0,5,3,4],pad:'organ',cut:240,bass:{ins:'sub',p:[0,_,_,_,_,_,_,_]},lead:{ins:'bell',ph:[[7,_,_,9,8,_,7,_],[5,_,4,_,2,_,_,_],[7,_,9,_,11,_,10,_],[9,_,_,7,_,_,_,_]]},dr:{k:'x.......'},amb:'drip',
+     boss:{bpm:92,bass:{ins:'saw',p:[0,0,_,0,0,_,5,_]},dr:{k:'x..x..x.',s:'....x...',h:'x.x.x.x.'}}},
+  1:{root:61.7,sc:'lyd',bpm:70,bar:8,chords:[0,4,5,3],pad:'glass',cut:420,bass:{ins:'sub',p:[0,_,_,_,4,_,_,_]},lead:{ins:'celesta',ph:[[7,9,11,14,11,9,7,_],[14,_,13,_,11,_,_,_],[4,7,9,11,9,7,4,_],[11,_,_,_,9,_,_,_]]},dr:{},amb:'wind',
+     boss:{bpm:100,bass:{ins:'pluck',p:[0,7,0,7,4,11,4,11]},dr:{h:'x.xxx.xx',k:'x...x...'}}},
+  2:{root:41.2,sc:'phryg',bpm:96,bar:8,chords:[0,1,0,6],pad:'saw',cut:220,bass:{ins:'saw',p:[0,_,0,1,0,_,_,6]},lead:{ins:'horn',ph:[[7,_,8,_,7,_,5,_],[4,_,_,_,5,_,_,_],[7,8,10,8,7,_,5,_],[1,_,_,_,0,_,_,_]]},dr:{t:'x..x..x.',k:'x.......'},amb:'crackle',
+     boss:{bpm:124,dr:{t:'x.xx.xx.',k:'x..x..x.',s:'....x..x'}}},
+  3:{root:46.2,sc:'locr',bpm:78,bar:6,chords:[0,1,4,0],pad:'wobble',cut:230,bass:{ins:'wobble',p:[0,_,4,0,_,4]},lead:{ins:'pluck',ph:[[4,_,3,_,1,_],[0,_,_,4,_,_],[7,_,6,_,4,_],[3,_,_,_,_,_]]},dr:{w:'x..x.x'},amb:'bubble',
+     boss:{bpm:108,dr:{w:'x.xx.x',k:'x.....',s:'...x..'}}},
+  4:{root:58.3,sc:'dorian',bpm:64,bar:8,chords:[0,3,6,4],pad:'choir',cut:360,bass:{ins:'sub',p:[0,_,_,_,_,_,4,_]},lead:{ins:'harp',ph:[[0,2,4,7,9,7,4,2],[9,_,_,_,7,_,_,_],[2,4,7,9,11,9,7,4],[7,_,_,_,_,_,_,_]]},dr:{},amb:'drip',wet:1,
+     boss:{bpm:92,bass:{ins:'saw',p:[0,_,0,_,3,_,4,_]},dr:{k:'x...x...',t:'..x...x.'}}},
+  5:{root:43.7,sc:'harm',bpm:112,bar:8,chords:[0,0,5,4],pad:'none',cut:260,bass:{ins:'pizz',p:[0,1,0,1,0,1,4,3]},lead:{ins:'pizz',ph:[[7,_,8,_,7,_,6,_],[4,_,_,_,_,_,_,_],[11,_,10,_,8,_,7,_],[6,_,_,_,_,_,_,_]]},dr:{h:'x.x.x.x.'},amb:'skitter',
+     boss:{bpm:138,dr:{h:'xxxxxxxx',k:'x..x....',s:'....x...'}}},
+  6:{root:65.4,sc:'major',bpm:118,bar:8,chords:[0,5,3,4],pad:'none',cut:360,bass:{ins:'pluck',p:[0,_,4,_,0,_,4,_]},lead:{ins:'musicbox',ph:[[7,9,11,9,7,4,7,_],[11,_,9,_,7,_,_,_],[14,11,9,7,9,11,14,_],[7,_,_,_,4,_,_,_]]},dr:{tick:'x.x.x.x.',w:'....x...'},amb:'tick',
+     boss:{bpm:140,bass:{ins:'saw',p:[0,0,4,4,5,5,4,4]},dr:{tick:'xxxxxxxx',k:'x...x...',s:'..x...x.'}}},
+  7:{root:55,sc:'harm',bpm:78,bar:6,chords:[0,3,4,0],pad:'organ',cut:280,bass:{ins:'sub',p:[0,_,_,4,_,_]},lead:{ins:'musicbox',ph:[[7,_,6,7,9,_],[8,_,_,7,_,_],[4,_,7,11,10,_],[9,_,_,_,_,_]]},dr:{w:'x.....'},amb:'whisper',
+     boss:{bpm:108,dr:{k:'x..x..',s:'...x..',w:'x.xx.x'}}},
+  8:{root:73.4,sc:'minor',bpm:128,bar:8,chords:[0,5,6,4],pad:'saw',cut:340,bass:{ins:'saw',p:[0,0,0,0,5,5,6,6]},lead:{ins:'horn',ph:[[7,_,_,9,10,_,9,_],[7,_,_,_,5,_,_,_],[10,_,12,_,14,_,12,10],[9,_,_,_,_,_,_,_]]},dr:{k:'x...x...',h:'..x...x.'},amb:'thunder',
+     boss:{bpm:150,dr:{k:'x.x.x.x.',s:'....x...',h:'xxxxxxxx'}}},
+  9:{root:36.7,sc:'whole',bpm:50,bar:8,chords:[0,3,1,4],pad:'void',cut:180,bass:{ins:'sub',p:[0,_,_,_,_,_,_,_]},lead:{ins:'glass',ph:[[6,_,_,_,5,_,_,_],[_,_,3,_,_,_,_,_],[8,_,_,7,_,_,_,_],[_,_,_,_,_,_,_,_]]},dr:{},amb:'hum',
+     boss:{bpm:84,bass:{ins:'saw',p:[0,_,0,1,_,0,4,_]},dr:{t:'x...x.x.',k:'x.......'}}},
 };
+MPROF[6].sc='major';SCALES.major=[0,2,4,5,7,9,11];
+function degHz(P,deg,oct){const sc=SCALES[P.sc]||SCALES.minor,n=sc.length;const o=Math.floor(deg/n),d=((deg%n)+n)%n;return P.root*Math.pow(2,(oct||0)+o+sc[d]/12);}
 function chordHz(p,st){return st.map(x=>p.root*2*Math.pow(2,x/12));}
 function pad(freqs,t,dur,vol){for(const f of freqs)for(const dt of[-7,7]){const o=AC.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=dt;const fl=AC.createBiquadFilter();fl.type='lowpass';fl.frequency.value=520;const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+2.5);g.gain.setValueAtTime(vol,t+dur-3);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(fl).connect(g);g.connect(MUS.rev);g.connect(MUS.dry);o.start(t);o.stop(t+dur+0.1);}}
 function voice(parts,f,t,vol,type,att,wetDl){parts.forEach(([m,v,d])=>{const o=AC.createOscillator();o.type=type||'sine';o.frequency.value=f*m;const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol*v,t+(att||0.006));g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g);if(wetDl!==false)g.connect(MUS.dl);g.connect(MUS.rev);g.connect(MUS.dry);o.start(t);o.stop(t+d+0.05);});}
@@ -348,20 +363,51 @@ function ambient(kind,t){
   else if(kind==='thunder'){if(R()<0.35)nz(t,3,0.14,'lowpass',180,1);else ambient('wind',t);}
   else if(kind==='hum'){const o=AC.createOscillator();o.type='sine';o.frequency.value=rf(108,112);const tr=AC.createOscillator();tr.frequency.value=rf(3,6);const tg=AC.createGain();tg.gain.value=0.012;const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.02,t+1);g.gain.linearRampToValueAtTime(0,t+3);tr.connect(tg).connect(g.gain);o.connect(g);g.connect(MUS.rev);o.start(t);tr.start(t);o.stop(t+3.1);tr.stop(t+3.1);}}
 function thump(t,vol){const o=AC.createOscillator();o.type='sine';o.frequency.setValueAtTime(75,t);o.frequency.exponentialRampToValueAtTime(32,t+0.18);const g=AC.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.25);o.connect(g);g.connect(MUS.dry);o.start(t);o.stop(t+0.3);}
-function musicTick(){if(!MUS||!AC)return;try{const t=AC.currentTime,ahead=t+0.4;
+// 악기들
+function padVoice(kind,freqs,t,dur,vol){if(kind==='none')return;for(const f of freqs){
+  if(kind==='organ'){for(const[m,v]of[[1,1],[2,0.5],[3,0.25],[4,0.15]])env('sine',f*m,t,dur,vol*v*0.8,1.2,2.5);}
+  else if(kind==='glass'){env('sine',f*2,t,dur,vol*0.7,1.8,3);env('triangle',f*4,t,dur,vol*0.15,2.5,3);}
+  else if(kind==='choir'){for(const dt of[-8,0,8]){const o=AC.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=dt;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=750;bp.Q.value=1.2;const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol*0.9,t+2);g.gain.setValueAtTime(vol*0.9,t+dur-2.5);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(bp).connect(g);g.connect(MUS.rev);o.start(t);o.stop(t+dur+0.1);}}
+  else if(kind==='wobble'){const o=AC.createOscillator();o.type='triangle';o.frequency.value=f;const lf=AC.createOscillator();lf.frequency.value=5.5;const lg=AC.createGain();lg.gain.value=f*0.02;lf.connect(lg).connect(o.frequency);const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+1.5);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(g);g.connect(MUS.rev);g.connect(MUS.dry);o.start(t);lf.start(t);o.stop(t+dur+0.1);lf.stop(t+dur+0.1);}
+  else if(kind==='void'){env('sine',f,t,dur,vol*1.2,dur*0.7,dur*0.3);env('sine',f*1.414,t,dur,vol*0.4,dur*0.8,dur*0.2);}
+  else if(kind==='warm'){env('triangle',f,t,dur,vol*0.9,1,2);env('sine',f*2,t,dur,vol*0.4,1,2);}
+  else pad([f],t,dur,vol);}}
+function env(type,f,t,dur,vol,att,rel){const o=AC.createOscillator();o.type=type;o.frequency.value=f;const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+att);g.gain.setValueAtTime(vol,t+Math.max(att,dur-rel));g.gain.linearRampToValueAtTime(0,t+dur);o.connect(g);g.connect(MUS.rev);g.connect(MUS.dry);o.start(t);o.stop(t+dur+0.05);}
+function bassVoice(ins,f,t,dur,vol){
+  if(ins==='sub'){const o=AC.createOscillator();o.type='sine';o.frequency.value=f;const g=AC.createGain();g.gain.setValueAtTime(vol*1.6,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur*3);o.connect(g);g.connect(MUS.dry);o.start(t);o.stop(t+dur*3+0.05);}
+  else if(ins==='saw'){const o=AC.createOscillator();o.type='sawtooth';o.frequency.value=f;const fl=AC.createBiquadFilter();fl.type='lowpass';fl.frequency.setValueAtTime(900,t);fl.frequency.exponentialRampToValueAtTime(180,t+dur);const g=AC.createGain();g.gain.setValueAtTime(vol*0.9,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur*0.95);o.connect(fl).connect(g);g.connect(MUS.dry);o.start(t);o.stop(t+dur);}
+  else if(ins==='wobble'){const o=AC.createOscillator();o.type='triangle';o.frequency.setValueAtTime(f*1.03,t);o.frequency.exponentialRampToValueAtTime(f*0.97,t+dur*1.5);const g=AC.createGain();g.gain.setValueAtTime(vol*1.4,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur*1.6);o.connect(g);g.connect(MUS.dry);o.start(t);o.stop(t+dur*1.7);}
+  else if(ins==='pizz'){const o=AC.createOscillator();o.type='triangle';o.frequency.value=f*2;const g=AC.createGain();g.gain.setValueAtTime(vol*1.3,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.18);o.connect(g);g.connect(MUS.dry);g.connect(MUS.rev);o.start(t);o.stop(t+0.2);}
+  else{const o=AC.createOscillator();o.type='triangle';o.frequency.value=f*2;const g=AC.createGain();g.gain.setValueAtTime(vol*1.1,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.45);o.connect(g);g.connect(MUS.dry);g.connect(MUS.dl);o.start(t);o.stop(t+0.5);}}
+function leadVoice(ins,f,t,vol){
+  if(ins==='celesta')voice([[1,1,1.6],[4,0.2,0.4]],f,t,vol*1.1,'sine',0.003);
+  else if(ins==='harp'){const o=AC.createOscillator();o.type='triangle';o.frequency.value=f;const g=AC.createGain();g.gain.setValueAtTime(vol*1.2,t);g.gain.exponentialRampToValueAtTime(0.0001,t+1.4);o.connect(g);g.connect(MUS.dl);g.connect(MUS.rev);g.connect(MUS.dry);o.start(t);o.stop(t+1.5);}
+  else if(ins==='pizz')bassVoice('pizz',f/2,t,0.2,vol);
+  else playMel(ins,f,t,vol);}
+function drum(k,t,v){
+  if(k==='k')thump(t,0.22*v);
+  else if(k==='t'){const o=AC.createOscillator();o.type='sine';o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(48,t+0.35);const g=AC.createGain();g.gain.setValueAtTime(0.26*v,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.45);o.connect(g);g.connect(MUS.dry);g.connect(MUS.rev);o.start(t);o.stop(t+0.5);nz(t,0.08,0.05*v,'lowpass',400,0,MUS.dry);}
+  else if(k==='s'){nz(t,0.14,0.09*v,'bandpass',1800,0.8,MUS.dry);const o=AC.createOscillator();o.type='triangle';o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(120,t+0.08);const g=AC.createGain();g.gain.setValueAtTime(0.06*v,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.1);o.connect(g);g.connect(MUS.dry);o.start(t);o.stop(t+0.12);}
+  else if(k==='h')nz(t,0.03,0.035*v,'highpass',7000,0,MUS.dry);
+  else if(k==='tick'){nz(t,0.015,0.05*v,'highpass',3500,0,MUS.dry);const o=AC.createOscillator();o.type='square';o.frequency.value=2200;const g=AC.createGain();g.gain.setValueAtTime(0.012*v,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.02);o.connect(g);g.connect(MUS.dry);o.start(t);o.stop(t+0.03);}
+  else if(k==='w'){const o=AC.createOscillator();o.type='triangle';o.frequency.value=rf(760,860);const g=AC.createGain();g.gain.setValueAtTime(0.05*v,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);o.connect(g);g.connect(MUS.dry);o.start(t);o.stop(t+0.06);}}
+function musicTick(){if(!MUS||!AC)return;try{const t=AC.currentTime,ahead=t+0.45;
   const bossOn=[...G.monsters.values()].some(m=>m.tc===3&&(m.fl&16));
   const mode=scene!=='game'?'calm':G.kind==='hub'?'town':meDowned()?'dead':bossOn?'boss':'calm';
-  const pk=scene==='game'&&G.kind==='dungeon'?String(SH.themeOf(G.floor||1).idx):'town';const P=MPROF[pk]||MPROF[0];const fin=scene==='game'&&G.floor>=100;
-  if(mode!==MUS.mode||pk!==MUS.prof){MUS.mode=mode;MUS.prof=pk;MUS.dF.frequency.setTargetAtTime(mode==='boss'?P.cut*1.7:mode==='dead'?150:P.cut,t,1.5);for(const d of MUS.drones)d.o.frequency.setTargetAtTime(P.root*d.r*(fin?0.94:1),t,2);MUS.dl.delayTime.setTargetAtTime(P.wet?0.78:0.52,t,1);MUS.ci=0;}
+  const pk=scene==='game'&&G.kind==='dungeon'?String(SH.themeOf(G.floor||1).idx):'town';const base=MPROF[pk]||MPROF[0];const fin=scene==='game'&&G.floor>=100;const boss=mode==='boss';
+  const P=boss?Object.assign({},base,base.boss,{dr:Object.assign({},base.dr,(base.boss||{}).dr)}):base;const bpm=P.bpm*(fin&&boss?1.1:1);const step=60/bpm/2;
+  if(mode!==MUS.mode||pk!==MUS.prof){MUS.mode=mode;MUS.prof=pk;MUS.dF.frequency.setTargetAtTime(boss?P.cut*1.7:mode==='dead'?150:P.cut,t,1.5);for(const d of MUS.drones)d.o.frequency.setTargetAtTime(base.root*d.r*(fin?0.94:1),t,2);MUS.dl.delayTime.setTargetAtTime(P.wet?0.78:step*3,t,1);MUS.st=0;MUS.bar=0;MUS.stT=Math.max(t+0.05,MUS.stT||0);}
   MUS.out.gain.setTargetAtTime(soundMode===0?0.55:0,t,0.4);
-  const boss=mode==='boss';
-  if(MUS.chordT<t)MUS.chordT=t+0.1;
-  if(MUS.chordT<ahead){const len=boss?4:8;const st=P.ch[MUS.ci%P.ch.length];MUS.cur=chordHz(P,boss?st.map(x=>x+(MUS.ci%4===3?1:0)):st);pad(MUS.cur,MUS.chordT,len+2.5,boss?0.03:0.024);MUS.ci++;MUS.chordT+=len;}
-  if(MUS.mel<t)MUS.mel=t+0.2;
-  if(MUS.mel<ahead){if(mode!=='dead'&&R()<(boss?0.8:mode==='town'?0.7:0.55))playMel(P.mel,pick(MUS.cur||chordHz(P,P.ch[0]))*pick([4,4,8]),MUS.mel,0.03);MUS.mel+=boss?pick([0.5,0.5,1])*(P.beat||0.9)/0.9:pick(P.rate);}
+  if(!MUS.stT||MUS.stT<t)MUS.stT=t+0.05;
+  while(MUS.stT<ahead){const st=MUS.st%P.bar,bar=MUS.bar,T=MUS.stT;
+    if(st===0){const ch=P.chords[bar%P.chords.length];padVoice(P.pad,[degHz(P,ch,1),degHz(P,ch+2,1),degHz(P,ch+4,1)],T,step*P.bar+1.5,boss?0.022:0.018);MUS.chRoot=ch;MUS.phr=pick(P.lead.ph);MUS.leadOn=mode!=='dead'&&(boss||(bar%4)<2||pk==='town');}
+    const bd=P.bass.p[st];if(bd!=null&&mode!=='dead')bassVoice(P.bass.ins,degHz(P,bd+(MUS.chRoot||0),0),T,step,0.09);
+    const ld=MUS.phr&&MUS.phr[st];if(ld!=null&&MUS.leadOn)leadVoice(P.lead.ins,degHz(P,ld+(MUS.chRoot||0)*0,2),T,0.028);
+    for(const k in P.dr){const pat=P.dr[k];if(pat&&pat[st%pat.length]==='x')drum(k,T,boss?1:0.8);}
+    MUS.st++;if(MUS.st%P.bar===0)MUS.bar++;MUS.stT+=step;}
   if(MUS.drip<t)MUS.drip=t+1;
-  if(MUS.drip<ahead){if(!boss||P.amb==='tick')ambient(P.amb,MUS.drip);MUS.drip+=P.amb==='tick'?1:P.amb==='skitter'?rf(1.5,5):rf(2.5,8);}
-  if(boss){const bt=(P.beat||0.9)*(fin?0.85:1);if(MUS.beat<t)MUS.beat=t+0.1;if(MUS.beat<ahead){thump(MUS.beat,0.22);thump(MUS.beat+bt*0.25,0.14);if(fin||pk==='2'||pk==='8')thump(MUS.beat+bt*0.5,0.18);MUS.beat+=bt;}}}catch(e){if(!MUS.err){MUS.err=1;console.error('music',e);}}}
+  if(MUS.drip<ahead){if(!boss&&P.amb!=='tick')ambient(P.amb,MUS.drip);MUS.drip+=P.amb==='skitter'?rf(1.5,5):rf(2.5,8);}
+  }catch(e){if(!MUS.err){MUS.err=1;console.error('music',e);}}}
 // ---- 속성별 타격음 ----
 const EL_SPARK={zap:'c',fire:'o',ice:'C',holy:'y',poison:'z',void:'P',magic:'p',arrow:'w',blunt:'S',quake:'S'};
 function nzF(dur,vol,type,freq,q,delay){const t=AC.currentTime+(delay||0);const s2=AC.createBufferSource();s2.buffer=NB;const f=AC.createBiquadFilter();f.type=type;f.frequency.value=freq;if(q)f.Q.value=q;const g=AC.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);s2.connect(f).connect(g).connect(SFXG);s2.start(t,R()*0.3);s2.stop(t+dur+0.03);}
@@ -448,7 +494,7 @@ function tutSaw(t){TUT.saw[t]=true;}
 function tutUpdate(dt){if(TUT.off||scene!=='game'||TUT.i>=TUT_STEPS.length)return;TUT.t+=dt;if(TUT.lx!=null)TUT.moved+=Math.hypot(me.x-TUT.lx,me.y-TUT.ly);TUT.lx=me.x;TUT.ly=me.y;
   if(TUT_STEPS[TUT.i].ok()){TUT.i++;TUT.t=0;TUT.saw={};sfx('pick');try{localStorage.setItem('bc_tut',TUT.i>=TUT_STEPS.length?'done':String(TUT.i));}catch(e){}}}
 function tutSkip(){TUT.off=true;try{localStorage.setItem('bc_tut','done');}catch(e){}}
-function drawTut(){if(TUT.off||scene!=='game'||TUT.i>=TUT_STEPS.length||showInv||showChar||showSkills||showShop)return;const st=TUT_STEPS[TUT.i];const y=62,w=Math.min(470,tw(st.m,12)+24);
+function drawTut(){if(TUT.off||scene!=='game'||TUT.i>=TUT_STEPS.length||showInv||showChar||showSkills||showShop||G.stairsAsk)return;const st=TUT_STEPS[TUT.i];const y=62,w=Math.min(470,tw(st.m,12)+24);
   pr(240-w/2,y-12,w,30,'rgba(10,7,14,0.82)');pr(240-w/2,y-12,w,1,PAL.y);pr(240-w/2,y+17,w,1,PAL.y);
   txt(`안내 ${TUT.i+1}/${TUT_STEPS.length}`,240-w/2+6,y-5,10,'#ffd35a');txt(st.m,240,y+5,12,'#f2eadb','center');txt('H: 안내 끄기',240+w/2-6,y-5,10,'#6b6275','right');}
 function msg(t,c){msgs.unshift({t,c:c||'#e6dcc3',life:3.4});if(msgs.length>4)msgs.pop();}
@@ -533,7 +579,8 @@ function handle(d){switch(d.t){
   case 'chat':{G.chatLog.push({name:d.name,m:d.m,t:time});if(G.chatLog.length>40)G.chatLog.shift();G.bubbles.set(d.id,{m:d.m,t:time});sfx('chat');break;}
   case 'invite':G.invite={from:d.from,name:d.name,t:time};sfx('chat');break;
   case 'stairs':G.stairsOpen=true;SH.openStairs(G.map);drawMini();break;
-  case 'trans':msg(`${d.by}님이 계단에 도착 · ${d.t0}초 후 다음 층으로`,'#ffd35a');sfx('stairs');break;
+  case 'stairsAsk':G.stairsAsk={floor:d.floor};sfx('stairs');break;
+  case 'trans':G.stairsAsk=null;msg(`${d.by}님이 계단에 도착 · ${d.t0}초 후 다음 층으로`,'#ffd35a');sfx('stairs');break;
   case 'result':clearTimeout(G.resT);G.resT=setTimeout(()=>{G.result=d;},1800);break;
   case 'meter':G.meter=d.rows;break;
   case 'paused':G.paused=d.by;if(d.by)msg(`${d.by}님이 일시정지했습니다`,'#9e937a');break;
@@ -676,6 +723,8 @@ window.addEventListener('keydown',e=>{
   if(c==='Space'||c==='Tab')e.preventDefault();
   if(c==='Enter'){openChat();e.preventDefault();return;}
   if(c==='Tab'){showMeter=true;return;}
+  if(G.stairsAsk&&(c==='KeyF'||c==='Enter'||c==='Space')){net({t:'descend'});G.stairsAsk=null;e.preventDefault();return;}
+  if(G.stairsAsk&&c==='Escape'){G.stairsAsk=null;return;}
   if(c==='Escape'){
     if(G.ctxMenu){G.ctxMenu=null;return;}if(G.result){G.result=null;return;}
     if(showInv||showChar||showShop||showSkills||G.portalMenu){showInv=showChar=showShop=showSkills=false;G.portalMenu=false;return;}
@@ -1091,6 +1140,11 @@ function drawShop(){const x=6,y=38,w=172,h=194;panel(x,y,w,h,'상인');const pri
     button(x+10,y+h-20,w-20,14,`스킬 초기화 (${sh.respec}골드)`,()=>net({t:'respec'}),{size:10});}
   else txt('불러오는 중...',x+w/2,y+100,11,'#6b6275','center');
   txt('판매: 인벤토리에서 우클릭',x+w/2,y+h-28,10,'#9e937a','center');}
+// 계단 위에 서면: 내려갈지 묻기
+function drawStairsAsk(){if(G.kind!=='dungeon'||!G.map){G.stairsAsk=null;return;}const tx=Math.floor(me.x/TS),ty=Math.floor(me.y/TS);let on=false;for(let j=-1;j<=1&&!on;j++)for(let i=-1;i<=1;i++)if(SH.tileAt(G.map,tx+i,ty+j)===2){on=true;break;}if(!on){G.stairsAsk=null;return;}
+  const f=G.stairsAsk.floor,th=SH.themeOf(f);const w=210,h=84,x=240-w/2,y=26;panel(x,y,w,h,null);txt(`지하 ${f}층으로 내려가시겠습니까?`,240,y+16,13,'#ffd35a','center');
+  txt((f%5===0?'보스가 기다리는 층 · ':'')+(th.corrupt?'타락한 ':'')+th.t.n,240,y+31,11,f%5===0?'#ff6a5a':'#d2c7ab','center');const pt=G.party;if(pt&&pt.members.length>1)txt('파티 전원이 3초 뒤 함께 내려갑니다',240,y+44,10,'#a79db3','center');
+  button(x+14,y+h-24,86,16,'내려가기 (F)',()=>{net({t:'descend'});G.stairsAsk=null;},{main:true,size:11});button(x+w-100,y+h-24,86,16,'머무르기 (Esc)',()=>{G.stairsAsk=null;},{size:11});}
 function drawPortalMenu(){const pt=G.party,leader=!pt||pt.leader===myId;const cps=G.ch?G.ch.cps:[1];const rows=Math.ceil(cps.length/3);const w=200,h=64+rows*20+(pt&&pt.inDungeon?22:0),x=240-w/2,y=60;
   panel(x,y,w,h,'던전 입구');
   if(pt&&pt.inDungeon){button(x+20,y+24,w-40,16,'파티의 던전에 합류',()=>{net({t:'enter'});G.portalMenu=false;},{main:true});}
@@ -1143,8 +1197,9 @@ function render(){
   if(showSkills)drawSkills();else if(showChar)drawChar();else if(showShop)drawShop();
   if(showInv&&!showSkills)drawInv();
   if(G.portalMenu)drawPortalMenu();
+  if(G.stairsAsk)drawStairsAsk();
   msgs.forEach((m,i)=>{ctx.globalAlpha=Math.min(1,m.life);txt(m.t,240,48+i*11,13,m.c,'center');});ctx.globalAlpha=1;
-  if(banner&&!(showInv||showChar||showSkills||showShop)){const a=banner.t<0.4?banner.t/0.4:banner.t>2.3?Math.max(0,(3-banner.t)/0.7):1;ctx.globalAlpha=a;bigTxt(banner.a,240,92,16,'#e6dcc3',2);txt(banner.b,240,112,13,'#9e937a','center');ctx.globalAlpha=1;}
+  if(banner&&!(showInv||showChar||showSkills||showShop||G.stairsAsk)){const a=banner.t<0.4?banner.t/0.4:banner.t>2.3?Math.max(0,(3-banner.t)/0.7):1;ctx.globalAlpha=a;bigTxt(banner.a,240,92,16,'#e6dcc3',2);txt(banner.b,240,112,13,'#9e937a','center');ctx.globalAlpha=1;}
   for(const e of effects)if(e.type==='mark'){const p=e.pid===myId?me:G.players.get(e.pid);if(!p)continue;const px=(e.pid===myId?me.x:p.dx)-icx,py=(e.pid===myId?me.y:p.dy)-icy;txt(`${e.txt} ${Math.ceil(e.max-e.t)}`,px,py-36,11,e.c==='y'?'#ffd35a':'#8fd0ff','center');}
   if(G.doom){G.doom.t-=1/60;if(G.doom.t<=0)G.doom=null;else{const n=Math.ceil(G.doom.t);ctx.globalAlpha=0.9;bigTxt(String(n),240,70,18,'#ff4a3a',3,'px');txt('방어 스킬을 쓰세요!',240,96,13,'#ff8a7a','center');ctx.globalAlpha=1;}}
   if(G.flash>0){G.flash-=1/60;pr(0,0,W,H,`rgba(255,240,220,${Math.max(0,G.flash)*1.5})`);}
