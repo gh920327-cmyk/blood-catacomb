@@ -1,7 +1,7 @@
 // 핏빛 카타콤 — 클라이언트 (렌더링 · 입력 · 네트워크 · UI)
 'use strict';
 (()=>{
-const W=480,H=270,TS=16,SC=2;
+const W=480,H=270,TS=16;let SC=2; // SC: 화면 해상도에 맞춰 2~4 (글자를 선명하게)
 const cv=document.getElementById('game');
 const ctx=cv.getContext('2d');
 function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.imageSmoothingEnabled=false;return [c,x];}
@@ -246,15 +246,18 @@ const ORB_GLASS=pcan(41,41,q=>{for(let a=0;a<12;a++){const t=Math.PI*1.1+a/12*0.
 
 // ================= 도트 텍스트 =================
 const TXT=new Map();
+// 설명 글씨가 어두워서 안 보이던 색을 밝게
+const TXT_BRIGHT={'#6b6275':'#a79db3','#9e937a':'#d2c7ab','#9e937a ':'#d2c7ab'};
 function fontStr(size,font){return font==='px'?`${size}px Silkscreen, "Courier New", monospace`:`800 ${size}px "Nanum Gothic", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;}
 const [,mcx]=mk(8,8);
 function tbitmap(str,size,color,font){font=font||'kr';
-  const key=str+'|'+size+'|'+color+'|'+font;let b=TXT.get(key);if(b)return b;if(TXT.size>1200)TXT.clear();
+  const key=str+'|'+size+'|'+color+'|'+font+'|'+SC;let b=TXT.get(key);if(b)return b;if(TXT.size>1500)TXT.clear();
+  color=TXT_BRIGHT[color]||color;size=(font==='px'?size:(size<=12?size+1:size))*SC/2;
   mcx.font=fontStr(size,font);const tw=Math.ceil(mcx.measureText(str).width);const w=Math.max(4,tw+6),h=Math.ceil(size*1.35)+6;
   const [c,x]=mk(w,h);x.font=fontStr(size,font);x.textBaseline='middle';x.fillStyle='#fff';x.fillText(str,3,Math.round(h/2)+1);
-  const id=x.getImageData(0,0,w,h),a=id.data,n=w*h,mask=new Uint8Array(n);for(let i=0;i<n;i++)mask[i]=a[i*4+3]>110?1:0;
+  const id=x.getImageData(0,0,w,h),a=id.data,n=w*h,mask=new Uint8Array(n),al=new Uint8Array(n);for(let i=0;i<n;i++){al[i]=a[i*4+3];mask[i]=al[i]>110?1:0;}const smooth=font!=='px'&&SC>2;const rad=SC>=4?2:1;
   const [cr,cg,cb]=rgb(color);
-  for(let i=0;i<n;i++){const p=i*4;if(mask[i]){a[p]=cr;a[p+1]=cg;a[p+2]=cb;a[p+3]=255;}else{const X=i%w,Y=(i/w)|0;let o=0;for(let dy=-1;dy<=1&&!o;dy++)for(let dx=-1;dx<=1;dx++){const xx=X+dx,yy=Y+dy;if(xx>=0&&yy>=0&&xx<w&&yy<h&&mask[yy*w+xx]){o=1;break;}}if(o){a[p]=8;a[p+1]=5;a[p+2]=10;a[p+3]=255;}else a[p+3]=0;}}
+  for(let i=0;i<n;i++){const p=i*4;if(mask[i]||(smooth&&al[i]>50)){a[p]=cr;a[p+1]=cg;a[p+2]=cb;a[p+3]=mask[i]?255:al[i]*2;}else{const X=i%w,Y=(i/w)|0;let o=0;for(let dy=-rad;dy<=rad&&!o;dy++)for(let dx=-rad;dx<=rad;dx++){const xx=X+dx,yy=Y+dy;if(xx>=0&&yy>=0&&xx<w&&yy<h&&mask[yy*w+xx]){o=1;break;}}if(o){a[p]=8;a[p+1]=5;a[p+2]=10;a[p+3]=255;}else a[p+3]=0;}}
   x.putImageData(id,0,0);TXT.set(key,c);return c;}
 function txt(str,x,y,size,color,align,font){size=size||12;color=color||'#e6dcc3';const b=tbitmap(String(str),size,color,font);let dx=x*SC;if(align==='center')dx-=b.width/2;else if(align==='right')dx-=b.width;ctx.drawImage(b,Math.round(dx),Math.round(y*SC-b.height/2));return b.width/SC;}
 function tw(str,size){return tbitmap(String(str),size||12,'#ffffff').width/SC;}
@@ -417,7 +420,7 @@ function tutSaw(t){TUT.saw[t]=true;}
 function tutUpdate(dt){if(TUT.off||scene!=='game'||TUT.i>=TUT_STEPS.length)return;TUT.t+=dt;if(TUT.lx!=null)TUT.moved+=Math.hypot(me.x-TUT.lx,me.y-TUT.ly);TUT.lx=me.x;TUT.ly=me.y;
   if(TUT_STEPS[TUT.i].ok()){TUT.i++;TUT.t=0;TUT.saw={};sfx('pick');try{localStorage.setItem('bc_tut',TUT.i>=TUT_STEPS.length?'done':String(TUT.i));}catch(e){}}}
 function tutSkip(){TUT.off=true;try{localStorage.setItem('bc_tut','done');}catch(e){}}
-function drawTut(){if(TUT.off||scene!=='game'||TUT.i>=TUT_STEPS.length)return;const st=TUT_STEPS[TUT.i];const y=62,w=Math.min(440,st.m.length*7.2+40);
+function drawTut(){if(TUT.off||scene!=='game'||TUT.i>=TUT_STEPS.length||showInv||showChar||showSkills||showShop)return;const st=TUT_STEPS[TUT.i];const y=62,w=Math.min(470,tw(st.m,12)+24);
   pr(240-w/2,y-12,w,30,'rgba(10,7,14,0.82)');pr(240-w/2,y-12,w,1,PAL.y);pr(240-w/2,y+17,w,1,PAL.y);
   txt(`안내 ${TUT.i+1}/${TUT_STEPS.length}`,240-w/2+6,y-5,10,'#ffd35a');txt(st.m,240,y+5,12,'#f2eadb','center');txt('H: 안내 끄기',240+w/2-6,y-5,10,'#6b6275','right');}
 function msg(t,c){msgs.unshift({t,c:c||'#e6dcc3',life:3.4});if(msgs.length>4)msgs.pop();}
@@ -976,11 +979,11 @@ function itemTip(it,where,by){const cls=myCls();const L=[[it.name,RAR[it.rar].c,
   if(!SH.canEquip(it,cls))L.push([`${CLASSES[cls].n}은(는) 착용 불가`,'#e0574a',12]);
   else if(where!=='eq'&&G.ch){const cur=G.ch.eq[it.slot];if(!cur)L.push(['빈 칸 · 바로 장착 가능','#7fd05a',11]);else if(cur!==it){L.push(['장착 중인 아이템과 비교','#9e937a',11]);const a=SH.itemStats(it),b=SH.itemStats(cur);let any=false;for(const k of new Set([...Object.keys(a),...Object.keys(b)])){const d=(a[k]||0)-(b[k]||0);if(d){any=true;L.push([diffLine(k,d),d>0?'#7fd05a':'#e0574a',12]);}}if(!any)L.push(['차이 없음','#9e937a',11]);}}
   if(by)L.push([`${by}님이 내려놓은 아이템`,'#c77ad8',11]);
-  if(where==='shop')L.push([`가격 ${it.price}골드 · 클릭해서 구입`,'#ffd35a',12]);else L.push([where==='bag'?(showShop?`클릭: 장착   우클릭: 판매 ${it.value}골드`:'클릭: 장착   우클릭: 바닥에 내려놓기 (거래)'):where==='ground'?'클릭해서 줍기 (F)':'클릭: 장착 해제','#6b6275',11]);return L;}
-function drawTip(lines){const bms=lines.map(l=>tbitmap(l[0],l[2]||12,l[1],'kr'));let w=0,h=0;bms.forEach(b=>{w=Math.max(w,b.width);h+=b.height-4;});const pad=12;w+=pad*2;h+=pad*2;
-  let x=mouse.x*SC+24,y=mouse.y*SC+8;if(x+w>W*SC-4)x=mouse.x*SC-w-12;if(y+h>H*SC-4)y=H*SC-h-4;x=Math.max(4,Math.round(x/2)*2);y=Math.max(4,Math.round(y/2)*2);
-  ctx.fillStyle=PAL.k;ctx.fillRect(x,y,w,h);ctx.fillStyle=PAL.G;ctx.fillRect(x+2,y+2,w-4,h-4);ctx.fillStyle='rgba(14,11,18,0.97)';ctx.fillRect(x+4,y+4,w-8,h-8);
-  let yy=y+pad-2;bms.forEach(b=>{ctx.drawImage(b,Math.round(x+w/2-b.width/2),Math.round(yy));yy+=b.height-4;});}
+  if(where==='shop')L.push([`가격 ${it.price}골드 · 클릭해서 구입`,'#ffd35a',12]);else L.push([where==='bag'?(showShop?`클릭: 장착   우클릭·Shift+클릭: 판매 ${it.value}골드`:'클릭: 장착   우클릭·Shift+클릭: 바닥에 버리기 (거래)'):where==='ground'?'클릭해서 줍기 (F)':'클릭: 장착 해제','#6b6275',11]);return L;}
+function drawTip(lines){const k=SC/2;const bms=lines.map(l=>tbitmap(l[0],(l[2]||12)+1,l[1],'kr'));let w=0,h=0;bms.forEach(b=>{w=Math.max(w,b.width);h+=b.height-3*k;});const pad=12*k;w+=pad*2;h+=pad*2;
+  let x=mouse.x*SC+24*k,y=mouse.y*SC+8*k;if(x+w>W*SC-4)x=mouse.x*SC-w-12*k;if(y+h>H*SC-4)y=H*SC-h-4;x=Math.max(4,Math.round(x/2)*2);y=Math.max(4,Math.round(y/2)*2);
+  ctx.fillStyle=PAL.k;ctx.fillRect(x,y,w,h);ctx.fillStyle=PAL.G;ctx.fillRect(x+2*k,y+2*k,w-4*k,h-4*k);ctx.fillStyle='rgba(8,6,12,0.985)';ctx.fillRect(x+4*k,y+4*k,w-8*k,h-8*k);
+  let yy=y+pad-2*k;bms.forEach(b=>{ctx.drawImage(b,Math.round(x+w/2-b.width/2),Math.round(yy));yy+=b.height-3*k;});}
 function drawHUD(){const mv=G.mev,cls=myCls(),skills=CLASSES[cls].skills;
   pr(44,232,392,38,PAL.k);pr(45,233,390,37,PAL.d);pr(45,233,390,1,PAL.m);pr(45,234,390,1,PAL.D);pr(50,238,2,2,PAL.g);pr(428,238,2,2,PAL.g);
   uiRects.push({x:44,y:232,w:392,h:38,block:true});
@@ -1097,7 +1100,7 @@ function render(){
   if(showInv&&!showSkills)drawInv();
   if(G.portalMenu)drawPortalMenu();
   msgs.forEach((m,i)=>{ctx.globalAlpha=Math.min(1,m.life);txt(m.t,240,48+i*11,13,m.c,'center');});ctx.globalAlpha=1;
-  if(banner){const a=banner.t<0.4?banner.t/0.4:banner.t>2.3?Math.max(0,(3-banner.t)/0.7):1;ctx.globalAlpha=a;bigTxt(banner.a,240,92,16,'#e6dcc3',2);txt(banner.b,240,112,13,'#9e937a','center');ctx.globalAlpha=1;}
+  if(banner&&!(showInv||showChar||showSkills||showShop)){const a=banner.t<0.4?banner.t/0.4:banner.t>2.3?Math.max(0,(3-banner.t)/0.7):1;ctx.globalAlpha=a;bigTxt(banner.a,240,92,16,'#e6dcc3',2);txt(banner.b,240,112,13,'#9e937a','center');ctx.globalAlpha=1;}
   for(const e of effects)if(e.type==='mark'){const p=e.pid===myId?me:G.players.get(e.pid);if(!p)continue;const px=(e.pid===myId?me.x:p.dx)-icx,py=(e.pid===myId?me.y:p.dy)-icy;txt(`${e.txt} ${Math.ceil(e.max-e.t)}`,px,py-36,11,e.c==='y'?'#ffd35a':'#8fd0ff','center');}
   if(G.doom){G.doom.t-=1/60;if(G.doom.t<=0)G.doom=null;else{const n=Math.ceil(G.doom.t);ctx.globalAlpha=0.9;bigTxt(String(n),240,70,18,'#ff4a3a',3,'px');txt('방어 스킬을 쓰세요!',240,96,13,'#ff8a7a','center');ctx.globalAlpha=1;}}
   if(G.flash>0){G.flash-=1/60;pr(0,0,W,H,`rgba(255,240,220,${Math.max(0,G.flash)*1.5})`);}
@@ -1121,7 +1124,8 @@ let last=performance.now();
 function frame(ts){const dt=Math.min(0.05,(ts-last)/1000)||0;last=ts;
   try{if(scene==='game'&&G.map){update(dt);tutUpdate(dt);}else time+=dt;render();}catch(err){console.error(err);}
   requestAnimationFrame(frame);}
-function fit(){const vw=window.innerWidth,vh=window.innerHeight;let s=Math.min(vw/W,vh/H);if(s>=1&&Math.floor(s)/s>=0.8)s=Math.floor(s);cv.style.width=Math.floor(W*s)+'px';cv.style.height=Math.floor(H*s)+'px';}
+function fit(){const vw=window.innerWidth,vh=window.innerHeight;let s=Math.min(vw/W,vh/H);if(s>=1&&Math.floor(s)/s>=0.8)s=Math.floor(s);cv.style.width=Math.floor(W*s)+'px';cv.style.height=Math.floor(H*s)+'px';
+  const ns=Math.max(2,Math.min(4,Math.round(s*(window.devicePixelRatio||1))));if(ns!==SC||cv.width!==W*ns){SC=ns;cv.width=W*SC;cv.height=H*SC;ctx.imageSmoothingEnabled=false;TXT.clear();}}
 window.addEventListener('resize',fit);fit();
 renderSelect();
 Promise.all([loadImg('sprites/heroes_anim.png'),loadImg('sprites/bosses_anim.png')]).then(([h,b])=>{if(h)SPR.heroAnim=sliceAnim(h,40,24);if(b)SPR.bossAnim=sliceAnim(b,72,48);for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
