@@ -21,10 +21,13 @@ const wss=new WebSocketServer({server,path:'/ws',maxPayload:256*1024});
 // ================= 밸런스 (이 숫자만 고치면 난이도가 바뀝니다) =================
 const BAL={
   monHpPerFloor:0.5,   // 층마다 몬스터 체력 +50%
+  monHpCurve:0.025,    // 깊어질수록 추가로 붙는 체력 배율(레벨·장비 성장 따라잡기)
   monDmgPerFloor:0.28, // 층마다 몬스터 공격력 +28%
   partyHp:0.6,         // 파티원 1명 추가마다 몬스터 체력 +60%
   eliteHp:2.6,eliteDmg:1.4,
-  bossHp:1.0,          // 보스 체력 전체 배율
+  bossHp:2.0,          // 보스 체력 전체 배율
+  bossHpCurve:0.02,    // 깊은 층 보스 추가 체력
+  finalBoss:1.6,       // 100층 보스 체력 배율
   bossDmg:1.0,         // 보스 공격력 전체 배율
   xp:1.0,gold:1.0,     // 경험치 · 골드 배율
   dropItem:0.15,dropHp:0.04,dropMp:0.02
@@ -90,14 +93,14 @@ function meterRows(map){return [...map.entries()].map(([id,m])=>({id,name:m.name
 // ================= 몬스터 =================
 function pickType(f){const w=[['zombie',Math.max(20,60-f*4)],['skel',25+Math.min(f,20)*2],['hound',Math.min(35,10+f*3)]];let t=R()*w.reduce((a,b)=>a+b[1],0);for(const[k,v]of w){if((t-=v)<=0)return k;}return 'zombie';}
 function spawnMonster(inst,type,x,y,elite){const d=SH.MT[type],f=inst.floor,n=Math.max(1,inst.players.size);
-  const hpM=(1+BAL.monHpPerFloor*(f-1))*(1+BAL.partyHp*(n-1)),dmM=1+BAL.monDmgPerFloor*(f-1);
+  const hpM=(1+BAL.monHpPerFloor*(f-1))*(1+BAL.monHpCurve*(f-1))*(1+BAL.partyHp*(n-1)),dmM=1+BAL.monDmgPerFloor*(f-1);
   const m={id:inst.mid++,type,tc:SH.MT_LIST.indexOf(type),d,x,y,r:d.r,elite:!!elite,maxHp:Math.round(d.hp*hpM*(elite?BAL.eliteHp:1)*(type==='boss'?BAL.bossHp:1)),dmg:d.dmg*dmM*(elite?BAL.eliteDmg:1)*(type==='boss'?BAL.bossDmg:1),spd:d.spd*(elite?1.1:1),
     xp:Math.round(d.xp*(1+0.3*(f-1))*(elite?3:1)*BAL.xp),face:1,cd:rf(0,1),ccd:1.5,wind:0,windType:'',atkT:0,flash:0,slow:0,stun:0,alert:false,moving:false,wander:0,wdx:0,wdy:0,charge:0,dead:false,tgt:null,tgtT:0,taunt:null};
   m.hp=m.maxHp;m.baseDmg=m.dmg;inst.monsters.push(m);return m;}
 function spawnMonsters(inst){const map=inst.map,f=inst.floor,n=Math.max(1,inst.players.size);
   for(const r of map.rooms){
     if(r===map.start)continue;
-    if(r===map.bossRoom){const b=spawnMonster(inst,'boss',r.cx*TS+8,r.cy*TS+8,false);b.boss=true;b.home={x:b.x,y:b.y};const th=SH.themeOf(f);const bm=(1+th.idx*0.12)*(th.corrupt?1.3:1)*(f===100?2.2:1);b.hp=b.maxHp=Math.round(b.maxHp*bm);b.r=f===100?13:11;inst.bossId=b.id;continue;}
+    if(r===map.bossRoom){const b=spawnMonster(inst,'boss',r.cx*TS+8,r.cy*TS+8,false);b.boss=true;b.home={x:b.x,y:b.y};const th=SH.themeOf(f);const bm=(1+th.idx*0.12)*(th.corrupt?1.3:1)*(1+BAL.bossHpCurve*(f-1))*(f===100?BAL.finalBoss:1);b.hp=b.maxHp=Math.round(b.maxHp*bm);b.r=f===100?13:11;inst.bossId=b.id;continue;}
     let c=ri(2,4)+Math.min(4,Math.floor(f/4))+(n-1);if(map.boss)c=Math.max(1,c-2);const eliteRoom=R()<0.12+Math.min(0.3,f*0.015);
     for(let i=0;i<c;i++){const x=(r.x+ri(1,r.w-2))*TS+8,y=(r.y+ri(1,r.h-2))*TS+8;spawnMonster(inst,pickType(f),x,y,eliteRoom&&i===0);}
   }}
