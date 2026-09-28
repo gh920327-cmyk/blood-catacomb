@@ -68,8 +68,8 @@ function genHub(){
 
 // ---------- 직업 ----------
 const CLASSES={
-  warrior:{n:'전사',role:'근거리 딜러',fam:'melee',prim:'str',range:'melee',base:{str:16,dex:10,vit:12,ene:6},hpMul:1.1,armorMul:1,atkRate:1.3,ms:80,
-    basic:{kind:'melee',mult:1},skills:['whirl','charge','warcry','cleave','bloodlust','leap','rend','berserk','frenzy','bladestorm','execute','earthsplit'],
+  warrior:{n:'전사',role:'근거리 딜러',fam:'melee',prim:'str',range:'melee',base:{str:16,dex:10,vit:12,ene:6},hpMul:1.2,armorMul:1.1,atkRate:1.35,ms:80,
+    basic:{kind:'melee',mult:1.2},skills:['whirl','charge','warcry','cleave','bloodlust','leap','rend','berserk','frenzy','bladestorm','execute','earthsplit'],
     desc:'강력한 근접 공격과 돌진으로 적진을 가르는 딜러'},
   guardian:{n:'수호자',role:'탱커',fam:'melee',prim:'str',range:'melee',base:{str:12,dex:8,vit:18,ene:6},hpMul:1.4,armorMul:1.7,atkRate:1.1,ms:76,
     basic:{kind:'melee',mult:0.8},skills:['taunt','bash','bulwark','hook','ironskin','shieldwall','consecrate','slam','undying','rally','shieldthrow','bastion'],

@@ -28,6 +28,7 @@ const BAL={
   bossHp:2.0,          // 보스 체력 전체 배율
   bossHpCurve:0.005,   // 깊은 층 보스 추가 체력
   finalBoss:1.6,       // 100층 보스 체력 배율
+  bossPartyHp:0.25,bossPartyDmg:0.1,bossPartyTempo:0.07, // 파티원 1명 추가마다 보스만 추가로: 체력 +25%, 공격력 +10%, 패턴 속도 +7%
   bossDmg:1.0,         // 보스 공격력 전체 배율
   xp:1.0,gold:1.0,     // 경험치 · 골드 배율
   dropItem:0.15,dropHp:0.04,dropMp:0.02,
@@ -59,7 +60,10 @@ function recalc(P){P.S=SH.calcStats(P.ch);P.hp=Math.min(P.hp,P.S.maxHp);P.mp=Mat
 // ================= 파티 =================
 function newParty(P){const pt={id:'pt'+(nextId++),leader:P.id,members:new Set([P.id]),inst:null};parties.set(pt.id,pt);P.party=pt;return pt;}
 function partyList(pt){const a=[];for(const id of pt.members){const p=players.get(id);if(p)a.push(p);}return a;}
-function sendParty(pt){const list=partyList(pt).map(p=>({id:p.id,name:p.ch.name,cls:p.ch.cls,lvl:p.ch.lvl}));for(const p of partyList(pt))send(p,{t:'party',leader:pt.leader,members:list,inDungeon:!!pt.inst});}
+function sendParty(pt){const list=partyList(pt).map(p=>({id:p.id,cid:p.ch.id,name:p.ch.name,cls:p.ch.cls,lvl:p.ch.lvl}));for(const p of partyList(pt))send(p,{t:'party',leader:pt.leader,members:list,inDungeon:!!pt.inst});}
+// 재접속(서버 재시작 등)했을 때 예전 파티원끼리 자동으로 다시 묶기
+function restoreParty(P){const prev=P.prevParty;if(!prev||prev.length<2)return;for(const Q of players.values()){if(Q===P||!Q.ch||!Q.party||Q.inst!==hub||!prev.includes(Q.ch.id))continue;if(!(Q.prevParty||[]).includes(P.ch.id))continue;const pt=Q.party;if(pt===P.party||pt.members.size>=4||pt.inst)continue;
+    leaveParty(P);pt.members.add(P.id);P.party=pt;sendParty(pt);bcastRoster(hub);for(const q of partyList(pt))msg(q,`${P.ch.name}님이 다시 파티에 합류했습니다`,'#7fd05a');return;}}
 function leaveParty(P){const pt=P.party;if(!pt)return;pt.members.delete(P.id);P.party=null;if(pt.members.size===0){parties.delete(pt.id);}else{if(pt.leader===P.id)pt.leader=[...pt.members][0];sendParty(pt);}}
 
 // ================= 인스턴스 =================
@@ -90,9 +94,9 @@ function loadFloor(inst,floor){
     if(floor>P.ch.best)P.ch.best=floor;markDirty(P);sendMap(P);}
   bcastRoster(inst);
 }
-function getMeter(map,P){let m=map.get(P.id);if(!m){m={name:P.ch.name,cls:P.ch.cls,dmg:0,taken:0,heal:0,shield:0};map.set(P.id,m);}return m;}
+function getMeter(map,P){let m=map.get(P.id);if(!m){m={name:P.ch.name,cls:P.ch.cls,dmg:0,taken:0,heal:0,shield:0,kills:0,elites:0};map.set(P.id,m);}return m;}
 function addMeter(inst,P,k,v){if(!inst.meter||v<=0)return;getMeter(inst.meter,P)[k]+=v;if(inst.bossMeter)getMeter(inst.bossMeter,P)[k]+=v;}
-function meterRows(map){return [...map.entries()].map(([id,m])=>({id,name:m.name,cls:m.cls,dmg:Math.round(m.dmg),taken:Math.round(m.taken),heal:Math.round(m.heal),shield:Math.round(m.shield)}));}
+function meterRows(map){return [...map.entries()].map(([id,m])=>({id,name:m.name,cls:m.cls,dmg:Math.round(m.dmg),taken:Math.round(m.taken),heal:Math.round(m.heal),shield:Math.round(m.shield),kills:m.kills||0,elites:m.elites||0}));}
 
 // ================= 몬스터 =================
 function pickType(f){const w=[['zombie',Math.max(20,60-f*4)],['skel',25+Math.min(f,20)*2],['hound',Math.min(35,10+f*3)]];let t=R()*w.reduce((a,b)=>a+b[1],0);for(const[k,v]of w){if((t-=v)<=0)return k;}return 'zombie';}
@@ -104,7 +108,7 @@ function spawnMonster(inst,type,x,y,elite){const d=SH.MT[type],f=inst.floor,n=Ma
 function spawnMonsters(inst){const map=inst.map,f=inst.floor,n=Math.max(1,inst.players.size);
   for(const r of map.rooms){
     if(r===map.start)continue;
-    if(r===map.bossRoom){const b=spawnMonster(inst,'boss',r.cx*TS+8,r.cy*TS+8,false);b.boss=true;b.home={x:b.x,y:b.y};const th=SH.themeOf(f);const bm=(1+th.idx*0.12)*(th.corrupt?1.3:1)*(1+BAL.bossHpCurve*(f-1))*(f===100?BAL.finalBoss:1);b.hp=b.maxHp=Math.round(b.maxHp*bm);b.r=f===100?13:11;inst.bossId=b.id;continue;}
+    if(r===map.bossRoom){const b=spawnMonster(inst,'boss',r.cx*TS+8,r.cy*TS+8,false);b.boss=true;b.home={x:b.x,y:b.y};const th=SH.themeOf(f);const bm=(1+th.idx*0.12)*(th.corrupt?1.3:1)*(1+BAL.bossHpCurve*(f-1))*(f===100?BAL.finalBoss:1);const pn=n-1;b.hp=b.maxHp=Math.round(b.maxHp*bm*(1+BAL.bossPartyHp*pn));b.dmg*=1+BAL.bossPartyDmg*pn;b.baseDmg=b.dmg;b.partyCd=1/(1+BAL.bossPartyTempo*pn);b.r=f===100?13:11;inst.bossId=b.id;continue;}
     let c=ri(2,4)+Math.min(4,Math.floor(f/4))+(n-1);if(map.boss)c=Math.max(1,c-2);const eliteRoom=R()<0.12+Math.min(0.3,f*0.015);
     for(let i=0;i<c;i++){const x=(r.x+ri(1,r.w-2))*TS+8,y=(r.y+ri(1,r.h-2))*TS+8;spawnMonster(inst,pickType(f),x,y,eliteRoom&&i===0);}
   }}
@@ -222,7 +226,7 @@ function bossAI(inst,m,T,d,dt,sm){if(!m.bossInit)initBoss(inst,m);m.face=T.x<m.x
   if(m.vuln>0)return;
   m.patCd-=dt;
   if(m.patCd<=0){let name=m.forceNext;m.forceNext=null;if(!name){const pool=m.phase>1?m.p1.concat(m.p2,m.p2):m.p1;const opts=pool.filter(p=>p!==m.last);name=pick(opts.length?opts:pool);}
-    const busy=(BP[name]||BP.slam)(inst,m,T);m.busy=busy;m.last=name;m.patCd=rf(1.6,2.6)*(m.corrupt?0.8:1)*(m.enraged?0.7:1)*(m.phase>1?0.85:1);return;}
+    const busy=(BP[name]||BP.slam)(inst,m,T);m.busy=busy;m.last=name;m.patCd=rf(1.6,2.6)*(m.corrupt?0.8:1)*(m.enraged?0.7:1)*(m.phase>1?0.85:1)*(m.partyCd||1);return;}
   if(d<m.r+4+18&&m.cd<=0){m.cd=m.d.cd*(m.corrupt?0.8:1);m.busy=BP.swipe(inst,m,T);return;}
   chase(inst,m,T,dt,sm*m.spdMul*(m.corrupt?1.2:1));}
 // 멀리 떨어진 플레이어 견제: 근거리만 맞고 원거리는 편한 상황을 막는다 (발밑 경고 → 폭발, 움직이면 피함)
@@ -230,6 +234,15 @@ function farHarass(inst,m,dt){if(m.hidden||m.dead)return;m.farCd=(m.farCd==null?
   m.farCd=(m.phase>1?BAL.farCd2:BAL.farCd1)*(m.corrupt?0.85:1)*(m.enraged?0.8:1)/(BAL.farTheme[m.theme]||1);
   const far=livingPlayers(inst).filter(p=>Math.hypot(p.x-m.x,p.y-m.y)>BAL.farDist);if(!far.length)return;const t=1.0*m.tf,r=22;
   for(const p of far){const x=p.x,y=p.y;fx(inst,{k:'tele',x:r1(x),y:r1(y),r,d:t,c:m.col});later(inst,t,()=>{if(m.dead)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r});hitCircle(inst,x,y,r,m.dmg*BAL.farDmg,m);});}}
+// 보스방 규칙: 일반 몬스터 출입 금지 · 보스는 방 밖으로 못 나감 · 전투 중엔 방 안의 플레이어도 못 나감
+function bossRoomRules(inst){const r=inst.map&&inst.map.bossRoom;if(!r)return;const x0=r.x*TS,y0=r.y*TS,x1=(r.x+r.w)*TS,y1=(r.y+r.h)*TS;
+  const inR=(x,y,pad)=>x>=x0-pad&&x<x1+pad&&y>=y0-pad&&y<y1+pad;const boss=inst.monsters.find(m=>m.boss&&!m.dead);
+  for(const m of inst.monsters){if(m.dead)continue;
+    if(m.boss){if(!inR(m.x,m.y,-6)){m.x=clamp(m.x,x0+8,x1-8);m.y=clamp(m.y,y0+8,y1-8);}}
+    else if(!m.summ&&!m.guardOf&&inR(m.x,m.y,6)&&m.lx!=null&&!inR(m.lx,m.ly,6)){m.x=m.lx;m.y=m.ly;}
+    m.lx=m.x;m.ly=m.y;}
+  const lock=!!(boss&&boss.alert);if(lock!==!!inst.bossLock){inst.bossLock=lock;bcast(inst,{t:'block',r:lock?{x:x0,y:y0,w:x1-x0,h:y1-y0}:null});if(lock)fx(inst,{k:'msg',m:'보스방 입구가 봉인됐다! 보스를 쓰러뜨려야 나갈 수 있다',c:'#ff6a5a'});}
+  for(const P of instPlayers(inst)){if(!lock){P.inBoss=false;continue;}const inside=inR(P.x,P.y,-2);if(inside)P.inBoss=true;else if(P.inBoss){P.x=clamp(P.x,x0+6,x1-6);P.y=clamp(P.y,y0+6,y1-6);if(SH.blocked(inst.map,P.x,P.y,3)){P.x=(r.cx*TS+8);P.y=(r.cy*TS+8);}send(P,{t:'tp',x:P.x,y:P.y});}}}
 function updateHazards(inst,dt){for(let i=inst.hz.length-1;i>=0;i--){const h=inst.hz[i];
   if(h.arm>0){h.arm-=dt;if(h.arm<=0&&h.burst){fx(inst,{k:'boom',x:r1(h.x),y:r1(h.y),r:h.r,c:1});hitCircle(inst,h.x,h.y,h.r,h.burst,h.src);}continue;}
   h.t-=dt;if(h.t<=0){inst.hz.splice(i,1);continue;}
@@ -304,7 +317,7 @@ function addDrop(inst,o,x,y){let tx=x,ty=y;for(let t=0;t<14;t++){const a=R()*Mat
   o.id=inst.did++;o.sx=r1(x);o.sy=r1(y);o.x=r1(tx);o.y=r1(ty);o.born=inst.time;inst.drops.push(o);
   for(const p of instPlayers(inst))if(o.owner==null||o.owner===p.id)send(p,{t:'dadd',d:[o]});return o;}
 function remDrop(inst,d){const i=inst.drops.indexOf(d);if(i>=0)inst.drops.splice(i,1);bcast(inst,{t:'drem',id:d.id});}
-function killMonster(inst,m,killer){m.dead=true;m.hp=0;fx(inst,{k:'mdie',id:m.id});
+function killMonster(inst,m,killer){m.dead=true;m.hp=0;fx(inst,{k:'mdie',id:m.id});if(killer&&inst.meter&&!m.boss&&!m.summ){const mm=getMeter(inst.meter,killer);if(m.elite)mm.elites++;else mm.kills++;}
   const f=inst.floor;
   for(const P of instPlayers(inst)){gainXP(P,m.xp);if(P===killer)P.ch.kills++;const fam=CLASSES[P.ch.cls].fam,own=P.id;
     if(m.boss){const th=SH.themeOf(f);const legP=f>=100?1:BAL.legBase+(th.corrupt?BAL.legCorrupt:0)+f*BAL.legPerFloor;
@@ -312,7 +325,7 @@ function killMonster(inst,m,killer){m.dead=true;m.hp=0;fx(inst,{k:'mdie',id:m.id
     else{if(R()<(m.elite?0.9:BAL.dropItem))addDrop(inst,{kind:'item',owner:own,it:SH.genItem(f+(m.elite?1:0),fam,m.elite?1:0,m.elite?8:0,R,2)},m.x,m.y);
       if(R()<.35)addDrop(inst,{kind:'gold',owner:own,amt:Math.max(1,Math.round(ri(2,6)*f*(m.elite?3:1)*BAL.gold))},m.x,m.y);if(R()<BAL.dropHp)addDrop(inst,{kind:'hp',owner:own},m.x,m.y);if(R()<BAL.dropMp)addDrop(inst,{kind:'mp',owner:own},m.x,m.y);}}
   if(m.boss){inst.stairsOpen=true;SH.openStairs(inst.map);bcast(inst,{t:'stairs'});fx(inst,{k:'shake',v:7});fx(inst,{k:'msg',m:'보스를 쓰러뜨렸다! 아래로 가는 계단이 열렸다',c:'#ffd35a'});
-    const rows=inst.bossMeter?meterRows(inst.bossMeter):[];bcast(inst,{t:'result',title:`${m.bname||SH.bossOf(f).n} 처치`,floor:f,time:Math.round(inst.time-inst.bossStart),rows});inst.bossMeter=null;inst.bossId=null;}}
+    const rows=inst.bossMeter?meterRows(inst.bossMeter):[];const res={title:`${m.bname||SH.bossOf(f).n} 처치`,floor:f,time:Math.round(inst.time-inst.bossStart),rows};(inst.bossHist=inst.bossHist||[]).push(res);if(inst.bossHist.length>20)inst.bossHist.shift();bcast(inst,Object.assign({t:'result'},res));inst.bossMeter=null;inst.bossId=null;}}
 
 // ---------- 플레이어 공격/스킬 ----------
 function spawnPProj(inst,P,type,a,speed,mult,o){o=o||{};const p={id:inst.pid++,type,owner:'p',pid:P.id,x:P.x+Math.cos(a)*6,y:P.y-2+Math.sin(a)*6,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,mult,r:o.r||2,life:o.life||1.3,h:8,pierce:!!o.pierce,hit:new Set(),boom:o.boom||0,dot:o.dot||null,bounce:o.bounce||0,aura:o.aura||null,slow:o.slow||0,ghost:!!o.ghost,el:inst._el||null};inst.projs.push(p);return p;}
@@ -460,10 +473,10 @@ function updateDungeon(inst,dt){
   inst.time+=dt;
   if(inst.trans){inst.trans.t-=dt;if(inst.trans.t<=0){if(inst.floor>=100){victory(inst);return;}loadFloor(inst,inst.floor+1);return;}}
   if(inst.dark>0)inst.dark-=dt;
-  updatePlayers(inst,dt);updateMonsters(inst,dt);updateDots(inst,dt);updateProjs(inst,dt);updateZones(inst,dt);updateHazards(inst,dt);updateTimers(inst,dt);
+  updatePlayers(inst,dt);updateMonsters(inst,dt);bossRoomRules(inst);updateDots(inst,dt);updateProjs(inst,dt);updateZones(inst,dt);updateHazards(inst,dt);updateTimers(inst,dt);
   const all=instPlayers(inst);
   if(all.length&&all.every(p=>p.downed)){inst.wipeT+=dt;if(inst.wipeT>=3){inst.wipeT=0;wipe(inst);}}else inst.wipeT=0;
-  inst.meterT-=dt;if(inst.meterT<=0){inst.meterT=1;bcast(inst,{t:'meter',rows:meterRows(inst.meter)});}
+  inst.meterT-=dt;if(inst.meterT<=0){inst.meterT=1;const bm=inst.bossMeter&&inst.bossId?{name:SH.bossOf(inst.floor).n,floor:inst.floor,time:Math.round(inst.time-inst.bossStart),rows:meterRows(inst.bossMeter)}:null;bcast(inst,{t:'meter',rows:meterRows(inst.meter),boss:bm,hist:inst.bossHist||[]});}
 }
 function victory(inst){const ps=instPlayers(inst);for(const P of ps){P.ch.cleared=(P.ch.cleared|0)+1;markDirty(P);}for(const P of ps){joinHub(P);send(P,{t:'victory'});msg(P,'지하 100층 정복! 심연의 심장이 멈췄다','#ffd35a');if(P.party)sendParty(P.party);}}
 function wipe(inst){fx(inst,{k:'msg',m:'파티가 전멸했습니다 · 입구에서 다시 시작합니다',c:'#ff6a5a'});
@@ -562,7 +575,7 @@ wss.on('connection',ws=>{
   ws.on('pong',()=>{P.alive=true;});
   ws.on('message',raw=>{let d;try{d=JSON.parse(raw);}catch(e){return;}if(!d||typeof d.t!=='string')return;
     if(++P.msgs>200)return;
-    if(!P.ch){if(d.t==='join'){const ch=sanitizeChar(d.ch);if(!ch){send(P,{t:'err',m:'캐릭터 정보가 올바르지 않습니다'});return;}P.ch=ch;P.S=SH.calcStats(ch);players.set(P.id,P);newParty(P);send(P,{t:'welcome',id:P.id});joinHub(P);sendParty(P.party);send(P,{t:'ch',ch:P.ch,S:P.S});}return;}
+    if(!P.ch){if(d.t==='join'){const ch=sanitizeChar(d.ch);if(!ch){send(P,{t:'err',m:'캐릭터 정보가 올바르지 않습니다'});return;}P.ch=ch;P.S=SH.calcStats(ch);players.set(P.id,P);newParty(P);send(P,{t:'welcome',id:P.id});joinHub(P);P.prevParty=Array.isArray(d.prev)?d.prev.slice(0,4).map(String):null;restoreParty(P);sendParty(P.party);send(P,{t:'ch',ch:P.ch,S:P.S});}return;}
     const h=H[d.t];if(h){try{h(P,d);}catch(e){console.error('handler',d.t,e);}}});
   ws.on('close',()=>{if(!P.ch)return;leaveInst(P);const pt=P.party;leaveParty(P);players.delete(P.id);});
 });
