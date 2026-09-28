@@ -1,0 +1,12 @@
+{
+  "name": "blood-catacomb",
+  "version": "0.1.0",
+  "description": "핏빛 카타콤 — 도트 감성 멀티플레이 액션 RPG",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
