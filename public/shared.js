@@ -179,11 +179,64 @@ const MT={
   zombie:{n:'굶주린 시체',hp:24,dmg:6,spd:30,r:5,xp:9,cd:1.3},
   skel:{n:'해골 궁수',hp:18,dmg:5,spd:36,r:5,xp:12,cd:1.9},
   hound:{n:'지옥 사냥개',hp:22,dmg:7,spd:46,r:5,xp:14,cd:1.0},
-  boss:{n:'피의 군주 모르가스',hp:520,dmg:14,spd:28,r:11,xp:400,cd:1.6}
+  boss:{n:'피의 군주 모르가스',hp:520,dmg:14,spd:28,r:11,xp:400,cd:1.6},
+  egg:{n:'알',hp:30,dmg:0,spd:0,r:5,xp:4,cd:99,stat:1},
+  tentacle:{n:'촉수',hp:60,dmg:8,spd:0,r:6,xp:8,cd:1.8,stat:1},
+  guard:{n:'수호 해골',hp:40,dmg:6,spd:32,r:5,xp:6,cd:1.3},
+  clone:{n:'환영',hp:60,dmg:8,spd:30,r:11,xp:0,cd:1.6}
 };
-const MT_LIST=['zombie','skel','hound','boss'];
-const WIND_LIST=['','melee','shoot','charge','slam','ring'];
-const PROJ_LIST=['arrow','parrow','bolt','holy','fire','orb','pierce','shieldp','poison','frostorb','holybeam'];
+const MT_LIST=['zombie','skel','hound','boss','egg','tentacle','guard','clone'];
+const WIND_LIST=['','melee','shoot','charge','slam','ring','cast'];
+const PROJ_LIST=['arrow','parrow','bolt','holy','fire','orb','pierce','shieldp','poison','frostorb','holybeam','ice','web','page','void','fireb'];
+
+// ---------- 테마 · 보스 ----------
+// 5층마다 테마가 바뀌고, 51층부터는 같은 테마의 타락한 버전이 나온다. 100층은 최종 보스.
+const THEMES=[
+  {n:'핏빛 지하묘지',col:{d:'#1b1622',D:'#272030',k:'#0e0b12',m:'#3a3144',S:'#7b7486'},flame:null,
+    mon:{zombie:'굶주린 시체',skel:'해골 궁수',hound:'지옥 사냥개'},mrm:{},
+    boss:{n:'피의 군주 모르가스',pats:['slam','bloodring','summon','lungeFar'],p2:['bloodpool','inout'],brm:{}},
+    lines:['망자들이 속삭인다','피 냄새가 짙어진다','뼈 부딪히는 소리가 들린다']},
+  {n:'서리 무덤',col:{d:'#1a2230',D:'#243246',k:'#0b1018',m:'#3a5068',S:'#9cc4e0'},flame:{o:'c',y:'w',r:'C'},
+    mon:{zombie:'얼어붙은 망자',skel:'서리 해골 궁수',hound:'설원 늑대'},mrm:{zombie:{z:'c',Z:'C',b:'n',B:'n'},skel:{w:'c',W:'C'},hound:{r:'s',R:'S',o:'c'}},
+    boss:{n:'서리 여왕 이셀라',pats:['iceSpears','markSpread','cone','slam'],p2:['blizzard','circles'],brm:{r:'c',R:'C',p:'n',B:'n',b:'C'}},
+    lines:['숨결이 하얗게 얼어붙는다','얼음 아래에서 무언가 움직인다','뼛속까지 시리다']},
+  {n:'불타는 심연',col:{d:'#2a1010',D:'#3a1612',k:'#120606',m:'#4a1a14',S:'#a0402a'},flame:{},
+    mon:{zombie:'불타는 시체',skel:'화염 해골 궁수',hound:'화염 사냥개'},mrm:{zombie:{z:'o',Z:'r',b:'R',B:'k'},skel:{w:'o',W:'r'},hound:{r:'o',R:'r',o:'y'}},
+    boss:{n:'화염 군주 이그나르',pats:['cone','meteorRain','lavaLines','slam'],p2:['burnMark','lungeFar'],brm:{r:'o',R:'r',p:'R',w:'y',W:'o'}},
+    lines:['발밑에서 용암이 끓는다','공기가 타들어 간다','재가 눈처럼 내린다']},
+  {n:'역병 늪지',col:{d:'#1a2214',D:'#243018',k:'#0c120a',m:'#2e3a1e',S:'#6a7a3a'},flame:{o:'z',y:'w',r:'Z'},
+    mon:{zombie:'역병 구울',skel:'독침 궁수',hound:'늪 도마뱀'},mrm:{zombie:{z:'z',Z:'Z',e:'y'},skel:{w:'z',W:'Z'},hound:{r:'z',R:'Z',o:'y'}},
+    boss:{n:'역병 모체 불루그',pats:['poisonPools','eggs','sweep','ring'],p2:['split','poisonPools'],brm:{r:'z',R:'Z',p:'Z',w:'y',W:'g'}},
+    lines:['썩은 물이 발목을 붙잡는다','숨 쉬기가 괴롭다','무언가 알을 까고 있다']},
+  {n:'가라앉은 신전',col:{d:'#10262a',D:'#1a3438',k:'#081416',m:'#1e3a40',S:'#4a8a8a'},flame:{o:'c',y:'w',r:'C'},
+    mon:{zombie:'익사한 사제',skel:'산호 궁수',hound:'심해 상어'},mrm:{zombie:{z:'c',Z:'C',b:'n',B:'k'},skel:{w:'P',W:'p'},hound:{r:'C',R:'n',o:'w'}},
+    boss:{n:'심해의 사제 오르무스',pats:['tentacles','tide','pull','ring'],p2:['guards','circles'],brm:{r:'C',R:'n',p:'c',w:'w',W:'c'}},
+    lines:['물방울이 천장에서 떨어진다','먼 곳에서 노랫소리가 들린다','바닥이 축축하다']},
+  {n:'거미 굴',col:{d:'#221a18',D:'#2e2420',k:'#100c0a',m:'#3a2a24',S:'#8a7a70'},flame:{},
+    mon:{zombie:'고치 속 시체',skel:'거미 사수',hound:'독거미'},mrm:{zombie:{z:'w',Z:'W',b:'W',B:'S'},skel:{w:'B',W:'k',e:'e'},hound:{r:'B',R:'k',o:'e'}},
+    boss:{n:'거미 여왕 아라크네아',pats:['webShot','summon','ceiling','cone'],p2:['webPools','eggs'],brm:{r:'B',R:'k',p:'p',w:'e',W:'R'}},
+    lines:['끈적한 줄이 얼굴에 걸린다','수많은 다리가 긁는 소리','고치들이 꿈틀거린다']},
+  {n:'태엽 공방',col:{d:'#2a2214',D:'#3a2e1a',k:'#140f08',m:'#4a3a20',S:'#b08a3a'},flame:{o:'y',y:'w',r:'g'},
+    mon:{zombie:'태엽 병사',skel:'석궁 자동인형',hound:'돌진 골렘'},mrm:{zombie:{z:'g',Z:'G',b:'S',B:'m'},skel:{w:'g',W:'G'},hound:{r:'S',R:'m',o:'y'}},
+    boss:{n:'태엽 골렘 크로노스',pats:['sweep','lines','overheat','slam'],p2:['rewind','ring'],brm:{r:'g',R:'G',p:'S',w:'y',W:'g'}},
+    lines:['톱니바퀴가 맞물려 돈다','증기가 뿜어져 나온다','째깍, 째깍, 째깍']},
+  {n:'망령의 도서관',col:{d:'#161430',D:'#201c40',k:'#0a0818',m:'#2a2450',S:'#6a5aa0'},flame:{o:'P',y:'w',r:'p'},
+    mon:{zombie:'망령 사서',skel:'저주받은 마도사',hound:'날뛰는 마도서'},mrm:{zombie:{z:'P',Z:'p',b:'n',B:'k'},skel:{w:'P',W:'p'},hound:{r:'p',R:'n',o:'y'}},
+    boss:{n:'금서의 리치 말라카르',pats:['homing','pages','guards','markSpread'],p2:['clones','homing'],brm:{r:'p',R:'n',p:'P',w:'c',W:'P'}},
+    lines:['책장이 스스로 넘어간다','속삭이는 글자들','잉크 냄새가 난다']},
+  {n:'폭풍 첨탑',col:{d:'#22262e',D:'#2e343e',k:'#101218',m:'#4a4e5a',S:'#9aa6b8'},flame:{o:'c',y:'w',r:'y'},
+    mon:{zombie:'폭풍 전사',skel:'번개 사수',hound:'바람 정령'},mrm:{zombie:{z:'s',Z:'S',b:'C',B:'n'},skel:{w:'y',W:'g'},hound:{r:'c',R:'C',o:'w'}},
+    boss:{n:'폭풍 거인 토르강',pats:['stackMark','chainMark','whirlwind','slam'],p2:['collapse','lines'],brm:{r:'s',R:'S',p:'C',w:'y',W:'c'}},
+    lines:['천둥이 탑을 흔든다','바람이 비명을 지른다','번개가 번뜩인다']},
+  {n:'공허의 왕좌',col:{d:'#140a1e',D:'#1e1030',k:'#06020a',m:'#2a1640',S:'#6a3aa0'},flame:{o:'P',y:'w',r:'p'},
+    mon:{zombie:'공허 망자',skel:'공허 사수',hound:'공허 사냥개'},mrm:{zombie:{z:'p',Z:'k',b:'k',B:'k',e:'P'},skel:{w:'p',W:'k',e:'P'},hound:{r:'p',R:'k',o:'P'}},
+    boss:{n:'공허의 군주 자르곤',pats:['voidOrb','portals','lungeFar','inout'],p2:['darkness','circles'],p3:['doom'],brm:{r:'p',R:'k',p:'P',w:'P',W:'p',y:'P'}},
+    lines:['빛이 빨려 들어간다','발밑이 사라지는 것 같다','무(無)가 부른다']}
+];
+const FINAL_BOSS={n:'심연의 심장',pats:['bloodring','iceSpears','meteorRain','poisonPools','pull','webShot','sweep','homing','chainMark','voidOrb'],p2:['circles','inout','lines'],p3:['doom'],brm:{r:'e',R:'R',p:'k',w:'y',W:'o'}};
+function themeOf(floor){const i=Math.floor((Math.max(1,floor)-1)/5);return{idx:i%10,corrupt:floor>50,t:THEMES[i%10],final:floor===100};}
+function bossOf(floor){const th=themeOf(floor);if(th.final)return Object.assign({final:true},FINAL_BOSS);const b=th.t.boss;return Object.assign({},b,{n:(th.corrupt?'타락한 ':'')+b.n});}
+function monName(floor,type,elite,id){const th=themeOf(floor);const base=type==='boss'?bossOf(floor).n:(th.t.mon[type]||(MT[type]&&MT[type].n)||type);return (th.corrupt&&type!=='boss'?'타락한 ':'')+(elite?['광폭한 ','저주받은 ','불타는 ','굶주린 '][id%4]:'')+base;}
 
 // ---------- 아이템 ----------
 const RAR_N=['일반','마법','희귀','전설'];
@@ -276,6 +329,6 @@ function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o
 
 const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,WIND_LIST,PROJ_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
-  xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
+  THEMES,FINAL_BOSS,themeOf,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
 })(typeof self!=='undefined'?self:this);
