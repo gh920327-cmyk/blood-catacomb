@@ -50,6 +50,18 @@ const CLASS_BODY={
 };
 const CLASS_LEG={warrior:['B','b'],guardian:['n','C'],archer:['B','Z'],mage:['p','P'],priest:['W','w']};
 const CLASS_COL={warrior:'#e0574a',guardian:'#7aa2ff',archer:'#9ccf6a',mage:'#c77ad8',priest:'#ffe9a8'};
+const TRIM={warrior:'g',guardian:'y',archer:'G',mage:'y',priest:'y'};
+const RTRIM=[null,'C','y','o'];
+const HELM={plate:{s:'w',S:'s'},leather:{s:'b',S:'B'},robe:{s:'p',S:'P'}};
+const PF_CACHE={};
+function lookOfMe(){const e=G.ch?G.ch.eq:{};return{w:e.weapon?e.weapon.kind:null,wr:e.weapon?e.weapon.rar:-1,a:e.armor?e.armor.kind:null,ar:e.armor?e.armor.rar:-1,rr:e.ring?e.ring.rar:-1};}
+function playerFrames(cls,look){look=look||{};const ar=Math.max(0,look.ar|0),a=look.a||'';const key=cls+'|'+a+'|'+ar;if(PF_CACHE[key])return PF_CACHE[key];
+  let body=CLASS_BODY[cls].slice();const m={};if(ar>0)m[TRIM[cls]]=RTRIM[ar];body=remap(body,m);
+  if((cls==='warrior'||cls==='guardian')&&HELM[a])body=body.map((r,i)=>i<=5?remap([r],HELM[a])[0]:r);
+  if(ar>=2&&(cls==='warrior'||cls==='guardian'))body[0]=body[0].slice(0,7)+(ar===3?'oo':'yy')+body[0].slice(9);
+  if(ar===3&&(cls==='mage'||cls==='priest'))body[0]=body[0].slice(0,7)+'o'+body[0].slice(8);
+  if(ar===3&&cls==='archer')body[1]=body[1].slice(0,5)+'y'+body[1].slice(6);
+  const lg=bipedLegs(CLASS_LEG[cls][0],CLASS_LEG[cls][1]);const fr=buildFrames(body,lg.idle,lg.walk);PF_CACHE[key]=fr;return fr;}
 const FRP={};for(const c of SH.CLASS_ORDER){const lg=bipedLegs(CLASS_LEG[c][0],CLASS_LEG[c][1]);FRP[c]=buildFrames(CLASS_BODY[c],lg.idle,lg.walk);}
 
 const ZOMBIE_BODY=["................","......kkkk......",".....kzzzzk.....","....kzzzzzZk....","....kzekezZk....","....kZzzzzZk....",".....kZkkZk.....","..kkkbbbbbbkkk..",".kzZkbbBbbbkZzk.",".kk.kbbbbBbk.kk.","....kbBbbbBk....","....kBBBBBBk...."];
@@ -333,12 +345,12 @@ function saveCurrent(ch){const a=loadChars();const i=a.findIndex(c=>c.id===ch.id
 // ================= 캐릭터 선택 화면 =================
 const selEl=document.getElementById('select');
 let chosenCls='warrior',delArm=null;
-function clsPreview(cls){const c=document.createElement('canvas');c.width=16;c.height=16;const x=c.getContext('2d');x.drawImage(FRP[cls].idle[0].r.c,0,0);return c;}
+function clsPreview(cls,ch){const c=document.createElement('canvas');c.width=16;c.height=16;const x=c.getContext('2d');const lk=ch?{a:ch.eq.armor&&ch.eq.armor.kind,ar:ch.eq.armor?ch.eq.armor.rar:0}:{};x.drawImage(playerFrames(cls,lk).idle[0].r.c,0,0);return c;}
 function renderSelect(){
   const slots=document.getElementById('slots');slots.innerHTML='';const a=loadChars();
   document.getElementById('noSlots').hidden=a.length>0;
   a.forEach(ch=>{const d=document.createElement('div');d.className='slot';
-    const top=document.createElement('div');top.className='row';top.appendChild(clsPreview(ch.cls));top.lastChild.style.cssText='width:40px;height:40px;image-rendering:pixelated';
+    const top=document.createElement('div');top.className='row';top.appendChild(clsPreview(ch.cls,ch));top.lastChild.style.cssText='width:40px;height:40px;image-rendering:pixelated';
     const t=document.createElement('div');t.innerHTML=`<div class="nm"></div><div class="meta"></div>`;t.querySelector('.nm').textContent=ch.name;t.querySelector('.meta').textContent=`${CLASSES[ch.cls].n} · 레벨 ${ch.lvl} · 최고 지하 ${ch.best||0}층`;top.appendChild(t);d.appendChild(top);
     const row=document.createElement('div');row.className='row';
     const b1=document.createElement('button');b1.className='main';b1.textContent='입장';b1.onclick=()=>startGame(ch.id);
@@ -630,7 +642,7 @@ function drawTiles(icx,icy){const map=G.map,hub=!!map.hub;const TA=hub?null:them
       if(nb){wx.fillStyle=PAL.k;wx.fillRect(sx,sy,16,16);wx.fillStyle=PAL.m;if(SH.tileAt(map,tx-1,ty)>0)wx.fillRect(sx,sy,1,16);if(SH.tileAt(map,tx+1,ty)>0)wx.fillRect(sx+15,sy,1,16);if(SH.tileAt(map,tx,ty-1)>0)wx.fillRect(sx,sy,16,1);
         wx.fillStyle=PAL.D;if(SH.tileAt(map,tx-1,ty)>0)wx.fillRect(sx+1,sy,1,16);if(SH.tileAt(map,tx+1,ty)>0)wx.fillRect(sx+14,sy,1,16);if(SH.tileAt(map,tx,ty-1)>0)wx.fillRect(sx,sy+1,16,1);}}}}
 function pickFrame(e,fr){let set,idx;if(e.atkAnim>0){set=fr.atk;idx=Math.min(2,Math.floor((1-e.atkAnim/e.atkDur)*3));}else if(e.moving){set=fr.walk;idx=Math.floor(e.animT*(e.fast?16:8))%4;}else{set=fr.idle;idx=Math.floor(e.animT*2)%2;}const f=set[idx];return e.face<0?f.l:f.r;}
-function drawPlayer(p,icx,icy,isMe){const cls=isMe?myCls():(p.cls||'warrior');const src=isMe?me:p;const fr=FRP[cls];
+function drawPlayer(p,icx,icy,isMe){const cls=isMe?myCls():(p.cls||'warrior');const src=isMe?me:p;const look=isMe?lookOfMe():(p.look||{});const fr=playerFrames(cls,look);
   const e={atkAnim:src.atkAnim,atkDur:src.atkDur,moving:isMe?me.moving:p.moving,animT:src.animT,face:isMe?me.face:p.face};const s=pickFrame(e,fr);
   const bx=Math.round(isMe?me.x:p.dx)-icx,by=Math.round(isMe?me.y:p.dy)-icy;
   wx.drawImage(SH_S,bx-6,by-1);
@@ -639,29 +651,35 @@ function drawPlayer(p,icx,icy,isMe){const cls=isMe?myCls():(p.cls||'warrior');co
   const dodging=isMe?me.dodgeT>0:p.dodge;if(dodging)wx.globalAlpha=((time*30|0)&1)?0.35:0.7;
   const flash=isMe?me.flash:p.flash;
   const sx=bx-(s.w>>1),sy=by-s.h+2;
-  if(cls==='guardian'&&!(src.spin>0))drawShield(bx,by,e.face,false);
+  if(look.ar>=2)drawCape(bx,by,e.face,look.ar,e.moving,src.animT);
+  if(cls==='guardian'&&!(src.spin>0))drawShield(bx,by,e.face,false,look.ar);
   wx.drawImage(flash>0?s.fc:s.c,sx,sy);
-  drawWeapon(cls,src,bx,by,e.face,isMe?(G.ch&&G.ch.eq.weapon):null,p&&p.look);
-  if(cls==='guardian'&&!(src.spin>0))drawShield(bx,by,e.face,true);
+  drawWeapon(cls,src,bx,by,e.face,isMe?(G.ch&&G.ch.eq.weapon):null,look);
+  if(cls==='guardian'&&!(src.spin>0))drawShield(bx,by,e.face,true,look.ar);
+  if(look.ar===3||look.wr===3){if(R()<0.35)part((isMe?me.x:p.dx)+rf(-6,6),(isMe?me.y:p.dy),rf(-4,4),0,pick(['o','y','o','w']),rf(.5,.9),{z:rf(0,6),vz:rf(18,34),glow:true});}
+  if(look.rr>=2&&((time*4|0)%3===0)){wpx(bx+(e.face>0?-4:3),by-5,look.rr===3?'o':'c');}
   if(p&&p.shield){wx.globalAlpha=0.5;for(let n=0;n<24;n++){const t=n/24*Math.PI*2+time*2;if(n%2)wpx(Math.round(bx+Math.cos(t)*9),Math.round(by-6+Math.sin(t)*10),'c');}}
   wx.globalAlpha=1;return s;}
-function drawShield(bx,by,face,front){if(front!==(face>0))return;const x=bx+(face>0?4:-8),y=by-9;wx.fillStyle=PAL.k;wx.fillRect(x-1,y-1,6,8);wx.fillStyle=PAL.C;wx.fillRect(x,y,4,6);wx.fillStyle=PAL.y;wx.fillRect(x+1,y+1,2,4);wx.fillStyle=PAL.n;wx.fillRect(x,y+5,4,1);}
-function drawWeapon(cls,src,bx,by,f,wItem,look){const fam=CLASSES[cls].fam;const kind=wItem?wItem.kind:look&&look.w?look.w:(fam==='melee'?'sword':fam==='bow'?'shortbow':'staff');
+function drawShield(bx,by,face,front,ar){if(front!==(face>0))return;ar=ar|0;const x=bx+(face>0?4:-8),y=by-9;const big=ar>=2;const w=big?5:4,h=big?7:6;wx.fillStyle=PAL.k;wx.fillRect(x-1,y-1,w+2,h+2);wx.fillStyle=PAL[['C','C','n','R'][ar]];wx.fillRect(x,y,w,h);wx.fillStyle=PAL[['y','c','y','o'][ar]];wx.fillRect(x+1,y+1,w-2,h-2);wx.fillStyle=PAL[['n','n','C','r'][ar]];wx.fillRect(x+Math.floor(w/2),y+1,1,h-2);if(ar===3&&((time*6|0)%2))wpx(x+Math.floor(w/2),y+2,'w');}
+function drawCape(bx,by,face,ar,moving,animT){const c1=ar===3?'r':'R',c2=ar===3?'o':'y';const dir=face>0?-1:1;const sway=moving?Math.round(Math.sin(animT*12)*1):0;
+  for(let j=0;j<9;j++){const w=2+Math.floor(j/3);const x0=bx+dir*(3+Math.floor(j/4))+sway*(j>5?1:0);for(let i=0;i<w;i++){const x=x0+(dir>0?i:-i);wpx(x,by-11+j,j===8||i===w-1?c2:c1);}}}
+function drawWeapon(cls,src,bx,by,f,wItem,look){const fam=CLASSES[cls].fam;const kind=wItem?wItem.kind:look&&look.w?look.w:(fam==='melee'?'sword':fam==='bow'?'shortbow':'staff');const wr=Math.max(0,(look&&look.wr)|0);const BL=['s','c','y','o'],BL2=['S','C','g','r'];
   if(fam==='bow'){const hx=bx+(f>0?5:-6),hy=by-7;let a=src.atkAnim>0?src.atkAngle:(f>0?0:Math.PI);const L=kind==='longbow'?7:5;const ca=Math.cos(a),sa=Math.sin(a),pa=a+Math.PI/2;
-    for(let t=-L;t<=L;t++){const bend=Math.sqrt(Math.max(0,L*L-t*t))*0.5;wpx(Math.round(hx+Math.cos(pa)*t+ca*bend),Math.round(hy+Math.sin(pa)*t+sa*bend),kind==='crossbow'?'S':'b');}
+    for(let t=-L;t<=L;t++){const bend=Math.sqrt(Math.max(0,L*L-t*t))*0.5;wpx(Math.round(hx+Math.cos(pa)*t+ca*bend),Math.round(hy+Math.sin(pa)*t+sa*bend),wr>=2&&Math.abs(t)>=L-1?BL[wr]:kind==='crossbow'?'S':wr===3?'r':'b');}
     const pull=src.atkAnim>0?-2:0;lineP(wpx,Math.round(hx+Math.cos(pa)*L+ca*pull),Math.round(hy+Math.sin(pa)*L+sa*pull),Math.round(hx-Math.cos(pa)*L+ca*pull),Math.round(hy-Math.sin(pa)*L+sa*pull),'w');return;}
   if(fam==='staff'){const hx=bx+(f>0?4:-5),hy=by-3;const tilt=src.atkAnim>0?(f>0?0.6:-0.6):(f>0?0.15:-0.15);const len=kind==='wand'?7:12;const tx=Math.round(hx+Math.sin(tilt)*len),ty=Math.round(hy-Math.cos(tilt)*len);
-    lineP(wpx,hx,hy+2,tx,ty,kind==='scepter'?'g':'b');const gem=cls==='priest'?'y':kind==='wand'?'c':'p';wx.fillStyle=PAL.k;wx.fillRect(tx-2,ty-2,4,4);wx.fillStyle=PAL[gem];wx.fillRect(tx-1,ty-1,2,2);wpx(tx-1,ty-1,'w');
+    lineP(wpx,hx,hy+2,tx,ty,kind==='scepter'||wr>=2?'g':'b');const gem=wr===3?'o':wr===2?'y':cls==='priest'?'y':kind==='wand'?'c':'p';if(wr>=2&&((time*5|0)%2))wpx(tx+(f>0?2:-2),ty-2,'w');wx.fillStyle=PAL.k;wx.fillRect(tx-2,ty-2,4,4);wx.fillStyle=PAL[gem];wx.fillRect(tx-1,ty-1,2,2);wpx(tx-1,ty-1,'w');
     if(src.atkAnim>0){for(let n=0;n<3;n++)wpx(tx+ri(-2,2),ty+ri(-2,2),gem);}return;}
   const hx=bx+(f>0?4:-5),hy=by-5;const len={dagger:6,sword:9,great:12,axe:9,mace:9}[kind]||9;let a,world=false;const swing=src.atkAnim>0&&src.atkKind==='swing';
   if(src.spin>0)a=(1-src.spin/0.3)*Math.PI*2.4;else if(swing){const prog=1-src.atkAnim/src.atkDur;a=src.atkAngle+f*(-1.7+prog*3.4);world=true;}else a=-1.0+(src.moving?Math.sin(src.animT*10)*0.15:0);
   if(f<0&&!world)a=Math.PI-a;const ca=Math.cos(a),sa=Math.sin(a);
   if(swing){const prog=1-src.atkAnim/src.atkDur;if(prog>0.3&&prog<0.8){wx.globalAlpha=0.5;for(let k=1;k<8;k++){const aa=a-(f>0?1:-1)*k*0.13;wpx(Math.round(hx+Math.cos(aa)*(len-1)),Math.round(hy+Math.sin(aa)*(len-1)),'w');}wx.globalAlpha=1;}}
-  const blade=kind==='axe'||kind==='mace'?'b':'s';
+  const blade=kind==='axe'||kind==='mace'?(wr>=2?BL2[wr]:'b'):BL[wr];
   for(let i=2;i<=len;i++)wpx(Math.round(hx+ca*i),Math.round(hy+sa*i)+1,'k');
-  for(let i=1;i<=len;i++){const x=Math.round(hx+ca*i),y=Math.round(hy+sa*i);wpx(x,y,i===1?'g':i===len&&blade==='s'?'w':blade);}
+  for(let i=1;i<=len;i++){const x=Math.round(hx+ca*i),y=Math.round(hy+sa*i);wpx(x,y,i===1?'g':i===len&&(blade==='s'||wr>=2)?'w':blade);}
+  if(wr===3&&R()<0.4)part(bx+ca*len*0.7+(hx-bx),by+sa*len*0.7-5+(hy-by)+5,0,0,pick(['o','y']),0.35,{z:5,vz:10,glow:true});
   const pa=a+Math.PI/2;wpx(Math.round(hx+ca*2+Math.cos(pa)*1.6),Math.round(hy+sa*2+Math.sin(pa)*1.6),'g');wpx(Math.round(hx+ca*2-Math.cos(pa)*1.6),Math.round(hy+sa*2-Math.sin(pa)*1.6),'g');
-  if(kind==='axe'){for(let k=-2;k<=2;k++)for(let j=0;j<2;j++)wpx(Math.round(hx+ca*(len-j)+Math.cos(pa)*k),Math.round(hy+sa*(len-j)+Math.sin(pa)*k),k>0?'s':'S');}
+  if(kind==='axe'){for(let k=-2;k<=2;k++)for(let j=0;j<2;j++)wpx(Math.round(hx+ca*(len-j)+Math.cos(pa)*k),Math.round(hy+sa*(len-j)+Math.sin(pa)*k),k>0?BL[wr]:BL2[wr]);}
   if(kind==='mace'){const tx=Math.round(hx+ca*len),ty=Math.round(hy+sa*len);wx.fillStyle=PAL.S;wx.fillRect(tx-1,ty-1,3,3);wpx(tx-1,ty-1,'s');}}
 function drawMonster(m,icx,icy){if(m.fl&512)return;const fr=themedMonsterFrames(m.type,G.floor);const boss=m.tc===3||m.tc===7;const wd=WIND_DUR[m.wc]||0.35;
   const e={atkAnim:m.atkT>0?m.atkT:0,atkDur:m.atkT>0?Math.max(m.atkT,wd):1,moving:!!(m.fl&(64|32)),animT:m.animT,face:m.face,fast:!!(m.fl&32)};const s=pickFrame(e,fr);m._s=s;
@@ -758,6 +776,7 @@ function drawParts(icx,icy,glow){for(const p of parts){if(p.glow!==glow)continue
 function computeLights(icx,icy){const L=[];
   L.push({x:me.x-icx,y:me.y-8-icy,r:G.dark?64:meDowned()?100:150,i:1});
   for(const p of G.players.values()){if(p.id===myId)continue;L.push({x:p.dx-icx,y:p.dy-8-icy,r:G.dark?40:110,i:0.95});}
+  {const lk=lookOfMe();if((lk.ar===3||lk.wr===3)&&!G.dark)L.push({x:me.x-icx,y:me.y-8-icy,r:175,i:1});}
   for(const t of torches){const x=t.x-icx,y=t.y+4-icy;if(G.dark||x<-80||x>W+80||y<-80||y>H+80)continue;L.push({x,y,r:66+Math.sin(time*9+t.ph)*3+Math.sin(time*23+t.ph)*2,i:1});}
   for(const p of G.projs.values()){if(p.type!=='arrow'&&p.type!=='parrow'&&p.type!=='poison'&&p.type!=='shieldp'&&p.type!=='web'&&p.type!=='page')L.push({x:p.dx-icx,y:p.dy-p.h-icy,r:p.type==='fire'?46:32,i:1});}
   for(const e of effects){if(e.type==='boom')L.push({x:e.x-icx,y:e.y-icy,r:70*(1-e.t/e.max)+10,i:1});else if(e.type==='nova'||e.type==='smite')L.push({x:e.x-icx,y:e.y-icy,r:90*(1-e.t/e.max)+10,i:.9});}
