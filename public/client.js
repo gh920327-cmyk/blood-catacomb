@@ -54,9 +54,9 @@ const TRIM={warrior:'g',guardian:'y',archer:'G',mage:'y',priest:'y'};
 const RTRIM=[null,'C','y','o'];
 const HELM={plate:{s:'w',S:'s'},leather:{s:'b',S:'B'},robe:{s:'p',S:'P'}};
 const PF_CACHE={};
-function lookOfMe(){const e=G.ch?G.ch.eq:{};return{w:e.weapon?e.weapon.kind:null,wr:e.weapon?e.weapon.rar:-1,a:e.armor?e.armor.kind:null,ar:e.armor?e.armor.rar:-1,rr:e.ring?e.ring.rar:-1};}
+function lookOfMe(){const e=G.ch?G.ch.eq:{};return{w:e.weapon?e.weapon.kind:null,wr:e.weapon?e.weapon.rar:-1,wid:e.weapon?e.weapon.id:null,a:e.armor?e.armor.kind:null,ar:e.armor?e.armor.rar:-1,rr:e.ring?e.ring.rar:-1};}
 function playerFrames(cls,look){look=look||{};const ar=Math.max(0,look.ar|0),a=look.a||'';const key=(SPR.ready?'ai|':'')+cls+'|'+a+'|'+ar;if(PF_CACHE[key])return PF_CACHE[key];
-  if(SPR.ready){const hi=SH.CLASS_ORDER.indexOf(cls)*4+Math.min(3,ar);const fr=SPR.heroAnim&&SPR.heroAnim[hi]?animFrames(SPR.heroAnim[hi]):aiFrames(SPR.heroes[hi]);PF_CACHE[key]=fr;return fr;}
+  if(SPR.ready){const hi=SH.CLASS_ORDER.indexOf(cls)*4+Math.min(3,ar);const fr=SPR.heroBare&&SPR.heroBare[hi]?animFrames(SPR.heroBare[hi]):SPR.heroAnim&&SPR.heroAnim[hi]?animFrames(SPR.heroAnim[hi]):aiFrames(SPR.heroes[hi]);PF_CACHE[key]=fr;return fr;}
   let body=CLASS_BODY[cls].slice();const m={};if(ar>0)m[TRIM[cls]]=RTRIM[ar];body=remap(body,m);
   if((cls==='warrior'||cls==='guardian')&&HELM[a])body=body.map((r,i)=>i<=5?remap([r],HELM[a])[0]:r);
   if(ar>=2&&(cls==='warrior'||cls==='guardian'))body[0]=body[0].slice(0,7)+(ar===3?'oo':'yy')+body[0].slice(9);
@@ -88,7 +88,12 @@ function blitS(img,s,sx,sy,hit){let ks=s.ks||1,kh=s.kh||1;if(hit>0){ks*=1.1;kh*=
 const bossFx=[];let screenFlash=0;
 // 4동작 시트(가만히·걷기A·걷기B·공격) → 프레임 세트
 function sliceAnim(img,Wf,H){const rows=Math.floor(img.height/H),out=[];for(let r=0;r<rows;r++){const fs=[];for(let k=0;k<4;k++){const [c,x]=mk(Wf,H);x.drawImage(img,k*Wf,r*H,Wf,H,0,0,Wf,H);fs.push({r:spriteFromCanvas(c,false),l:spriteFromCanvas(c,true)});}out.push(fs);}return out;}
-function animFrames(fs){const f=(i,dx,dy,ks,kh)=>({r:Object.assign({},fs[i].r,{dx:dx||0,dy:dy||0,ks:ks||1,kh:kh||1,anim:true}),l:Object.assign({},fs[i].l,{dx:-(dx||0),dy:dy||0,ks:ks||1,kh:kh||1,anim:true})});
+// 맨손 시트: 프레임마다 손 위치(앞쪽 팔 끝) 계산
+function handAnchor(sp,atk){const c=sp.c,W2=c.width,H2=c.height,d=c.getContext('2d').getImageData(0,0,W2,H2).data;let top=H2,bot=0;for(let j=0;j<H2;j++)for(let i=0;i<W2;i++)if(d[(j*W2+i)*4+3]>0){if(j<top)top=j;if(j>bot)bot=j;}
+  const hgt=bot-top+1,b0=Math.floor(top+hgt*(atk?0.22:0.42)),b1=Math.ceil(top+hgt*(atk?0.6:0.66));let bx=-1,by=b0;for(let j=b0;j<=b1;j++)for(let i=W2-1;i>=0;i--)if(d[(j*W2+i)*4+3]>0){if(i>bx){bx=i;by=j;}break;}
+  return{hx:Math.max(0,bx-1),hy:by};}
+function sliceBare(img,Wf,H){const rows=sliceAnim(img,Wf,H);for(const fs of rows)fs.forEach((f,k)=>{const a=handAnchor(f.r,k===3);f.r.hx=a.hx;f.r.hy=a.hy;f.l.hx=f.r.w-1-a.hx;f.l.hy=a.hy;f.r.bare=f.l.bare=true;});return rows;}
+function animFrames(fs){const f=(i,dx,dy,ks,kh)=>({r:Object.assign({},fs[i].r,{dx:dx||0,dy:dy||0,ks:ks||1,kh:kh||1,anim:true,fi:i}),l:Object.assign({},fs[i].l,{dx:-(dx||0),dy:dy||0,ks:ks||1,kh:kh||1,anim:true,fi:i})});
   return{idle:[f(0),f(0,0,0,1.03,0.97)],walk:[f(1),f(0,0,-1),f(2),f(0,0,-1)],atk:[f(0,-1,0,0.95,1.04),f(3,1),f(3)],ai:true,anim:true};}
 function loadImg(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src;});}
 const EGG_ROWS=["................","................","................","................","......kkkk......",".....kwwwwk.....","....kwwzwwWk....","....kwwwwwWk....","...kwzwwwwzWk...","...kwwwwwwwWk...","...kWwwwzwWWk...","....kWwwwwWk....",".....kkkkkk....."];
@@ -154,6 +159,28 @@ const SH_B=pcan(28,7,q=>{const c='rgba(0,0,0,0.5)';for(let j=0;j<7;j++){const hw
 
 // 아이콘
 const ICONS=new Map();
+// ---- 힉스필드 무기 그림: 종류 12행(방패 포함) × 등급 4열, 칸 24x24, 아래 정렬 ----
+const W_ORDER=['dagger','sword','axe','mace','great','shortbow','longbow','crossbow','wand','staff','scepter','shield'],W_H=[14,18,17,16,22,18,22,10,14,22,17,13];
+const WSPR=new Map();
+function idHash(id){let h=2166136261;const s2=String(id||'').slice(0,12);for(let i=0;i<s2.length;i++){h^=s2.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+// 무기 한 개(종류·등급·아이템 id) → {c:그림, g:빛 테두리, px:그립 x, py:그립 y, h:높이}
+function weapSprite(kind,rar,id){if(!SPR.weap)return null;rar=Math.max(0,Math.min(3,rar|0));const hh=idHash(id);const key=kind+'|'+rar+'|'+(hh%7);let w=WSPR.get(key);if(w)return w;
+  const row=W_ORDER.indexOf(kind);if(row<0)return null;const H=W_H[row];const [c,x]=mk(24,24);
+  const hue=rar<3?((hh%7)-3)*5:0;if(hue)x.filter=`hue-rotate(${hue}deg)`;x.drawImage(SPR.weap,rar*24,row*24,24,24,0,0,24,24);x.filter='none';
+  const d=x.getImageData(0,0,24,24).data;let x0=24,x1=0,y0=24;for(let j=0;j<24;j++)for(let i=0;i<24;i++)if(d[(j*24+i)*4+3]>0){if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;}
+  const bow=kind==='shortbow'||kind==='longbow',xb=kind==='crossbow',sh=kind==='shield';
+  const px=xb?x0+Math.round((x1-x0)*0.3):Math.round((x0+x1)/2),py=(bow||sh||xb)?Math.round((y0+23)/2):22;
+  const LEG_GLOW=['#ff8a1f','#ffd35a','#ff4a3a','#c77ad8','#5ad8ff'];const glowCol=rar===3?LEG_GLOW[hh%LEG_GLOW.length]:rar===2?'#ffd35a':rar===1?'#7aa2ff':null;let g=null;
+  if(glowCol){const [gc,gx]=mk(24,24);gx.drawImage(c,0,0);gx.globalCompositeOperation='source-in';gx.fillStyle=glowCol;gx.fillRect(0,0,24,24);g=gc;}
+  w={c,g,px,py,h:24-y0,col:glowCol,x0,x1,y0};WSPR.set(key,w);return w;}
+// 손에 든 무기 그리기: ax,ay=손 위치(월드→화면), ang=0이면 그림 그대로(날이 위), face=좌우
+const W_SCALE={great:0.85,staff:0.9,longbow:0.9,shield:0.72,scepter:0.95};
+function drawHeld(ws,ax,ay,ang,face,rar,glowT,kind){if(!ws)return;wx.save();wx.translate(ax,ay);const sc=W_SCALE[kind]||1;wx.scale((face<0?-1:1)*sc,sc);wx.rotate(ang);
+  if(ws.g&&rar>=1){const a=rar===3?0.4+0.25*Math.sin(glowT*7):rar===2?0.25+0.15*Math.sin(glowT*4):0.18;wx.globalAlpha=a;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])wx.drawImage(ws.g,-ws.px+dx,-ws.py+dy);wx.globalAlpha=1;}
+  wx.drawImage(ws.c,-ws.px,-ws.py);wx.restore();}
+// 인벤토리 아이콘: 무기 그림을 16칸에 맞춰 (근접·지팡이는 비스듬히)
+function weaponIconAI(it){const ws=weapSprite(it.kind,it.rar,it.id);if(!ws)return null;const [c,x]=mk(16,16);const diag=!['shortbow','longbow','crossbow'].includes(it.kind);
+  x.save();x.translate(8,8);if(diag)x.rotate(Math.PI/4);const hgt=ws.h,wid=ws.x1-ws.x0+1;const k=Math.min(1,(diag?20:15)/Math.max(hgt,wid));x.scale(k,k);x.drawImage(ws.c,-(ws.x0+ws.x1+1)/2,-(ws.y0+24)/2);x.restore();return c;}
 function weaponIcon(kind){return outlineC(pcan(16,16,q=>{
   if(kind==='axe'){lineP(q,3,13,11,5,'b');discP(q,11,4,3,'S');lineP(q,13,2,14,6,'s');q(11,4,'s');q(10,3,'s');}
   else if(kind==='mace'){lineP(q,3,13,9,7,'b');discP(q,11,5,3,'S');q(10,4,'s');q(11,4,'s');q(10,5,'s');q(14,5,'s');q(11,1,'s');q(8,5,'S');}
@@ -169,7 +196,8 @@ const ARMOR_HALF=["........","..kkk...",".kSSSk..",".kSsSSkk",".kSssSSS","kSSsss
 function armorIcon(kind){const map={leather:{s:'b',S:'B',g:'G'},chain:{},plate:{g:'y'},robe:{s:'p',S:'R'}}[kind]||{};
   const rows=["................"].concat(ARMOR_HALF.map(h=>(h+h.split('').reverse().join('')).replace(/[sSg]/g,c=>map[c]||c)));return makeSprite(rows).c;}
 function ringIcon(gem){return outlineC(pcan(16,16,q=>{ringP(q,8,10,4,'g');ringP(q,8,10,3,'G');discP(q,8,5,2,gem||'r');q(7,4,'w');}));}
-function iconFor(it){const key=it.slot+it.kind+(it.gem||'');let c=ICONS.get(key);if(c)return c;c=it.slot==='weapon'?weaponIcon(it.kind):it.slot==='armor'?armorIcon(it.kind):ringIcon(it.gem);ICONS.set(key,c);return c;}
+function iconFor(it){if(it.slot==='weapon'&&SPR.weap){const k2='w|'+it.kind+'|'+it.rar+'|'+(idHash(it.id)%7);let c2=ICONS.get(k2);if(!c2){c2=weaponIconAI(it);if(c2)ICONS.set(k2,c2);}if(c2)return c2;}
+  const key=it.slot+it.kind+(it.gem||'');let c=ICONS.get(key);if(c)return c;c=it.slot==='weapon'?weaponIcon(it.kind):it.slot==='armor'?armorIcon(it.kind):ringIcon(it.gem);ICONS.set(key,c);return c;}
 const POT=["......kkk.......","......kWk.......",".....kkbkk......","....krrrrrk.....","...krorrrrrk....","...korrrrrrk....","...krrrrrRRk....","....kRRRRRk.....",".....kkkkk......"];
 const POT_HP=makeSprite(POT).c,POT_MP=makeSprite(POT.map(s=>s.replace(/r/g,'c').replace(/R/g,'C').replace(/o/g,'w'))).c;
 const GOLD=makeSprite([".kkk....","kyygk...","kgyGkkk.",".kkgyygk","..kkkkk."]).c;
@@ -762,8 +790,9 @@ function drawPlayer(p,icx,icy,isMe){const cls=isMe?myCls():(p.cls||'warrior');co
   if(look.ar>=2&&!s.ai)drawCape(bx,by,e.face,look.ar,e.moving,src.animT);
   if(cls==='guardian'&&!(src.spin>0)&&!s.anim)drawShield(bx,by,e.face,false,look.ar);
   blitS(flash>0?s.fc:s.c,s,sx-(flash>0&&s.ai?e.face:0),sy,flash);
-  if(!s.anim||src.spin>0)drawWeapon(cls,src,bx,by,e.face,isMe?(G.ch&&G.ch.eq.weapon):null,look);else weaponTrail(cls,src,bx,by,e.face);
-  if(cls==='guardian'&&!(src.spin>0)&&!s.anim)drawShield(bx,by,e.face,true,look.ar);
+  if(s.bare&&SPR.weap){drawHeldGear(cls,src,s,sx,sy,e,look);}
+  else{if(!s.anim||src.spin>0)drawWeapon(cls,src,bx,by,e.face,isMe?(G.ch&&G.ch.eq.weapon):null,look);else weaponTrail(cls,src,bx,by,e.face);
+  if(cls==='guardian'&&!(src.spin>0)&&!s.anim)drawShield(bx,by,e.face,true,look.ar);}
   if(look.ar===3||look.wr===3){if(R()<0.35)part((isMe?me.x:p.dx)+rf(-6,6),(isMe?me.y:p.dy),rf(-4,4),0,pick(['o','y','o','w']),rf(.5,.9),{z:rf(0,6),vz:rf(18,34),glow:true});}
   if(look.rr>=2&&((time*4|0)%3===0)){wpx(bx+(e.face>0?-4:3),by-5,look.rr===3?'o':'c');}
   if(p&&p.shield){wx.globalAlpha=0.5;for(let n=0;n<24;n++){const t=n/24*Math.PI*2+time*2;if(n%2)wpx(Math.round(bx+Math.cos(t)*9),Math.round(by-6+Math.sin(t)*10),'c');}}
@@ -772,6 +801,21 @@ function drawShield(bx,by,face,front,ar){if(front!==(face>0))return;if(SPR.ready
 function drawCape(bx,by,face,ar,moving,animT){const c1=ar===3?'r':'R',c2=ar===3?'o':'y';const dir=face>0?-1:1;const sway=moving?Math.round(Math.sin(animT*12)*1):0;
   for(let j=0;j<9;j++){const w=2+Math.floor(j/3);const x0=bx+dir*(3+Math.floor(j/4))+sway*(j>5?1:0);for(let i=0;i<w;i++){const x=x0+(dir>0?i:-i);wpx(x,by-11+j,j===8||i===w-1?c2:c1);}}}
 // 동작 그림을 쓸 때: 무기는 그림에 있으니 휘두르는 궤적만 그린다
+// 맨손 캐릭터 + 장착 무기 그림
+function drawHeldGear(cls,src,s,sx,sy,e,look){const fam=CLASSES[cls].fam;const kind=look.w||(fam==='melee'?'sword':fam==='bow'?'shortbow':'staff');const rar=Math.max(0,look.wr|0);
+  const ws=weapSprite(kind,rar,look.wid);const f=e.face;const ks=s.ks||1,kh=s.kh||1;const ax=sx+Math.round(s.hx*ks+(s.w-s.w*ks)/2),ay=sy+Math.round(s.hy*kh+s.h*(1-kh));
+  const atk=src.atkAnim>0,prog=atk?1-src.atkAnim/src.atkDur:0,bob=e.moving?Math.sin(src.animT*10)*0.12:0;let ang;
+  if(src.spin>0)ang=(1-src.spin/0.3)*Math.PI*2.4;
+  else if(fam==='melee'){ang=atk&&src.atkKind==='swing'?-1.3+prog*3.1:atk?1.35:0.35+bob;}
+  else if(kind==='crossbow'){ang=0;}
+  else if(fam==='bow'){ang=atk?0:0.12+bob*0.5;}
+  else{ang=atk?0.95:0.12+bob*0.5;}
+  if(cls==='guardian'){const shW=weapSprite('shield',Math.max(0,look.ar|0),'s'+(look.ar|0));const scx=sx+(f>0?Math.round(s.w/2)+5:Math.round(s.w/2)-5),scy=sy+s.h-7;
+    drawHeld(ws,ax,ay,ang,f,rar,time,kind);if(shW)drawHeld(shW,atk?ax+(f>0?3:-3):scx,atk?ay+1:scy,0,f,Math.max(0,look.ar|0),time+1,'shield');}
+  else drawHeld(ws,ax,ay,ang,f,rar,time,kind);
+  if(rar===3&&ws&&R()<0.5){const L=ws.h*0.7,aa=ang*(f<0?-1:1);part(ax+Math.sin(aa)*rf(2,L)*(f<0?-1:1)+ (0),ay-Math.cos(aa)*rf(2,L),rf(-6,6),rf(-6,6),pick(['o','y','w','r']),rf(.3,.6),{z:0,glow:true});}
+  else if(rar===2&&ws&&R()<0.12)part(ax+rf(-2,2),ay-rf(2,ws.h*0.8),0,rf(-8,-3),'y',0.4,{glow:true});
+  if(fam==='melee'&&atk&&src.atkKind==='swing'&&prog>0.25&&prog<0.85){const L=(ws?ws.h:12)-2;wx.globalAlpha=0.45;for(let k=0;k<8;k++){const aa=-1.3+(prog-k*0.035)*3.1;const px=ax+Math.sin(aa)*L*f,py=ay-Math.cos(aa)*L;wpx(Math.round(px),Math.round(py),rar===3?'o':rar===2?'y':k<3?'w':'s');}wx.globalAlpha=1;}}
 function weaponTrail(cls,src,bx,by,f){const fam=CLASSES[cls].fam;if(!(src.atkAnim>0))return;const prog=1-src.atkAnim/src.atkDur;
   if(fam==='melee'&&src.atkKind==='swing'){if(prog<0.25||prog>0.85)return;const hx=bx+(f>0?4:-5),hy=by-8,len=11;wx.globalAlpha=0.55;for(let k=0;k<9;k++){const aa=src.atkAngle+f*(-1.7+prog*3.4)-(f>0?1:-1)*k*0.13;wpx(Math.round(hx+Math.cos(aa)*len),Math.round(hy+Math.sin(aa)*len),k<3?'w':'s');}wx.globalAlpha=1;}
   else if(fam==='staff'&&prog>0.3){const tx=bx+(f>0?12:-12),ty=by-12;for(let n=0;n<3;n++)wpx(tx+ri(-2,2),ty+ri(-2,2),cls==='priest'?'y':'p');}}
@@ -1128,7 +1172,7 @@ function fit(){const vw=window.innerWidth,vh=window.innerHeight;let s=Math.min(v
   const ns=Math.max(2,Math.min(4,Math.round(s*(window.devicePixelRatio||1))));if(ns!==SC||cv.width!==W*ns){SC=ns;cv.width=W*SC;cv.height=H*SC;ctx.imageSmoothingEnabled=false;TXT.clear();}}
 window.addEventListener('resize',fit);fit();
 renderSelect();
-Promise.all([loadImg('sprites/heroes_anim.png'),loadImg('sprites/bosses_anim.png')]).then(([h,b])=>{if(h)SPR.heroAnim=sliceAnim(h,40,24);if(b)SPR.bossAnim=sliceAnim(b,72,48);for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
+Promise.all([loadImg('sprites/heroes_anim.png'),loadImg('sprites/bosses_anim.png'),loadImg('sprites/heroes_bare.png'),loadImg('sprites/weapons.png')]).then(([h,b,hb,wp])=>{if(h)SPR.heroAnim=sliceAnim(h,40,24);if(hb&&wp){SPR.heroBare=sliceBare(hb,40,24);SPR.weap=wp;ICONS.clear();}if(b)SPR.bossAnim=sliceAnim(b,72,48);for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
 loadImg('sprites/tiles.png').then(t=>{if(!t)return;SPR.tiles=t;for(const k in THEME_CACHE)delete THEME_CACHE[k];});
 Promise.all([loadImg('sprites/heroes.png'),loadImg('sprites/mons.png'),loadImg('sprites/bosses.png')]).then(([h,m,b])=>{if(!h||!m||!b)return;SPR.heroes=sliceAtlas(h,24);SPR.mons=sliceAtlas(m,24);SPR.bosses=sliceAtlas(b,48);SPR.ready=true;for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
 requestAnimationFrame(frame);

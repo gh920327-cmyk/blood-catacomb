@@ -63,7 +63,7 @@ function sendParty(pt){const list=partyList(pt).map(p=>({id:p.id,name:p.ch.name,
 function leaveParty(P){const pt=P.party;if(!pt)return;pt.members.delete(P.id);P.party=null;if(pt.members.size===0){parties.delete(pt.id);}else{if(pt.leader===P.id)pt.leader=[...pt.members][0];sendParty(pt);}}
 
 // ================= 인스턴스 =================
-function lookOf(P){const w=P.ch.eq.weapon,a=P.ch.eq.armor,r=P.ch.eq.ring;return{w:w?w.kind:null,wr:w?w.rar:-1,a:a?a.kind:null,ar:a?a.rar:-1,rr:r?r.rar:-1};}
+function lookOf(P){const w=P.ch.eq.weapon,a=P.ch.eq.armor,r=P.ch.eq.ring;return{w:w?w.kind:null,wr:w?w.rar:-1,wid:w?String(w.id).slice(0,12):null,a:a?a.kind:null,ar:a?a.rar:-1,rr:r?r.rar:-1};}
 function roster(inst){return instPlayers(inst).map(p=>({id:p.id,name:p.ch.name,cls:p.ch.cls,lvl:p.ch.lvl,pt:p.party?p.party.id:null,look:lookOf(p)}));}
 function bcastRoster(inst){if(inst.type==='dungeon'){inst.syn=SH.synergies(instPlayers(inst).map(p=>p.ch.cls));inst.synM={};for(const c of SH.CLASS_ORDER)inst.synM[c]=SH.synergyMods(inst.syn,c);}bcast(inst,{t:'ros',list:roster(inst),syn:inst.syn||null});}
 function visibleDrops(inst,P){return inst.drops.filter(d=>d.owner==null||d.owner===P.id);}
