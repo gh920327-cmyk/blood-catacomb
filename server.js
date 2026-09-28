@@ -30,7 +30,9 @@ const BAL={
   finalBoss:1.6,       // 100층 보스 체력 배율
   bossDmg:1.0,         // 보스 공격력 전체 배율
   xp:1.0,gold:1.0,     // 경험치 · 골드 배율
-  dropItem:0.15,dropHp:0.04,dropMp:0.02
+  dropItem:0.15,dropHp:0.04,dropMp:0.02,
+  farDist:70,farCd1:4.5,farCd2:3.5,farDmg:1.5,
+  farTheme:[1,1,0.4,1.4,0.85,0.8,0.9,1.8,0.5,0.9] // 테마별 견제 빈도 (보스마다 원거리 패턴 양이 달라서 맞춤) // 보스가 멀리 있는 플레이어를 견제하는 주기·피해
 };
 // ================= 유틸 =================
 const R=Math.random,ri=(a,b)=>a+Math.floor(R()*(b-a+1)),rf=(a,b)=>a+R()*(b-a),pick=a=>a[Math.floor(R()*a.length)],clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -213,6 +215,7 @@ function bossAI(inst,m,T,d,dt,sm){if(!m.bossInit)initBoss(inst,m);m.face=T.x<m.x
   if(m.phase===1&&hpf<0.5){m.phase=2;m.patCd=0.5;bmsg(inst,m,`${m.bname}이(가) 격노한다!`,'#ff4a3a');fx(inst,{k:'shake',v:5});fx(inst,{k:'sfx',n:'boss'});}
   if(m.phase===2&&m.p3.length&&hpf<0.2){m.phase=3;m.patCd=0.3;m.forceNext=m.p3[0];}
   if(!m.enraged&&m.fightT>240){m.enraged=true;m.dmg*=1.6;m.spdMul=1.4;bmsg(inst,m,`${m.bname}이(가) 광폭해졌다! (시간 초과)`,'#ff4a3a');}
+  farHarass(inst,m,dt);
   if(m.busy>0){m.busy-=dt;return;}
   if(m.vuln>0)return;
   m.patCd-=dt;
@@ -220,6 +223,11 @@ function bossAI(inst,m,T,d,dt,sm){if(!m.bossInit)initBoss(inst,m);m.face=T.x<m.x
     const busy=(BP[name]||BP.slam)(inst,m,T);m.busy=busy;m.last=name;m.patCd=rf(1.6,2.6)*(m.corrupt?0.8:1)*(m.enraged?0.7:1)*(m.phase>1?0.85:1);return;}
   if(d<m.r+4+18&&m.cd<=0){m.cd=m.d.cd*(m.corrupt?0.8:1);m.busy=BP.swipe(inst,m,T);return;}
   chase(inst,m,T,dt,sm*m.spdMul*(m.corrupt?1.2:1));}
+// 멀리 떨어진 플레이어 견제: 근거리만 맞고 원거리는 편한 상황을 막는다 (발밑 경고 → 폭발, 움직이면 피함)
+function farHarass(inst,m,dt){if(m.hidden||m.dead)return;m.farCd=(m.farCd==null?4:m.farCd)-dt;if(m.farCd>0)return;
+  m.farCd=(m.phase>1?BAL.farCd2:BAL.farCd1)*(m.corrupt?0.85:1)*(m.enraged?0.8:1)/(BAL.farTheme[m.theme]||1);
+  const far=livingPlayers(inst).filter(p=>Math.hypot(p.x-m.x,p.y-m.y)>BAL.farDist);if(!far.length)return;const t=1.0*m.tf,r=22;
+  for(const p of far){const x=p.x,y=p.y;fx(inst,{k:'tele',x:r1(x),y:r1(y),r,d:t,c:m.col});later(inst,t,()=>{if(m.dead)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r});hitCircle(inst,x,y,r,m.dmg*BAL.farDmg,m);});}}
 function updateHazards(inst,dt){for(let i=inst.hz.length-1;i>=0;i--){const h=inst.hz[i];
   if(h.arm>0){h.arm-=dt;if(h.arm<=0&&h.burst){fx(inst,{k:'boom',x:r1(h.x),y:r1(h.y),r:h.r,c:1});hitCircle(inst,h.x,h.y,h.r,h.burst,h.src);}continue;}
   h.t-=dt;if(h.t<=0){inst.hz.splice(i,1);continue;}
