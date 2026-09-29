@@ -876,8 +876,9 @@ const GREG={
     for(const [x,y] of pts)addHz(inst,{x,y,r:22,t:0.1,arm:1.4*m.tf,burst:m.dmg*2.1,vis:21,src:m});fx(inst,{k:'msg',m:'바닥이 무너진다!',c:'#ff8a5a'});return 1.2;},
   slam(inst,m){return BP.slam(inst,m);}};
 // ================= 레이드 모듈 (공통 훅) =================
+const RAID_DMG=+(process.env.RAID_DMG||1);/* 레이드 보스 공격력 전체 배율 */
 function raidBoss(inst,type,x,y,share){const r=inst.raid;const b=spawnMonster(inst,type,x,y,false);b.boss=true;b.home={x,y};b.maxHp=b.hp=Math.round(SH.MT[type].hp*raidScale(r.def.lvl,r.n,r.hard)*(share||1));
-  b.dmg*=(r.hard?2.6:1.8)*[0,0.55,0.78,0.9,1][clamp(r.n,1,4)]*(r.id==='moon'?1.6:r.id==='clock'?1.15:1);b.baseDmg=b.dmg;b.r=SH.MT[type].r;b.raidAI=RAID_AI[type];b.bname=SH.MT[type].n;b.tf=r.hard?0.85:1;b.phase=1;b.fightT=0;b.patCd=2.5;b.spdMul=1;return b;}
+  b.dmg*=(r.hard?2.6:1.8)*[0,0.55,0.78,0.9,1][clamp(r.n,1,4)]*(r.id==='moon'?1.6:r.id==='clock'?1.15:1)*RAID_DMG;b.baseDmg=b.dmg;b.r=SH.MT[type].r;b.raidAI=RAID_AI[type];b.bname=SH.MT[type].n;b.tf=r.hard?0.85:1;b.phase=1;b.fightT=0;b.patCd=2.5;b.spdMul=1;return b;}
 function raidAdds(inst,dt,type,cap){const r=inst.raid;if(r.stage!=='gate')return;r.gT-=dt;if(r.gT>0)return;r.gT=r.hard?6:8;const alive=inst.monsters.filter(m=>!m.dead&&m.type===type).length;if(alive>=(r.hard?cap+2:cap))return;const map=inst.map;
   for(let k=0;k<2;k++){const x=(map.start.x+1+ri(0,map.start.w-3))*TS+8,y=(map.start.y+1+ri(0,2))*TS+8;if(SH.blocked(map,x,y,5))continue;const m=spawnMonster(inst,type,x,y,false);m.alert=true;fx(inst,{k:'blink',x:r1(x),y:r1(y)});}}
 function setTile(inst,tx,ty,v){const i=ty*inst.map.w+tx;if(inst.map.tiles[i]===v)return;inst.map.tiles[i]=v;bcast(inst,{t:'tile',i,v});}
