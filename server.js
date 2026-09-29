@@ -669,22 +669,22 @@ const SK={
     for(const q of partyNear(inst,P,60)){q.shield=Math.max(q.shield,Math.round(q.S.maxHp*0.1*k));q.shieldT=5;q.shieldBy=P.id;}},
   // ----- 궁극기 -----
   ragnarok(inst,P,a,tx,ty){[tx,ty]=clampTarget(P,tx,ty,140);if(SH.blocked(inst.map,tx,ty,4)){tx=P.x;ty=P.y;}P.dodgeT=Math.max(P.dodgeT,1.3);fx(inst,{k:'rag',id:P.id,x:r1(tx),y:r1(ty),a:r1(a)});
-    later(inst,0.95,()=>{if(!P.inst||P.inst!==inst)return;P.x=tx;P.y=ty;send(P,{t:'tp',x:tx,y:ty});fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:60});fx(inst,{k:'quake',x:r1(tx),y:r1(ty),r:70});fx(inst,{k:'shake',v:9});aoe(inst,P,tx,ty,60,6,{kb:10});
-      for(let i=1;i<=3;i++)later(inst,i*0.22,()=>{if(!P.inst||P.inst!==inst)return;const x=tx+Math.cos(a)*i*40,y=ty+Math.sin(a)*i*40;fx(inst,{k:'fissure',x:r1(x),y:r1(y),a:r1(a)});fx(inst,{k:'shake',v:5});aoe(inst,P,x,y,40,3,{kb:6});addZone(inst,P,{x,y,r:30,t:3,iv:0.5,dmg:0.4,vis:14});});});},
+    later(inst,0.95,()=>{if(!P.inst||P.inst!==inst)return;P.x=tx;P.y=ty;send(P,{t:'tp',x:tx,y:ty});fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:60});fx(inst,{k:'quake',x:r1(tx),y:r1(ty),r:70});fx(inst,{k:'shake',v:9});aoe(inst,P,tx,ty,60,13,{kb:10});
+      for(let i=1;i<=3;i++)later(inst,i*0.22,()=>{if(!P.inst||P.inst!==inst)return;const x=tx+Math.cos(a)*i*40,y=ty+Math.sin(a)*i*40;fx(inst,{k:'fissure',x:r1(x),y:r1(y),a:r1(a)});fx(inst,{k:'shake',v:5});aoe(inst,P,x,y,40,7.5,{kb:6});addZone(inst,P,{x,y,r:30,t:3,iv:0.5,dmg:1,vis:14});});});},
   wargod(inst,P){buff(P,'god',1,12);buff(P,'sdmg',0.3,12);P.rootT=0;P.slowT=0;fx(inst,{k:'god',id:P.id,d:12});fx(inst,{k:'shake',v:6});},
   aegisdome(inst,P){const x=P.x,y=P.y;addZone(inst,P,{x,y,r:72,t:8,iv:0.25,vis:11,dr:0.6});fx(inst,{k:'dome',x:r1(x),y:r1(y),r:72,d:8});
     later(inst,8,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'domeburst',x:r1(x),y:r1(y),r:80});fx(inst,{k:'shake',v:7});aoe(inst,P,x,y,80,4,{kb:18});});},
   judgehammer(inst,P,a,tx,ty){[tx,ty]=clampTarget(P,tx,ty,160);for(let i=0;i<3;i++){const last=i===2;later(inst,0.15+i*0.55,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'hammer',x:r1(tx),y:r1(ty),d:0.35,big:last?1:0});
       later(inst,0.35,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:54,c:1});fx(inst,{k:'quake',x:r1(tx),y:r1(ty),r:60});fx(inst,{k:'shake',v:last?9:6});
-        for(const m of inst.monsters){if(m.dead||Math.hypot(m.x-tx,m.y-ty)>54+m.r)continue;hitMonster(inst,m,P,3.5,{kb:8,stun:last?3:0});if(last&&m.boss){m.grog=Math.max(m.grog||0,inst.time+2.5);fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-40),s:'휘청!',c:'#ffe9a8'});}}});});}},
-  skyrain(inst,P,a,tx,ty){[tx,ty]=clampTarget(P,tx,ty,200);addZone(inst,P,{x:tx,y:ty,r:100,t:5,iv:0.25,dmg:0.9,vis:12});fx(inst,{k:'sfx',n:'bow'});},
+        for(const m of inst.monsters){if(m.dead||Math.hypot(m.x-tx,m.y-ty)>54+m.r)continue;hitMonster(inst,m,P,6.2,{kb:8,stun:last?3:0});if(last&&m.boss){m.grog=Math.max(m.grog||0,inst.time+2.5);fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-40),s:'휘청!',c:'#ffe9a8'});}}});});}},
+  skyrain(inst,P,a,tx,ty){[tx,ty]=clampTarget(P,tx,ty,200);addZone(inst,P,{x:tx,y:ty,r:100,t:5,iv:0.25,dmg:3.8,vis:12});fx(inst,{k:'sfx',n:'bow'});},
   dragonarrow(inst,P,a,tx,ty){P.rootT=Math.max(P.rootT,0.8);fx(inst,{k:'dcharge',id:P.id,d:0.8,a:r1(a)});
     later(inst,0.8,()=>{if(!alive(inst,P))return;const len=360,sp=240,BODY=190,x0=P.x+Math.cos(a)*10,y0=P.y-4+Math.sin(a)*10;fx(inst,{k:'dragon',x:r1(x0),y:r1(y0),a:r1(a),len,sp});fx(inst,{k:'shake',v:5});
       /* 다단히트: 용의 몸통(머리~꼬리 190px)이 지나가는 동안 0.1초마다 닿은 적에게 피해, 적마다 최대 10회 */
       const cnt=new Map(),T=(len+BODY)/sp,N=Math.ceil(T/0.1);const ca=Math.cos(a),sa=Math.sin(a);
       for(let j=1;j<=N;j++)later(inst,j*0.1,()=>{if(!P.inst||P.inst!==inst)return;const hd=Math.min(len,j*0.1*sp),tl=Math.max(0,j*0.1*sp-BODY);if(tl>=len)return;
         for(const m of inst.monsters){if(m.dead)continue;const n=cnt.get(m.id)|0;if(n>=10)continue;const rx=m.x-x0,ry=m.y-y0;const along=rx*ca+ry*sa,perp=Math.abs(-rx*sa+ry*ca);if(along<tl-m.r||along>hd+m.r+8||perp>18+m.r)continue;
-          cnt.set(m.id,n+1);hitMonster(inst,m,P,n===0?8:6.5,{kb:n===0?8:2});}});
+          cnt.set(m.id,n+1);hitMonster(inst,m,P,n===0?9.5:7.6,{kb:n===0?8:2});}});
       later(inst,len/sp,()=>{if(!P.inst||P.inst!==inst)return;const x=x0+ca*len,y=y0+sa*len;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:70});fx(inst,{k:'shake',v:8});aoe(inst,P,x,y,70,6,{kb:10});});});},
   apocalypse(inst,P,a,tx,ty){fx(inst,{k:'redsky',d:4.6});fx(inst,{k:'shake',v:3});
     for(let n=0;n<12;n++)later(inst,0.3+n*0.25,()=>{if(!P.inst||P.inst!==inst)return;const near=inst.monsters.filter(m=>!m.dead&&Math.hypot(m.x-P.x,m.y-P.y)<180);let x,y;if(near.length){const m=pick(near);x=m.x+rf(-6,6);y=m.y+rf(-6,6);}else{x=P.x+rf(-120,120);y=P.y+rf(-80,80);}
@@ -693,7 +693,7 @@ const SK={
       later(inst,1.1,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:72});fx(inst,{k:'quake',x:r1(tx),y:r1(ty),r:90});fx(inst,{k:'shake',v:10});aoe(inst,P,tx,ty,72,10*P.S.spell,{kb:14});addZone(inst,P,{x:tx,y:ty,r:50,t:3,iv:0.5,dmg:0.6*P.S.spell,vis:14});});});},
   absolutezero(inst,P){const x=P.x,y=P.y,R0=140;const ids=[];for(const m of inst.monsters){if(m.dead||Math.hypot(m.x-x,m.y-y)>R0+m.r)continue;ids.push(m.id);if(m.boss)m.slow=Math.max(m.slow,3);else m.stun=Math.max(m.stun,3);}
     fx(inst,{k:'freeze',x:r1(x),y:r1(y),r:R0,d:3,ids});addZone(inst,P,{x,y,r:R0,t:3,iv:9,vis:13});
-    later(inst,3,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'shatter',x:r1(x),y:r1(y),r:R0,ids});fx(inst,{k:'shake',v:9});aoe(inst,P,x,y,R0,7*P.S.spell,{kb:6});});},
+    later(inst,3,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'shatter',x:r1(x),y:r1(y),r:R0,ids});fx(inst,{k:'shake',v:9});aoe(inst,P,x,y,R0,40*P.S.spell,{kb:6});});},
   angel(inst,P){addZone(inst,P,{r:150,t:10,iv:0.5,heal:P.S.healPow*0.6,vis:15,follow:true,revive:true});fx(inst,{k:'angel',id:P.id,d:10});reviveNear(inst,P,150);},
   divinejudge(inst,P,a,tx,ty){for(const q of partyNear(inst,P,200)){q.shield=Math.max(q.shield,Math.round(q.S.maxHp*0.2));q.shieldT=8;q.shieldBy=P.id;fx(inst,{k:'shieldfx',x:r1(q.x),y:r1(q.y)});}
     for(let n=0;n<10;n++)later(inst,0.2+n*0.4,()=>{if(!P.inst||P.inst!==inst)return;const near=inst.monsters.filter(m=>!m.dead&&Math.hypot(m.x-P.x,m.y-P.y)<200);let x,y;if(near.length){const m=pick(near);x=m.x;y=m.y;}else{x=P.x+rf(-100,100);y=P.y+rf(-70,70);}
