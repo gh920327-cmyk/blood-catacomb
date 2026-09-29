@@ -63,9 +63,27 @@ function genFloor(seed,fl){
 function openStairs(map){map.tiles[map.stairsIdx]=2;}
 
 // ---------- 마을 (던전 입구 광장) ----------
+// ---------- 결투장 ----------
+function genArena(seed){const R=mulberry(seed);const W=32,H=22,tiles=new Uint8Array(W*H);const map={w:W,h:H,tiles,boss:false,floor:1,arena:true};
+  for(let y=4;y<=17;y++)for(let x=3;x<=28;x++)tiles[y*W+x]=1;
+  const pil=[[9,7],[21,7],[9,13],[21,13]];if(R()<0.5)pil.push([15,10]);for(const[x,y]of pil){tiles[y*W+x]=0;tiles[y*W+x+1]=0;tiles[(y+1)*W+x]=0;tiles[(y+1)*W+x+1]=0;}
+  const room={x:3,y:4,w:26,h:14,cx:16,cy:11};map.rooms=[room];map.start=room;map.bossRoom=null;map.stairsIdx=-1;map.secret=null;
+  map.torches=[];for(const x of[5,10,16,22,27])map.torches.push({x:x*TS+8,y:3*TS+4,ph:x});
+  map.spawns=[{x:6*TS+8,y:11*TS+8},{x:26*TS+8,y:11*TS+8}];return map;}
+// ---------- 낚시 ----------
+const FISH=[{id:'f0',n:'진흙 메기',r:0,v:8},{id:'f1',n:'비늘 붕어',r:0,v:10},{id:'f2',n:'동굴 송사리',r:0,v:6},{id:'f3',n:'늪 장어',r:0,v:12},
+  {id:'f4',n:'은빛 송어',r:1,v:30},{id:'f5',n:'피눈 농어',r:1,v:36},{id:'f6',n:'얼음 연어',r:1,v:40},
+  {id:'f7',n:'반짝이는 조개',r:2,v:60,gem:1},{id:'f8',n:'마력 해파리',r:2,v:70,dust:2},{id:'f9',n:'유령 잉어',r:2,v:120},
+  {id:'f10',n:'심연의 아귀',r:3,v:400,dust:4},{id:'f11',n:'황금 비늘 용어',r:3,v:600,gem:2}];
+const FISH_RN=['일반','고급','희귀','전설'],FISH_RC=['#e6dcc3','#7aa2ff','#ffd35a','#ff8a1f'];
+function rollFish(R,lvl){R=R||Math.random;const x=R()*100;const b=Math.min(4,(lvl|0)/25);const r=x<2+b?3:x<12+b*2?2:x<40?1:0;const pool=FISH.filter(f=>f.r===r);return pool[Math.floor(R()*pool.length)];}
+// ---------- 염색 · 감정표현 ----------
+const DYES=[{n:'기본'},{n:'핏빛',h:0},{n:'황금',h:44},{n:'숲',h:110},{n:'청록',h:172},{n:'바다',h:212},{n:'자수정',h:276},{n:'장미',h:330},{n:'칠흑',dark:1},{n:'설원',light:1}];
+const DYE_COST=800;
+const EMOTES=['인사','웃음','하트','화남','슬픔','좋아','물음표','졸림'];
 // 로비 그림 크기 [폭, 높이] — 발밑(아래 가운데)이 좌표. 발자국(fp)=[반폭 여백, 깊이]만큼 못 지나간다
-const LOBBY_SZ={forge:[100,91],vault:[94,84],tent:[80,81],stall:[84,78],gate:[92,74],tree:[30,50],lamp:[14,42],board:[23,36],well:[24,36],dummy:[17,30],cart:[23,22],grave:[13,22],bench:[20,20],logs:[14,18],planter:[15,16],fire:[13,16]};
-const LOBBY_FP={forge:[8,40],vault:[8,38],tent:[8,34],stall:[6,32],gate:[4,44],tree:[11,8],lamp:[5,5],board:[8,6],well:[9,14],cart:[8,8],grave:[5,6],bench:[7,6],logs:[5,6],planter:[5,6],fire:[5,6]};
+const LOBBY_SZ={wardrobe:[22,32],aboard:[23,36],vault:[94,84],tent:[80,81],stall:[84,78],gate:[92,74],tree:[30,50],lamp:[14,42],board:[23,36],well:[24,36],dummy:[17,30],cart:[23,22],grave:[13,22],bench:[20,20],logs:[14,18],planter:[15,16],fire:[13,16]};
+const LOBBY_FP={wardrobe:[3,8],aboard:[8,6],vault:[8,38],tent:[8,34],stall:[6,32],gate:[4,44],tree:[11,8],lamp:[5,5],board:[8,6],well:[9,14],cart:[8,8],grave:[5,6],bench:[7,6],logs:[5,6],planter:[5,6],fire:[5,6]};
 function genHub(){
   const W=60,H=42,tiles=new Uint8Array(W*H);const map={w:W,h:H,tiles,hub:true,floor:0};
   const rect=(x0,y0,x1,y1,v)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)tiles[y*W+x]=v;};
@@ -83,8 +101,9 @@ function genHub(){
   add('grave',900,230);add('grave',924,244);add('grave',900,262);add('tree',940,220);
   // 나무·가로등·수레
   add('tree',60,190);add('tree',50,600);add('tree',930,420);add('tree',620,640);add('tree',330,640);
-  for(const[x,y]of[[400,130],[560,130],[300,300],[660,300],[300,470],[660,470],[480,450]])add('lamp',x,y);
-  add('cart',236,300);add('planter',92,322);add('planter',256,190);add('planter',706,190);add('logs',236,160);
+  for(const[x,y]of[[400,130],[560,130],[300,300],[660,300],[300,470],[690,470],[540,450]])add('lamp',x,y);
+  add('cart',236,300);add('planter',92,322);add('planter',256,190);add('logs',236,160);
+  add('wardrobe',740,200);add('aboard',620,500);
   map.props=P;
   for(const p of P){const fp=LOBBY_FP[p.t],sz=LOBBY_SZ[p.t];if(p.t==='fountain'){rect(29,16,30,16,3);continue;}if(!fp||!sz)continue;
     const x0=Math.floor((p.x-sz[0]/2+fp[0])/TS),x1=Math.floor((p.x+sz[0]/2-fp[0]-1)/TS),y0=Math.floor((p.y-fp[1])/TS),y1=Math.floor((p.y-2)/TS);
@@ -95,7 +114,9 @@ function genHub(){
   const g=new Uint8Array(W*H);for(let y=0;y<H;y++)for(let x=0;x<W;x++){const h=((x*73856093)^(y*19349663))>>>0;const n=(h%7)/7;
     const road=Math.abs(x-30)<=4+n*1.5||Math.abs(y-20)<=3+n*1.5||(y<=13&&(Math.abs(x-9)<=6+n||Math.abs(x-51)<=6+n))||(y>=14&&y<=22&&(Math.abs(x-9)<=6+n||Math.abs(x-51)<=6+n))||Math.hypot(x-30,y-17)<9+n*2;
     g[y*W+x]=road?0:1;}
-  map.ground=g;
+  // 연못 (낚시터)
+  const pond={cx:430,cy:584,rx:66,ry:30};for(let y=0;y<H;y++)for(let x=0;x<W;x++){const px=x*TS+8,py=y*TS+8;const d=((px-pond.cx)/pond.rx)**2+((py-pond.cy)/pond.ry)**2;if(d<=1){g[y*W+x]=2;tiles[y*W+x]=3;}else if(d<=1.5&&g[y*W+x]===0)g[y*W+x]=1;}
+  map.ground=g;map.pond=pond;map.fish={x:430,y:540};map.arena={x:620,y:510};map.tailor={x:742,y:212};
   map.portal={x:480,y:100};map.merchant={x:206,y:330};map.spawn={x:480,y:356};map.board={x:392,y:252};
   map.forge={x:150,y:190};map.vault={x:812,y:190};map.tent={x:812,y:334};map.dummies=[{x:760,y:548},{x:820,y:548}];
   map.torches=[];
@@ -401,7 +422,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,
+const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
   THEMES,FINAL_BOSS,themeOf,ENH_MAX,ENH_RATE,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
