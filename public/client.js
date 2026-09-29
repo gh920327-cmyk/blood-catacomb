@@ -1858,9 +1858,9 @@ const BCARD={bell:{img:'art/boss_bell.jpg',ep:'울리지 못한 종',q:'"또 종
   moon:{img:'art/boss_moon.jpg',ep:'새벽을 버린 기사',q:'"등불 하나로 이 밤을 밝히겠다고?"',face:[731,125],z:2.6,spr:['r_karnas']}};
 // 페이즈 카드 (보스 모습이 바뀔 때)
 const BPH={bell2:{img:'art/ph_bell2.jpg',top:'2 페이즈 · 무너지는 종탑',n:'종지기 그레고르',q:'"종탑이… 무너진다! 너희도 함께!"',face:[756,156],z:2.6,spr:['r_greg']},
-  lyra2:{img:'art/ph_lyra2.jpg',top:'각성 · 눈부신 빛',n:'빛의 마녀 리라',q:'"빛이여, 모두 눈멀게 하라!"',face:[629,118],z:2.3,spr:['r_lyra']},
+  lyra2:{img:'art/ph_lyra2.jpg',top:'각성 · 눈부신 빛',n:'빛의 마녀 리라',q:'"빛이여, 모두 눈멀게 하라!"',face:[690,150],z:2.2,spr:['r_lyra']},
   nora2:{img:'art/ph_nora2.jpg',top:'각성 · 가라앉는 그림자',n:'그림자 마녀 노라',q:'"그림자 속으로 가라앉아라…"',face:[739,111],z:2.6,spr:['r_nora']},
-  lyraAlone:{img:'art/ph_lyra2.jpg',top:'홀로 남은 언니',n:'빛의 마녀 리라',q:'"노라…! 너희 모두 빛에 타 버려라!"',face:[629,118],z:2.3,spr:['r_lyra']},
+  lyraAlone:{img:'art/ph_lyra2.jpg',top:'홀로 남은 언니',n:'빛의 마녀 리라',q:'"노라…! 너희 모두 빛에 타 버려라!"',face:[690,150],z:2.2,spr:['r_lyra']},
   noraAlone:{img:'art/ph_nora2.jpg',top:'홀로 남은 동생',n:'그림자 마녀 노라',q:'"리라…! 용서하지 않겠어!"',face:[739,111],z:2.6,spr:['r_nora']},
   golem:{img:'art/ph_golem.jpg',top:'2 페이즈 · 태엽 심장과 하나로',n:'태엽 거인 발렌',q:'"태엽 심장이여, 나와 하나가 되어라!"',face:[680,80],z:2.1,spr:['r_golem']},
   karnas2:{img:'art/ph_karnas2.jpg',top:'2 페이즈 · 흑월이 차오른다',n:'흑왕 카르나스',q:'"이제부터가 진짜다."',face:[722,190],z:2.6,spr:['r_karnas']},
