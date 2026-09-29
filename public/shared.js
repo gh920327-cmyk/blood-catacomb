@@ -82,8 +82,10 @@ function branchSpent(ch,bi){const br=TALENTS[ch.cls][bi];let n=0;for(const nd of
 function canTalent(ch,id){const tr=TALENTS[ch.cls];for(let bi=0;bi<3;bi++){const k=tr[bi].n.findIndex(x=>x.id===id);if(k<0)continue;const nd=tr[bi].n[k];const r=(ch.tal&&ch.tal[id])|0;if(r>=nd.max)return '이미 최대입니다';if(talentSpent(ch)>=talentPts(ch.lvl))return '특성 포인트가 없습니다';
   let before=0;for(let j=0;j<k;j++)before+=(ch.tal&&ch.tal[tr[bi].n[j].id])|0;if(before<TAL_NEED[k])return `이 갈래 윗단계에 ${TAL_NEED[k]}포인트가 필요합니다`;return null;}return '없는 특성입니다';}
 // ---------- 업적 · 칭호 · 도감 · 펫 ----------
-const PETS=[{id:'slime',n:'꼬마 슬라임'},{id:'bat',n:'아기 박쥐'},{id:'crow',n:'해골 까마귀'},{id:'cat',n:'유령 고양이'},{id:'fox',n:'여우 정령'},{id:'dragon',n:'아기 용'}];
+const PETS=[{id:'slime',n:'꼬마 슬라임'},{id:'bat',n:'아기 박쥐'},{id:'crow',n:'해골 까마귀'},{id:'cat',n:'유령 고양이'},{id:'fox',n:'여우 정령'},{id:'dragon',n:'아기 용'},{id:'moonlet',n:'새끼 흑월'}];
 const ACH=[
+  {id:'moonN',n:'흑월을 끈 자',d:'흑왕 카르나스 처치 (절망)',t:'흑월을 끈 자',c:ch=>(ch.rclr||{}).moon|0,need:1,pet:'moonlet'},
+  {id:'moonH',n:'새벽을 부른 자',d:'흑왕 카르나스 하드 처치',t:'새벽을 부른 자',c:ch=>ch.moonH|0,need:1},
   {id:'k100',n:'첫 사냥',d:'몬스터 100마리 처치',t:'사냥꾼',c:ch=>ch.kills,need:100},
   {id:'k1000',n:'학살',d:'몬스터 1,000마리 처치',t:'학살자',c:ch=>ch.kills,need:1000,pet:'bat'},
   {id:'k5000',n:'끝없는 전투',d:'몬스터 5,000마리 처치',t:'끝없는 칼날',c:ch=>ch.kills,need:5000},
