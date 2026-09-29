@@ -141,6 +141,21 @@ function mercCost(lvl){return 150+(lvl|0)*25;}
 // ---------- 카운터 전용 스킬 (1레벨부터, R키) ----------
 const CTR_SKILL={warrior:{n:'저지 베기',d:'앞으로 짧게 파고들며 베어 180% 피해'},guardian:{n:'방패 밀치기',d:'방패로 밀쳐 140% 피해와 짧은 기절'},archer:{n:'견제 사격',d:'아주 빠른 화살 한 발, 170% 피해'},mage:{n:'마력 충격',d:'순식간에 날아가는 마력탄, 180% 피해'},priest:{n:'신성한 일격',d:'빛의 탄환을 쏘아 160% 피해'}};
 const CTR_CD=6;
+// ---------- 레이드 ----------
+const RAIDS=[{id:'bell',n:'잊힌 종탑',boss:'종지기 그레고르',lvl:20,ready:1},{id:'mirror',n:'거울 미궁',boss:'쌍둥이 마녀 리라와 노라',lvl:30,ready:0},{id:'clock',n:'태엽 심장 공장',boss:'기사단장 발렌',lvl:40,ready:0},{id:'moon',n:'흑월의 왕좌',boss:'흑왕 카르나스',lvl:50,ready:0}];
+function genRaid(id,seed){const W=40,H=44,tiles=new Uint8Array(W*H);const map={w:W,h:H,tiles,boss:true,floor:1,raid:id};
+  const rect=(x0,y0,x1,y1,v)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)tiles[y*W+x]=v;};
+  rect(5,4,34,20,1);rect(18,21,21,27,1);rect(9,28,30,40,1);
+  // 관문 문 (퍼즐을 풀면 열림)
+  for(let x=18;x<=21;x++)tiles[24*W+x]=5;
+  const gate={x:9,y:28,w:22,h:13,cx:19,cy:34},boss={x:5,y:4,w:30,h:17,cx:19,cy:11};map.rooms=[gate,boss];map.start=gate;map.bossRoom=boss;map.stairsIdx=-1;map.secret=null;
+  map.door=[24*W+18,24*W+19,24*W+20,24*W+21];map.startPt={x:19*TS+8,y:38*TS+8};map.bossPt={x:19*TS+8,y:9*TS+8};map.bossEntry={x:19*TS+8,y:19*TS+8};
+  map.torches=[];for(const x of[7,12,19,26,32])map.torches.push({x:x*TS+8,y:3*TS+4,ph:x});for(const x of[11,19,28])map.torches.push({x:x*TS+8,y:27*TS+4,ph:x*2});
+  if(id==='bell'){map.bells=[{x:11*TS+8,y:30*TS+8,c:0},{x:27*TS+8,y:30*TS+8,c:1},{x:11*TS+8,y:39*TS+8,c:2},{x:27*TS+8,y:39*TS+8,c:3}];map.bigBell={x:19*TS+8,y:33*TS+8};
+    map.bossBells=[{x:7*TS+8,y:6*TS+8,c:0},{x:32*TS+8,y:6*TS+8,c:1},{x:7*TS+8,y:19*TS+8,c:2},{x:32*TS+8,y:19*TS+8,c:3}];
+    for(const b of map.bells.concat([map.bigBell]))tiles[Math.floor(b.y/TS)*W+Math.floor(b.x/TS)]=3;}
+  return map;}
+function walkRaid(){}
 // ---------- 결투장 ----------
 function genArena(seed){const R=mulberry(seed);const W=32,H=22,tiles=new Uint8Array(W*H);const map={w:W,h:H,tiles,boss:false,floor:1,arena:true};
   for(let y=4;y<=17;y++)for(let x=3;x<=28;x++)tiles[y*W+x]=1;
@@ -194,7 +209,7 @@ function genHub(){
     g[y*W+x]=road?0:1;}
   // 연못 (낚시터)
   const pond={cx:430,cy:584,rx:66,ry:30};for(let y=0;y<H;y++)for(let x=0;x<W;x++){const px=x*TS+8,py=y*TS+8;const d=((px-pond.cx)/pond.rx)**2+((py-pond.cy)/pond.ry)**2;if(d<=1){g[y*W+x]=2;tiles[y*W+x]=3;}else if(d<=1.5&&g[y*W+x]===0)g[y*W+x]=1;}
-  map.ground=g;map.pond=pond;map.fish={x:430,y:540};map.merc={x:566,y:176};map.arena={x:620,y:510};map.tailor={x:742,y:212};
+  map.ground=g;map.pond=pond;map.fish={x:430,y:540};map.merc={x:566,y:176};map.arena={x:620,y:510};map.tailor={x:742,y:212};map.raid={x:320,y:188};map.raidStone={x:320,y:176};for(const tx of[19,20])tiles[10*W+tx]=3;
   map.portal={x:480,y:100};map.merchant={x:206,y:330};map.spawn={x:480,y:356};map.board={x:392,y:252};
   map.forge={x:150,y:190};map.vault={x:812,y:190};map.tent={x:812,y:334};map.dummies=[{x:760,y:548},{x:820,y:548}];
   map.torches=[];
@@ -320,9 +335,17 @@ const MT={
   tentacle:{n:'촉수',hp:60,dmg:8,spd:0,r:6,xp:8,cd:1.8,stat:1},
   guard:{n:'수호 해골',hp:40,dmg:6,spd:32,r:5,xp:6,cd:1.3},
   clone:{n:'환영',hp:60,dmg:8,spd:30,r:11,xp:0,cd:1.6},
-  goblin:{n:'보물 고블린',hp:55,dmg:0,spd:60,r:5,xp:60,cd:99}
+  goblin:{n:'보물 고블린',hp:55,dmg:0,spd:60,r:5,xp:60,cd:99},
+  r_greg:{n:'종지기 그레고르',hp:520,dmg:14,spd:26,r:12,xp:900,cd:1.8,rb:1},
+  r_lyra:{n:'빛의 마녀 리라',hp:520,dmg:14,spd:30,r:10,xp:900,cd:1.6,rb:1},
+  r_nora:{n:'그림자 마녀 노라',hp:520,dmg:14,spd:30,r:10,xp:900,cd:1.6,rb:1},
+  r_valen:{n:'기사단장 발렌',hp:520,dmg:14,spd:32,r:11,xp:900,cd:1.5,rb:1},
+  r_golem:{n:'태엽 거인 발렌',hp:520,dmg:14,spd:22,r:15,xp:900,cd:2,rb:1},
+  r_karnas:{n:'흑왕 카르나스',hp:520,dmg:14,spd:30,r:14,xp:1200,cd:1.6,rb:1},
+  r_ella:{n:'빛의 기사 엘라',hp:520,dmg:0,spd:0,r:10,xp:0,cd:99,rb:1},
+  ghoul:{n:'종탑의 망자',hp:26,dmg:7,spd:32,r:5,xp:10,cd:1.3}
 };
-const MT_LIST=['zombie','skel','hound','boss','egg','tentacle','guard','clone','goblin'];
+const MT_LIST=['zombie','skel','hound','boss','egg','tentacle','guard','clone','goblin','r_greg','r_lyra','r_nora','r_valen','r_golem','r_karnas','r_ella','ghoul'];
 // 엘리트 특성 (비트)
 const EAFF=[['frost','빙결',1],['split','분열',2],['vamp','흡혈',4],['tele','순간이동',8],['shield','보호막',16],['bomb','자폭',32],['fast','신속',64],['tough','강철',128]];
 function eaffNames(mask){return EAFF.filter(a=>mask&a[2]).map(a=>a[1]);}
@@ -381,7 +404,7 @@ function bossOf(floor){const th=themeOf(floor);if(th.final)return Object.assign(
 function monName(floor,type,elite,id){const th=themeOf(floor);const base=type==='boss'?bossOf(floor).n:(th.t.mon[type]||(MT[type]&&MT[type].n)||type);return (th.corrupt&&type!=='boss'?'타락한 ':'')+(elite?['광폭한 ','저주받은 ','불타는 ','굶주린 '][id%4]:'')+base;}
 
 // ---------- 아이템 ----------
-const RAR_N=['일반','마법','희귀','전설'];
+const RAR_N=['일반','마법','희귀','전설','신화'];
 const SLOTN={weapon:'무기',armor:'갑옷',ring:'반지'};
 const FAMN={melee:'근접 무기',bow:'활',staff:'지팡이'};
 const AFF={
@@ -429,6 +452,11 @@ function genItem(L,fam,minR,bonus,R,maxR,fslot){
   const x=R();let ns=rar===1?(x<0.15?1:0):rar===2?(x<0.1?2:x<0.4?1:0):rar===3?(x<0.3?2:1):0;ns=Math.min(ns,SOCK_MAX[slot]);if(ns)it.so=new Array(ns).fill(null);
   return it;
 }
+// ---------- 신화 (레이드 경매 전용) ----------
+const MYTH={blast:{n:'핏빛 폭발',d:'적을 처치하면 주변에 폭발 (공격력 80%)'},aegis:{n:'불멸의 가호',d:'5초마다 최대 체력 10% 보호막'},chainz:{n:'천둥의 연쇄',d:'치명타 시 번개가 주변 적 3명에게 튄다 (60%)'},vamp:{n:'피의 계약',d:'생명력 흡수 +4%, 처치 시 체력 3% 회복'},haste:{n:'시간의 톱니',d:'스킬 재사용 대기 -15%'},wrath:{n:'군주 사냥꾼',d:'보스에게 주는 피해 +20%'}};
+const MYTH_N={melee:['흑월의 대검','종말의 도끼'],bow:['별을 삼킨 활','피안의 석궁'],staff:['심연의 왕홀','시간을 먹는 지팡이'],armor:['불멸 군주의 갑주','새벽 기사단의 흉갑'],ring:['신들의 반지','엘라의 약속']};
+function genMythic(L,fam,R,slot){R=R||Math.random;const it=genItem(L,fam,3,0,R,3,slot);it.rar=4;for(const k in it.base)if(k==='dmg'||k==='armor')it.base[k]=Math.round(it.base[k]*1.25);for(const a of it.aff)a.v=Math.round(a.v*1.25);
+  const keys=Object.keys(MYTH);it.myth=keys[Math.floor(R()*keys.length)];const pool=MYTH_N[it.slot==='weapon'?fam:it.slot];it.name=pool[Math.floor(R()*pool.length)];it.value=Math.round(it.value*2);if(!it.so)it.so=[null];return it;}
 function starterWeapon(fam){const b=WEAPONS[fam][fam==='melee'?1:fam==='bow'?0:1];return{id:rid(),slot:'weapon',rar:0,L:1,fam,kind:b.kind,bn:b.n,name:'낡은 '+b.n,base:{dmg:4},aff:[],value:3};}
 function starterArmor(cls){const k=cls==='mage'||cls==='priest'?ARMORS[3]:ARMORS[0];return{id:rid(),slot:'armor',rar:0,L:1,kind:k.kind,bn:k.n,name:'해진 '+k.n,base:{armor:3},aff:[],value:3};}
 function itemStats(it){const s={};const em=enhMul(it.up|0);for(const k in it.base){const v=it.base[k];s[k]=(s[k]||0)+((k==='dmg'||k==='armor')?Math.round(v*em):v);}const rm=it.slot==='ring'&&it.up?1+0.05*it.up:1;for(const a of it.aff)s[a.k]=(s[a.k]||0)+(rm===1?a.v:Math.round(a.v*rm));
@@ -437,12 +465,13 @@ function itemStats(it){const s={};const em=enhMul(it.up|0);for(const k in it.bas
 // ---------- 대장간: 강화 · 재련 · 분해 · 소켓/보석 ----------
 const ENH_MAX=10,ENH_RATE=[100,100,95,90,80,70,60,50,40,30];
 function enhMul(up){return 1+0.1*up;}
-function enhCost(it){const up=it.up|0,L=it.L|0;return{gold:Math.round((20+L*8)*(1+up)*(1+it.rar*0.5)),iron:1+Math.floor(up/2),dust:up>=5?up-3:0,ess:it.rar===3&&up>=7?1:0};}
-function affRange(it,k){const L=it.L|0;const lo=AFF[k].r(L,()=>0),hi=AFF[k].r(L,()=>0.999999);return it.rar===3?[Math.round(lo*1.35)+1,Math.round(hi*1.35)+1]:[lo,hi];}
-function rollAff(it,k,R){R=R||Math.random;let v=AFF[k].r(it.L|0,R);if(it.rar===3)v=Math.round(v*1.35)+1;return v;}
-function rerollCost(it,swap){const n=it.rc|0,L=it.L|0,leg=it.rar===3;const g=Math.round((15+L*6)*(1+n*0.5)*(swap?2:1)*(leg?2:1));
+function enhCost(it){const up=it.up|0,L=it.L|0;return{gold:Math.round((20+L*8)*(1+up)*(1+it.rar*0.5)),iron:1+Math.floor(up/2),dust:up>=5?up-3:0,ess:it.rar>=3&&up>=7?1:0,myth:it.rar===4&&up>=5?1+Math.floor((up-5)/2):0};}
+function affScale(it,v){if(it.rar===3)return Math.round(v*1.35)+1;if(it.rar===4)return Math.round((v*1.35+1)*1.25);return v;}
+function affRange(it,k){const L=it.L|0;const lo=AFF[k].r(L,()=>0),hi=AFF[k].r(L,()=>0.999999);return[affScale(it,lo),affScale(it,hi)];}
+function rollAff(it,k,R){R=R||Math.random;return affScale(it,AFF[k].r(it.L|0,R));}
+function rerollCost(it,swap){const n=it.rc|0,L=it.L|0,leg=it.rar>=3;if(it.rar===4){const g=Math.round((30+L*10)*(1+n*0.5)*(swap?2:1));return swap?{gold:g,dust:3,ess:2+n,myth:1}:{gold:g,dust:2+Math.floor(n/3),myth:1};}const g=Math.round((15+L*6)*(1+n*0.5)*(swap?2:1)*(leg?2:1));
   if(swap)return leg?{gold:g,dust:2,ess:2+n}:{gold:g,dust:2+Math.floor(n/3)};return{gold:g,dust:(leg?2:1)+Math.floor(n/3)};}
-function salvageOf(it){const r=it.rar,up=it.up|0;const o={iron:[1,2,3,1][r]+up,dust:[0,0,2,4][r],ess:r===3?1:0,dustP:r===1?0.3:0};return o;}
+function salvageOf(it){const r=it.rar,up=it.up|0;const o={iron:[1,2,3,1,2][r]+up,dust:[0,0,2,4,6][r],ess:r===3?1:r===4?2:0,myth:r===4?1:0,dustP:r===1?0.3:0};return o;}
 // 보석: r 루비, s 사파이어, t 토파즈, e 에메랄드, a 자수정, d 다이아몬드 · 등급 1~5
 const GEM_T=['r','s','t','e','a','d'];
 const GEM_N={r:'루비',s:'사파이어',t:'토파즈',e:'에메랄드',a:'자수정',d:'다이아몬드'};
@@ -494,6 +523,8 @@ function calcStats(ch){
   if(T.hpPct)S.maxHp=Math.round(S.maxHp*(1+T.hpPct/100));if(T.mpPct)S.maxMp=Math.round(S.maxMp*(1+T.mpPct/100));if(T.armorPct)S.armor=Math.round(S.armor*(1+T.armorPct/100));
   if(T.dr)S.dr=(S.dr||0)+T.dr/100;S.cdr=Math.min(0.4,(T.cdr||0)/100);if(T.healPct)S.healPow=Math.round(S.healPow*(1+T.healPct/100));if(T.spellPct)S.spell*=1+T.spellPct/100;
   S.regen=1+(T.regen||0)/100;if(T.mpRegen)S.mpRegen*=1+T.mpRegen/100;
+  S.myth=[];for(const s2 of['weapon','armor','ring']){const it=ch.eq[s2];if(it&&it.rar===4&&it.myth&&MYTH[it.myth]&&canEquip(it,ch.cls))S.myth.push(it.myth);}
+  if(S.myth.includes('vamp'))S.ls+=4;if(S.myth.includes('haste'))S.cdr=Math.min(0.5,(S.cdr||0)+0.15);
   return S;
 }
 function dmgReduce(S,floor){return Math.min(0.75,S.armor/(S.armor+40+12*Math.max(1,floor)));}
@@ -504,8 +535,8 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
-  THEMES,FINAL_BOSS,themeOf,ENH_MAX,ENH_RATE,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
+  THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,affScale,ENH_MAX,ENH_RATE,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
 })(typeof self!=='undefined'?self:this);
