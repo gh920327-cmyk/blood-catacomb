@@ -580,9 +580,9 @@ function handle(d){switch(d.t){
   case 'ucd':ultEnd=time+d.left;break;
   case 'ctrReset':ctrCdEnd=0;break;
   case 'err':toast(d.m);break;
-  case 'map':{closeFac();G.raid=null;G.rvote=null;G.mvp=null;G.auc=null;G.bseq=null;G.rings=[];G.tethers=[];G.block=null;me.inBoss=false;G.bossLive=null;G.kind=d.kind;G.paused=d.paused||null;G.trans=0;G.monsters.clear();G.deadM.clear();G.projs.clear();G.drops.clear();G.zones=[];parts=[];effects=[];texts=[];G.portalMenu=false;showShop=false;
+  case 'map':{if(G.pendEnd&&d.kind==='hub'){const pe=G.pendEnd;G.pendEnd=null;setTimeout(()=>playEnding(pe,()=>{if(pe==='end2')onFirstDawn();}),1200);}closeFac();G.raid=null;G.rvote=null;G.mvp=null;G.auc=null;G.bseq=null;G.rings=[];G.tethers=[];G.block=null;me.inBoss=false;G.bossLive=null;G.kind=d.kind;G.paused=d.paused||null;G.trans=0;G.monsters.clear();G.deadM.clear();G.projs.clear();G.drops.clear();G.zones=[];parts=[];effects=[];texts=[];G.portalMenu=false;showShop=false;
     if(d.kind==='hub'){G.arena=null;G.arenaRes=null;G.fishS=null;G.map=SH.genHub();G.floor=0;banner={t:0,a:'던전 입구 광장',b:'동료를 모아 포탈로 들어가세요'};}
-    else if(d.raid){G.arena=null;G.arenaRes=null;G.map=SH.genRaid(d.raid.id,d.seed);G.floor=d.raid.tf;G.stairsOpen=false;G.raid=d.raid.st;G.auc=null;if(d.raid.door)for(const i of G.map.door)G.map.tiles[i]=1;const rd=SH.RAIDS.find(r=>r.id===d.raid.id);for(const k in BPH)artOf(BPH[k].img);banner={t:0,a:`${rd.n} · ${RAID_MODE_N[d.raid.mode]}`,b:`${rd.boss}이(가) 기다린다`};}
+    else if(d.raid){G.arena=null;G.arenaRes=null;G.map=SH.genRaid(d.raid.id,d.seed);G.floor=d.raid.tf;G.stairsOpen=false;G.raid=d.raid.st;G.auc=null;if(d.raid.door)for(const i of G.map.door)G.map.tiles[i]=1;const rd=SH.RAIDS.find(r=>r.id===d.raid.id);for(const k in BPH)artOf(BPH[k].img);G.halfN=0;banner={t:0,a:`${rd.n} · ${RAID_MODE_N[d.raid.mode]}`,b:`${rd.boss}이(가) 기다린다`};}
     else if(d.arena){G.map=SH.genArena(d.seed);G.floor=d.floor;G.stairsOpen=false;banner={t:0,a:'결투장',b:'상대 팀을 모두 쓰러뜨리세요'};}
     else{G.arena=null;G.arenaRes=null;G.map=SH.genFloor(d.seed,d.floor);G.floor=d.floor;G.stairsOpen=!!d.stairs;if(d.stairs)SH.openStairs(G.map);const th=SH.themeOf(d.floor);banner={t:0,a:`지하 ${d.floor}층 · ${th.corrupt?'타락한 ':''}${th.t.n}`,b:G.map.boss?`${SH.bossOf(d.floor).n}이(가) 기다린다`:pick(th.t.lines)};}
     torches=G.map.torches;G.explored=new Uint8Array(G.map.w*G.map.h);me.x=d.x;me.y=d.y;me.path=null;me.pickTarget=null;me.goal=null;me.dodgeT=0;
@@ -598,7 +598,8 @@ function handle(d){switch(d.t){
   case 'ch':{const firstCh=!G.ch;const old=G.ch;G.ch=d.ch;G.S=d.S;if(old&&d.ch.lvl>old.lvl){}saveCurrent(d.ch);break;}
   case 'tp':me.x=d.x;me.y=d.y;me.path=null;me.lastSent='';break;
   case 'force':me.force={vx:d.vx,vy:d.vy,t:d.d};break;
-  case 'victory':G.victory=time;sfx('legend');break;
+  case 'victory':G.victory=time;sfx('legend');if(G.kind==='hub')setTimeout(()=>playEnding('end1'),3500);else G.pendEnd='end1';break;
+  case 'ending':G.pendEnd=d.id;break;
   case 'dadd':for(const o of d.d)addDropC(o,false);break;
   case 'drem':G.drops.delete(d.id);break;
   case 'msg':msg(d.m,d.c||'#e6dcc3');break;
@@ -1379,12 +1380,26 @@ const NPC_DEF=[
   {row:3,n:'도박사 제로',home:[770,344],rad:8,act:0.3,lines:['운명을 시험해 보겠나?','상자 안엔 뭐가 들었을까... 후후.','오늘은 운이 좋아 보이는군.','전설? 그건 보스 놈들만 갖고 있지.']},
   {row:4,n:'수녀 엘레나',home:[532,300],rad:36,act:0.12,lines:['빛이 그대와 함께하길.','쓰러진 동료 곁에 서 있으면 일으켜 세울 수 있어요.','분수의 물은 언제나 맑답니다.']},
   {row:5,n:'거지 톰',home:[430,420],rad:70,act:0.15,lines:['한 푼만 줍쇼...','내가 왕년에 30층까지 갔었다고!','게시판 의뢰는 매일 바뀐다네.','훈련장 허수아비는 아무리 때려도 안 쓰러져.','연못에서 황금 비늘 용어를 봤다니까!']}];
+// 진행에 따라 바뀌는 마을 대사: 0 시작 · 1 지하 10층+ · 2 36층+(2막) · 3 100층 정복(엘라 해방) · 4 흑왕 처치(첫 새벽)
+function storyStage(){const ch=G.ch;if(!ch)return 0;if(((ch.rclr||{}).moon|0)>0)return 4;if((ch.cleared|0)>0)return 3;if((ch.best|0)>=36)return 2;if((ch.best|0)>=10)return 1;return 0;}
+const NPC_STORY=[
+  {0:['흑월이 뜬 뒤로 풀무 불만이 이 마을의 유일한 해라네.','등불 기름이 모자라면 말하게. 쇠 다루는 손으로도 심지는 꼬거든.'],1:['알드릭 경의 검도 내가 벼렸지. 그 친구, 돌아오지 않았어.'],2:['벽 너머 쿵쿵 울리는 소리… 내 망치 소리가 아니야.','요즘은 나도 모르게 심장 소리에 맞춰 망치질을 해. 기분 나쁘게.'],3:['엘라 경이 돌아왔다고? 새 갑옷부터 벼려 줘야겠군!'],4:['해가 떴어! 풀무 불이 이렇게 초라해 보일 줄이야, 하하!']},
+  {0:['밤이 끝나지 않으니 검은 옷만 팔려. 가끔은 밝은 색도 입어 보렴.'],1:['알드릭이 떠나기 전날, 누이에게 줄 머리띠를 맡겼었지…'],2:['밤마다 지하에서 노랫소리가 들려. 엘라가 부르던 노래야.'],3:['엘라 머리띠를 다시 만들어 줬단다. 너한테 고맙다고 전해 달래.'],4:['햇빛 아래서 보니 이 옷감 색이 원래 이랬구나!']},
+  {0:['흑월 아래서는 망자도 잠들지 못한다. 등불을 꺼뜨리지 마라.'],1:['새벽 기사단? 이제 남은 건 나 같은 퇴물뿐이지.'],2:['36층 아래는 기사단도 못 내려갔던 곳이다. 대단하군.'],3:['엘라 경이 돌아왔다. 기사단이 다시 모인다!'],4:['흑왕을… 네가 쓰러뜨렸다고? 새벽 기사단의 이름으로 경례하지.']},
+  {0:['해가 다시 뜰 확률? 후후, 그건 나도 못 걸겠군.'],2:['심장 소리에 판돈을 걸어 볼까? 쿵, 쿵…'],4:['해가 떴네. 이번 판은 내가 졌어. 기분 좋게 졌지.']},
+  {0:['새벽의 종이 울리지 않은 지 오래예요. 그래도 기도는 멈추지 않아요.','등불은 작아도 어둠을 이겨요.'],1:['알드릭 경을 위해서도 기도하고 있어요.'],2:['심장에 삼켜진 이들에게도… 빛이 닿기를.'],3:['엘라 님이 성당에 오셨어요. 오랫동안 제단 앞에 계셨지요.'],4:['새벽의 종이 다시 울렸어요! 들리세요?']},
+  {0:['흑월이 뜨던 밤, 종탑에서 종이 안 울렸어. 그레고르 영감이 멍하니 서 있더라고.'],1:['쌍둥이 점성술사 말이야, 그날 밤 거울 앞에서 웃고 있었다니까.'],2:['지하 36층이라고? 난 30층까지였는데… 흠흠.'],3:['엘라 아가씨가 돌아왔어! 나한테 동전을 줬다고!'],4:['해다! 해가 떴어! 오늘은 한 푼 안 줘도 괜찮아!']}];
+const NPC_RAID={bell:[0,'종탑의 종소리가 멎었다더군. 그레고르… 그 늙은이도 이제 편히 쉬기를.'],mirror:[5,'거울 미궁이 조용해졌대. 쌍둥이도 이제 서로를 놓아줬겠지.'],clock:[2,'발렌 부단장… 태엽이 멈췄다니 다행이다. 그도 이제 명령에서 풀려났겠지.'],moon:[4,'흑월이 걷혔어요. 카르나스 경도… 언젠가 용서받을 수 있을까요.']};
+function npcLine(i){const d=NPC_DEF[i],st=storyStage(),S=NPC_STORY[i]||{};let pool=[];for(let k=st;k>=0;k--)if(S[k]){pool=S[k];break;}
+  const ch=G.ch||{};for(const id in NPC_RAID){const [ni,l]=NPC_RAID[id];if(ni===i&&((ch.rclr||{})[id]|0)>0)pool=pool.concat([l]);}
+  if(i===2&&(ch.lvl|0)>=20&&!Object.keys(ch.rclr||{}).length)pool=pool.concat(['광장 석판이 붉게 빛나더군. 흑왕의 수하들이 너를 부르는 거다.']);
+  return pool.length&&R()<0.55?pick(pool):pick(d.lines);}
 const NPCS=NPC_DEF.map((d,i)=>({d,x:(d.home||d.path[0])[0],y:(d.home||d.path[0])[1],tx:null,ty:null,wait:rf(0,2),face:i%2?-1:1,walk:false,animT:R()*3,act:0,say:null,sayT:0,sayCd:rf(3,9),pi:0}));
 let NPC_FR=null;
 function npcFrames(){if(NPC_FR||!LOB.npc)return NPC_FR;NPC_FR=[];for(let r=0;r<6;r++){const row=[];for(let k=0;k<4;k++){const [c,x]=mk(36,34);x.drawImage(LOB.npc,k*36,r*34,36,34,0,0,36,34);const [f,fx2]=mk(36,34);fx2.translate(36,0);fx2.scale(-1,1);fx2.drawImage(c,0,0);row.push({r:c,l:f});}NPC_FR.push(row);}return NPC_FR;}
 function updateNpcs(dt){if(G.kind!=='hub'||!G.map)return;for(const n of NPCS){const d=n.d;n.animT+=dt;n.walk=false;if(n.act>0)n.act-=dt;
   const near=Math.hypot(me.x-n.x,me.y-n.y)<110;
-  if(n.sayT>0)n.sayT-=dt;else n.say=null;n.sayCd-=dt;if(n.sayCd<=0&&near){n.say=pick(d.lines);n.sayT=3.2;n.sayCd=rf(7,13);if(Math.abs(me.x-n.x)>4)n.face=me.x<n.x?-1:1;}
+  if(n.sayT>0)n.sayT-=dt;else n.say=null;n.sayCd-=dt;if(n.sayCd<=0&&near){n.say=npcLine(NPC_DEF.indexOf(d));n.sayT=3.2;n.sayCd=rf(7,13);if(Math.abs(me.x-n.x)>4)n.face=me.x<n.x?-1:1;}
   if(n.wait>0){n.wait-=dt;if(n.wait<=0&&R()<d.act)n.act=1.2;continue;}
   if(n.tx==null){if(d.path){n.pi=(n.pi+1)%d.path.length;[n.tx,n.ty]=d.path[n.pi];}else{const a=R()*Math.PI*2,r=R()*d.rad;n.tx=d.home[0]+Math.cos(a)*r;n.ty=d.home[1]+Math.sin(a)*r*0.6;}}
   const dx=n.tx-n.x,dy=n.ty-n.y,dd=Math.hypot(dx,dy),st=17*dt;if(n.act>0||n.sayT>0&&near){continue;}
@@ -1744,7 +1759,16 @@ const BOSS_BIO={bell:['하렌의 종지기. 흑월이 뜨던 밤, 경고의 종�
   mirror:['왕실 점성술사였던 쌍둥이. 둘 다 별에서 흑월을 먼저 읽었다.','언니 리라는 침묵했고, 동생 노라는 그것을 반겼다.','거울 속에서 서로를 비추며 영원히 같은 밤을 산다.'],
   clock:['새벽 기사단의 부단장. 명령을 끝까지 따르려고','멈추지 않는 태엽 심장을 제 몸에 박아 넣었다.','그 명령이 무엇이었는지는 이미 잊었다.'],
   moon:['새벽 기사단장이자 지금의 흑왕.','밤을 끝낼 힘을 원했고, 가장 아끼던 기사 엘라를 바쳐 심연의 심장을 빚었다.','흑월은 그가 스스로 연 문이다.']};
-const ENDINGS=[{id:'end1',n:'엔딩 1 · 심장이 멈춘 날',hint:'지하 100층을 정복하면 열려요',ok:ch=>(ch.cleared|0)>0,list:null},{id:'end2',n:'엔딩 2 · 첫 새벽',hint:'흑왕 카르나스를 쓰러뜨리면 열려요',ok:ch=>((ch.rclr||{}).moon|0)>0,list:null}];
+const ENDINGS=[{id:'end1',n:'엔딩 1 · 심장이 멈춘 날',hint:'지하 100층을 정복하면 열려요',ok:ch=>(ch.cleared|0)>0,title:['심장이 멈춘 날','2막 · 심장의 부름 끝'],list:[
+    {img:'art/end1.jpg',t:'백 번째 층. 심연의 심장이 마침내 멈췄다.\n붉은 뿌리가 풀려나고, 그 안에서 엘라가 눈을 떴다.'},
+    {img:'art/intro5.jpg',t:'엘라는 오빠의 일지를 끝까지 읽었다.\n"오빠가 끝까지 왔다고 전해 줘."\n마지막 장의 글씨는 떨리고 있었다.'},
+    {img:'art/end1.jpg',t:'심장은 멈췄지만, 하늘의 흑월은 그대로였다.\n"흑왕이 아직 남아 있어요. 이번엔… 제가 함께 갈게요."'}]},
+  {id:'end2',n:'엔딩 2 · 첫 새벽',thumb:'art/end2.jpg',hint:'흑왕 카르나스를 쓰러뜨리면 열려요',ok:ch=>((ch.rclr||{}).moon|0)>0,title:['첫 새벽','달 없는 밤이 끝났다'],list:[
+    {img:'art/ph_karnas3.jpg',t:'흑왕 카르나스가 무릎을 꿇었다.\n깨어진 심장 조각 사이로, 그는 마지막으로 엘라의 이름을 불렀다.'},
+    {img:'art/end2.jpg',t:'검은 달이 부서지고, 하렌에 첫 새벽이 왔다.\n사람들은 등불을 높이 들어 해를 맞았다.'},
+    {img:'art/intro1.jpg',t:'새벽의 종이 다시 울린다.\n엘라는 등불을 든 자에게 새벽의 맹세를 건넸다.\n"이제 당신도 새벽 기사예요."'}]}];
+function onFirstDawn(){msg('새벽의 맹세를 받았다','#ffd35a');}
+function playEnding(id,done){const e=ENDINGS.find(q=>q.id===id);if(!e)return;playCine(e.list,{title:e.title,done});}
 function openChron(on){G.chron=on;G.chronD=null;if(on){G.rec=false;G.talent=false;showSkills=false;showChar=false;showInv=false;closeFac();G.chronT=G.chronT||'act';}}
 function artCover(img,dx,dy,dw,dh,fx){const ir=img.width/img.height,r=dw/dh;let sw,sh,sx,sy;if(ir>r){sh=img.height;sw=sh*r;sx=Math.max(0,Math.min(img.width-sw,(fx==null?0.6:fx)*img.width-sw/2));sy=0;}else{sw=img.width;sh=sw/r;sx=0;sy=(img.height-sh)/2;}artDraw(img,sx,sy,sw,sh,dx,dy,dw,dh);}
 function drawChron(){const ch=G.ch;if(!ch)return;const x=22,y=12,w=436,h=246;panel(x,y,w,h,'연대기');const tab=G.chronT||'act';
@@ -1773,7 +1797,7 @@ function drawChron(){const ch=G.ch;if(!ch)return;const x=22,y=12,w=436,h=246;pan
       if(img){ctx.globalAlpha=ok?1:0.18;artCover(img,bx+1,by+1,rw-2,64,0.62);ctx.globalAlpha=1;}
       txt(ok?r.boss:'???',bx+6,by+76,r.boss.length>9?15:18,ok?'#f2eadb':'#6b6275',null,'serif');txt(ok?C.ep:`레벨 ${r.lvl} 레이드 · ${r.n}`,bx+6,by+90,12,ok?'#ffd35a':'#6b6275');txt(ok?`처치 ${n}번`:'',bx+rw-6,by+90,11,'#7fd05a','right');
       if(ok)uiRects.push({x:bx,y:by,w:rw,h:104,click:()=>{G.chronD=i;},tip:[['클릭: 자세히 보기','#ffd35a',11]]});});}
-  else{const items=[{n:'인트로 · 달 없는 밤',img:'art/intro6.jpg',ok:true,go:()=>playIntro()}].concat(ENDINGS.map(e=>({n:e.n,img:e.list?e.list[e.list.length-1].img:null,ok:e.ok(ch)&&!!e.list,hint:e.list?e.hint:'준비 중',go:()=>playCine(e.list,{})})));
+  else{const items=[{n:'인트로 · 달 없는 밤',img:'art/intro6.jpg',ok:true,go:()=>playIntro()}].concat(ENDINGS.map(e=>({n:e.n,img:e.thumb||(e.list?e.list[e.list.length-1].img:null),ok:e.ok(ch)&&!!e.list,hint:e.list?e.hint:'준비 중',go:()=>playEnding(e.id)})));
     items.forEach((it,i)=>{const by=cy+4+i*70,bw=cw-8;pr(cx+4,by,bw,66,it.ok?'#ffd35a':'#3a3144');pr(cx+5,by+1,bw-2,64,'#0a070e');const im=it.img?artOf(it.img):null;
       if(im){ctx.globalAlpha=it.ok?1:0.15;artCover(im,cx+5,by+1,118,64,0.5);ctx.globalAlpha=1;}
       txt(it.n,cx+132,by+22,20,it.ok?'#f2eadb':'#6b6275',null,'serif');txt(it.ok?'클릭해서 다시 보기':it.hint,cx+132,by+42,13,it.ok?'#ffd35a':'#6b6275');
@@ -1862,7 +1886,7 @@ function drawRaidUI(){const rs=G.raid;if(!rs||!inDungeon()||!G.map||!G.map.raid)
   if(rs.stage==='boss'&&!rs.done){const left=rs.enr-rs.bossT;txt(left>0?`보스 ${fmtMS(rs.bossT)} · 광폭화까지 ${fmtMS(left)}`:'광폭화!',240,y2+5,10,left<60?'#ff6a5a':'#e6dcc3','center');y2+=11;}
   else if(rs.stage==='gate'&&rs.pz&&!rs.door){const pz=rs.pz;const st=pz.st==='show'?'종소리를 잘 들으세요…':pz.st==='input'?`같은 순서로 치세요 ${pz.n}/${pz.len}`:'잠시 후 종이 울립니다';txt(`종 순서 퍼즐 ${Math.min(pz.round+1,pz.total)}/${pz.total} · ${st}`,240,y2+5,10,pz.st==='input'?'#ffd35a':'#e6dcc3','center');y2+=11;}
   else if(rs.door&&rs.stage==='gate'){txt('문이 열렸다 · 위쪽 보스방으로',240,y2+5,10,'#7fd05a','center');y2+=11;}
-  if(rs.bb){const bb=rs.bb;const b2=((time*6)|0)%2;txt(`종 ${bb.need}개 동시 타격! (${keyLabel(kbCode('act'))})  남은 ${bb.t}초`,240,y2+7,13,b2?'#8fd0ff':'#ffffff','center');y2+=14;
+  if(rs.bb){const bb=rs.bb;const b2=((time*6)|0)%2;txt([`종소리의 장막 · 남은 ${bb.t}초`,`모서리의 종 ${bb.need}개 · 남은 ${bb.t}초`,`종 ${bb.need}개 동시 타격! (${keyLabel(kbCode('act'))})  남은 ${bb.t}초`][hintLvC('bb')],240,y2+7,13,b2?'#8fd0ff':'#ffffff','center');y2+=14;
     for(let i=0;i<bb.need;i++){const hx=240-bb.need*9+i*18;pr(hx,y2,14,10,PAL.k);pr(hx+1,y2+1,12,8,bb.hit.includes(i)?'#8fd0ff':BELL_DK[i]);}}
   y2=drawRaidX(rs,y2);
   const nb=nearBell();if(nb&&!meDowned())txt(`${keyLabel(kbCode('act'))}: ${nb.lab||BELL_NM[nb.b.c]+' 종 치기'}`,me.x-camX,me.y-camY+10,11,'#ffd35a','center');
@@ -2164,21 +2188,23 @@ function drawMirrorWall(sx,sy,tx,ty){const k=(Math.sin(time*3+ty*0.7)+1)/2;wx.fi
 // ---- 격돌 · 반월 · 역격돌 · 엘라 ----
 G.clash=null;G.half=null;G.beats=null;G.clashRes=null;
 function onRaid2Msg(d){if(d.t==='clash'){if(d.end){G.clash=null;G.clashRes={win:d.win,t0:time};sfx(d.win?'legend':'boss');if(d.win){shake=Math.max(shake,8);screenFlash=0.3;}return;}G.clash={n:d.n,i:d.i,dur:d.dur,zone:d.zone,t0:time,fin:d.fin,pressed:false};sfx('shout');return;}
-  if(d.t==='half'){G.half={a:d.a,x:d.x,y:d.y,t0:time,d:d.d};sfx('boss');return;}
+  if(d.t==='half'){G.halfN=(G.halfN||0)+1;G.half={a:d.a,x:d.x,y:d.y,t0:time,d:d.d};sfx('boss');return;}
   if(d.t==='beats'){if(d.end){G.beats=null;G.beatRes={win:d.win,rate:d.rate,t0:time};sfx(d.win?'legend':'boss');return;}G.beats={beats:d.beats,win:d.win,t0:time,hit:new Set(),miss:0,sent:false};return;}}
 function clashNeedle(){const c=G.clash;if(!c)return 0;return Math.min(1,(time-c.t0)/c.dur);}
 function clashPress(){const c=G.clash;if(!c||c.pressed)return true;c.pressed=true;const v=clashNeedle();c.pv=v;net({t:'clashp',v:Math.round(v*1000)/1000});sfx(v>=c.zone[0]&&v<=c.zone[1]?'legend':'no');return true;}
 function beatPress(){const B=G.beats;if(!B)return false;const t=time-B.t0;let bi=-1,bd=9;B.beats.forEach((b,i)=>{if(B.hit.has(i))return;const d=Math.abs(t-b);if(d<bd){bd=d;bi=i;}});if(bi>=0&&bd<=B.win){B.hit.add(bi);sfx('hit');}else{B.miss++;sfx('no');}return true;}
-function drawRaid2Screen(){const rsx=G.raid&&G.raid.x;if(rsx&&rsx.cz)for(const [x,y,c] of rsx.cz)txt(c==='L'?'빛':'그림자',x-camX,y-camY-30,11,c==='L'?'#ffd35a':'#c9a0e8','center');
-  if(G.half){const t=time-G.half.t0;if(t<G.half.d)txt(`반월 베기! 빛나는 반대편으로 · ${Math.max(0,G.half.d-t).toFixed(1)}`,240,212,12,'#c9a0e8','center');}
+function hintLvC(k){const h=G.raid&&G.raid.hl;return Math.min(2,h?h[k]|0:0);}
+const ELLA_LINES=['제가 곁에 있을게요!','등불을 꺼뜨리지 마세요!','오빠… 보고 있어? 거의 다 왔어.','카르나스 경, 이제 그만 멈춰요!','새벽은 반드시 와요!','다치면 제 빛 곁으로 오세요!'];
+function drawRaid2Screen(){{const E=G.ella,P=G.ellaPos;if(E&&P&&E.say&&time-E.sayS<3.6&&G.raid&&G.raid.x&&G.raid.x.ella){const w=txt(E.say,-999,-999,11,'#2a1e14');pr(P.x-w/2-4,P.y-50,w+8,12,'rgba(255,246,208,0.9)');txt(E.say,P.x,P.y-44,11,'#3a2a14','center');}}const rsx=G.raid&&G.raid.x;if(rsx&&rsx.cz)for(const [x,y,c] of rsx.cz)txt(c==='L'?'빛':'그림자',x-camX,y-camY-30,11,c==='L'?'#ffd35a':'#c9a0e8','center');
+  if(G.half){const t=time-G.half.t0;if(t<G.half.d)txt(`${['반월 베기!','반월 베기! 달빛이 닿지 않는 곳으로','반월 베기! 빛나는 반대편으로'][Math.min(2,(G.halfN||1)-1)]} · ${Math.max(0,G.half.d-t).toFixed(1)}`,240,212,12,'#c9a0e8','center');}
   const C=G.clash;if(C){const v=clashNeedle();const x=140,y=150,w=200,h=14;pr(x-4,y-18,w+8,h+34,'rgba(10,6,14,0.82)');txt(C.fin?`최후의 격돌 ${C.i+1}/${C.n}`:'격돌!',240,y-10,13,C.fin?'#ffd35a':'#c9a0e8','center');
     pr(x,y,w,h,PAL.k);pr(x+1,y+1,w-2,h-2,'#241e2b');pr(x+Math.round(w*C.zone[0]),y+1,Math.round(w*(C.zone[1]-C.zone[0])),h-2,'#b38a3a');pr(x+Math.round(w*C.zone[0]),y+1,Math.round(w*(C.zone[1]-C.zone[0])),2,'#ffd35a');
     const nx=x+Math.round(w*v);pr(nx-1,y-3,3,h+6,'#ffffff');if(C.pressed){const px=x+Math.round(w*C.pv);pr(px-1,y-3,3,h+6,C.pv>=C.zone[0]&&C.pv<=C.zone[1]?'#7fd05a':'#e0574a');}
-    txt(C.pressed?(C.pv>=C.zone[0]&&C.pv<=C.zone[1]?'성공!':'빗나감…'):`${keyLabel(kbCode('ctr'))} 를 노란 칸에서!`,240,y+h+8,11,C.pressed?(C.pv>=C.zone[0]&&C.pv<=C.zone[1]?'#7fd05a':'#e0574a'):'#ffffff','center');}
+    txt(C.pressed?(C.pv>=C.zone[0]&&C.pv<=C.zone[1]?'성공!':'빗나감…'):(hintLvC('clash')?`${keyLabel(kbCode('ctr'))} 를 노란 칸에서!`:`( ${keyLabel(kbCode('ctr'))} )`),240,y+h+8,11,C.pressed?(C.pv>=C.zone[0]&&C.pv<=C.zone[1]?'#7fd05a':'#e0574a'):'#ffffff','center');}
   if(G.clashRes&&time-G.clashRes.t0<1.6){bigTxt(G.clashRes.win?'격돌 성공':'격돌 실패',240,120,16,G.clashRes.win?'#ffd35a':'#e0473a',2);}
   const B=G.beats;if(B){const t=time-B.t0;const x=90,y=180,w=300,hx=x+40;pr(x,y-10,w,22,'rgba(10,6,14,0.82)');pr(hx-1,y-10,2,22,'#ffd35a');txt('역격돌',x+4,y-16,11,'#c9a0e8');
     B.beats.forEach((b,i)=>{const px=hx+(b-t)*120;if(px<x-4||px>x+w)return;const hit=B.hit.has(i);pr(Math.round(px)-3,y-4,7,10,hit?'#7fd05a':(t-b>B.win?'#e0574a':'#fff6d0'));});
-    txt(`${keyLabel(kbCode('act'))} 를 선에서!  ${B.hit.size}/${B.beats.length}`,x+w-4,y-16,10,'#e6dcc3','right');
+    txt(hintLvC('beats')?`${keyLabel(kbCode('act'))} 를 선에서!  ${B.hit.size}/${B.beats.length}`:`( ${keyLabel(kbCode('act'))} )  ${B.hit.size}/${B.beats.length}`,x+w-4,y-16,10,'#e6dcc3','right');
     if(!B.sent&&t>B.beats[B.beats.length-1]+B.win+0.05){B.sent=true;net({t:'beatres',hit:B.hit.size});}}
   if(G.beatRes&&time-G.beatRes.t0<1.8)bigTxt(G.beatRes.win?`역격돌 성공 ${G.beatRes.rate}%`:`역격돌 실패 ${G.beatRes.rate}%`,240,120,16,G.beatRes.win?'#ffd35a':'#e0473a',2);}
 function drawRaid2World(icx,icy){{const X=G.raid&&G.raid.x;if(X&&X.beam&&X.beam.length>1&&G.map.raid==='mirror'){for(let i=0;i<X.beam.length-1;i++){const [ax,ay]=X.beam[i],[bx,by]=X.beam[i+1];const x1=ax-icx,y1=ay-icy-10,x2=bx-icx,y2=by-icy-10;wx.save();wx.globalCompositeOperation='lighter';wx.strokeStyle='rgba(255,233,168,0.35)';wx.lineWidth=5;wx.beginPath();wx.moveTo(x1,y1);wx.lineTo(x2,y2);wx.stroke();wx.restore();lineP(wpx,x1,y1,x2,y2,'w');}
@@ -2188,6 +2214,7 @@ function drawRaid2World(icx,icy){{const X=G.raid&&G.raid.x;if(X&&X.beam&&X.beam.
     for(let s=-300;s<300;s+=2){const px=sx-sa*s-ca*6,py=sy+ca*s-sa*6;wx.fillStyle=(s/2|0)%3?'#c9a0e8':'#ffffff';wx.fillRect(Math.round(px),Math.round(py),1,1);}
 }}
   const rs=G.raid;if(rs&&rs.x&&rs.x.ella&&G.map.raid==='moon'){const E=G.ella||(G.ella={x:me.x-30,y:me.y-10});const tx=me.x-26,ty=me.y-14;E.x+=(tx-E.x)*0.04;E.y+=(ty-E.y)*0.04;const bx=Math.round(E.x)-icx,by=Math.round(E.y+Math.sin(time*2)*3)-icy;
+    G.ellaPos={x:bx,y:by};if(!E.sayN||time>E.sayN){E.say=pick(ELLA_LINES);E.sayS=time;E.sayN=time+rf(11,16);}
     const fr=raidFrames('r_ella',G.floor);wglow(bx,by-18,30,'#fff6d0',0.45);if(fr&&fr.idle){const f=fr.idle[0];const im=f.r;if(im&&im.c){wx.drawImage(im.c,bx-Math.round(im.c.width/2),by-im.c.height);}}if(R()<0.4)part(E.x+rf(-8,8),E.y-rf(4,30),0,0,pick(['w','y']),0.8,{z:0,vz:12,glow:true});}}
 function drawRaid2Marks(icx,icy){const rs=G.raid;if(!rs||!rs.x||!rs.x.marks)return;for(const id in rs.x.marks){const p=id===myId?me:G.players.get(id);if(!p)continue;const x=Math.round(id===myId?me.x:p.dx)-icx,y=Math.round(id===myId?me.y:p.dy)-icy-34;const L=rs.x.marks[id]==='L';
   wglow(x,y,8,L?'#ffd35a':'#b86ad0',0.5);wx.fillStyle=L?'#ffd35a':'#b86ad0';wx.beginPath();wx.arc(x,y,3,0,Math.PI*2);wx.fill();if(L){for(let n=0;n<8;n++){const q=n/8*Math.PI*2;wx.fillRect(Math.round(x+Math.cos(q)*5),Math.round(y+Math.sin(q)*5),1,1);}}else{wx.fillStyle='#0e0b12';wx.beginPath();wx.arc(x+1.5,y-1,2.6,0,Math.PI*2);wx.fill();}}
