@@ -647,7 +647,8 @@ function handle(d){switch(d.t){
   case 'msg':msg(d.m,d.c||'#e6dcc3');break;
   case 'chat':{G.chatLog.push({name:d.name,m:d.m,t:time});if(G.chatLog.length>40)G.chatLog.shift();G.bubbles.set(d.id,{m:d.m,t:time});sfx('chat');break;}
   case 'invite':G.invite={from:d.from,name:d.name,t:time};sfx('chat');break;
-  case 'who':G.who=d.list;G.whoT=time;break;
+  case 'an':G.anD=d;break;
+case 'who':G.who=d.list;G.whoT=time;break;
 case 'insp':G.insp=d.v;break;
 case 'treq':G.treq={from:d.from,name:d.name,t:time};sfx('chat');break;
   case 'trade':{const was=G.trade;G.trade=d.st;if(d.st){showInv=true;showChar=false;showSkills=false;G.ctxMenu=null;closeFac();if(!was)sfx('pick');}if(d.done)sfx('gold');break;}
@@ -861,6 +862,7 @@ window.addEventListener('keydown',e=>{
   if(act==='rec'){G.rec=!G.rec;if(G.rec){G.talent=false;G.chron=false;showSkills=false;showChar=false;showInv=false;closeFac();}return;}
   if(act==='chron'){openChron(!G.chron);return;}
   if(act==='comm'){openComm(!G.comm);return;}
+  if(act==='anal'){openAnal(!G.anal);return;}
   if(G.treq&&!G.invite&&(c==='KeyY'||c==='KeyN')){net({t:'tans',from:G.treq.from,ok:c==='KeyY'});G.treq=null;return;}
   if(G.invite&&(c==='KeyY'||c==='KeyN')){net({t:'ians',from:G.invite.from,ok:c==='KeyY'});G.invite=null;return;}
   if(inDungeon()&&G.paused)return;
@@ -1357,7 +1359,7 @@ function drawMeterTable(title,rows,x,y,w,sub){const h=46+Math.max(1,rows.length)
 /* ---- 커뮤니티: 친구(이 브라우저에 저장) · 접속자 목록, 원거리 파티 초대·정보 보기 ---- */
 function friends(){try{return JSON.parse(localStorage.getItem('bc_friends')||'[]');}catch(e){return [];}}
 function setFriends(a){try{localStorage.setItem('bc_friends',JSON.stringify(a.slice(0,50)));}catch(e){}}
-function openComm(on){G.comm=on;if(on){G.chron=false;G.rec=false;G.talent=false;showSkills=false;showChar=false;closeFac();G.commT=G.commT||'all';G.commPg=0;net({t:'who'});}}
+function openComm(on){G.comm=on;if(on){G.anal=false;G.chron=false;G.rec=false;G.talent=false;showSkills=false;showChar=false;closeFac();G.commT=G.commT||'all';G.commPg=0;net({t:'who'});}}
 function drawComm(){const x=6,y=38,w=236,h=194;panel(x,y,w,h,'커뮤니티');button(x+w-18,y+4,12,11,'×',()=>{G.comm=false;},{size:10});uiRects.push({x,y,w,h,block:true});
   if(time-(G.whoT||0)>3&&time-(G.whoAsk||0)>3){G.whoAsk=time;net({t:'who'});}
   const fr=friends();const all=G.who||[];const T=G.commT;
@@ -1375,6 +1377,20 @@ function drawComm(){const x=6,y=38,w=236,h=194;panel(x,y,w,h,'커뮤니티');but
   if(!rows.length)txt(T==='fr'?'아직 친구가 없어요 · 접속자 탭에서 [친구+]':'접속한 플레이어가 없어요',x+w/2,y+80,11,'#6b6275','center');
   if(pages>1){button(x+8,y+h-18,20,13,'◀',()=>{G.commPg=(pg-1+pages)%pages;},{size:9});txt(`${pg+1} / ${pages}`,x+w/2,y+h-12,10,'#9e937a','center');button(x+w-28,y+h-18,20,13,'▶',()=>{G.commPg=(pg+1)%pages;},{size:9});}
   else txt(`${keyLabel(kbCode('comm'))} 키로 열고 닫기`,x+w/2,y+h-12,9,'#6b6275','center');}
+/* ---- 전투력 분석기: 스킬별 피해 비중 ---- */
+function openAnal(on){G.anal=on;if(on){G.comm=false;G.chron=false;G.rec=false;G.talent=false;showSkills=false;showChar=false;closeFac();net({t:'an'});G.anAsk=time;}}
+function anName(k){if(k==='atk')return'기본 공격';if(k==='etc')return'기타 (펫·반사·효과)';const s=SH.SKILLS[k];return s?s.n:k;}
+function drawAnal(){const x=6,y=38,w=236,h=194;panel(x,y,w,h,'전투력 분석기');button(x+w-18,y+4,12,11,'×',()=>{G.anal=false;},{size:10});uiRects.push({x,y,w,h,block:true});
+  if(time-(G.anAsk||0)>1){G.anAsk=time;net({t:'an'});}const D=G.anD;
+  button(x+8,y+4,40,11,'초기화',()=>{net({t:'anreset'});},{size:9,tip:[['기록을 지우고 새로 재요','#e6dcc3',11]]});
+  if(!D||!D.n){txt('아직 기록이 없어요',x+w/2,y+70,12,'#9e937a','center');txt('허수아비·던전·레이드에서 싸우면',x+w/2,y+88,11,'#6b6275','center');txt('스킬별로 넣은 피해가 여기에 쌓여요',x+w/2,y+100,11,'#6b6275','center');return;}
+  const rows=Object.entries(D.by).map(([k,b])=>Object.assign({k},b)).sort((a,b)=>b.d-a.d);const tot=rows.reduce((a,b)=>a+b.d,0)||1;
+  txt(`총 피해 ${Math.round(tot).toLocaleString()}  ·  ${Math.round(D.dur)}초  ·  초당 ${Math.round(tot/D.dur).toLocaleString()}`,x+w/2,y+22,11,'#ffd35a','center');
+  const top=rows[0].d;rows.slice(0,8).forEach((r,i)=>{const ry=y+32+i*18;const pct=r.d/tot;pr(x+8,ry,w-16,16,'rgba(10,7,14,0.55)');pr(x+8,ry,Math.max(1,Math.round((w-16)*r.d/top)),16,i===0?'rgba(140,100,30,0.55)':'rgba(70,56,90,0.55)');
+    txt(anName(r.k),x+12,ry+5,11,SH.SKILLS[r.k]&&SH.SKILLS[r.k].ult?'#ffd35a':'#f2eadb');txt(`${(pct*100).toFixed(1)}%`,x+w-12,ry+5,11,'#ffd35a','right');
+    txt(`${Math.round(r.d).toLocaleString()}  ·  ${r.h}회  ·  평균 ${Math.round(r.d/r.h)}  ·  치명 ${Math.round(r.c/r.h*100)}%  ·  최대 ${r.mx}${r.dot?'  ·  지속 '+Math.round(r.dot/r.d*100)+'%':''}`,x+12,ry+12,8,'#9e937a','left','px');});
+  if(rows.length>8)txt(`외 ${rows.length-8}개`,x+w/2,y+h-20,9,'#6b6275','center');
+  txt('마을·던전을 오가도 기록은 이어져요 · 초기화로 새로 재기',x+w/2,y+h-9,9,'#6b6275','center');}
 /* 다른 플레이어 정보(스펙) 보기 */
 function drawInsp(){const v=G.insp;const x=150,y=30,w=180,h=204;panel(x,y,w,h,`${v.name}`);button(x+w-18,y+4,12,11,'×',()=>{G.insp=null;},{size:10});uiRects.push({x,y,w,h,block:true});
   const C=CLASSES[v.cls]||{n:'?'};txt(`${C.n} · 레벨 ${v.lvl}${v.title?' · '+v.title:''}`,x+w/2,y+21,11,CLASS_COL[v.cls]||'#e6dcc3','center');
@@ -1433,8 +1449,9 @@ function render(){
     const n=Math.floor(time*3)%4;txt('.'.repeat(n),240,106,14,'#ffd35a','center');}return;}
   const [icx,icy]=renderWorld();drawUltScreen();
   drawWorldUI(icx,icy);drawPartyArrows(icx,icy);drawHUD();drawTut();drawChat();
-  if(G.trade)drawTrade();if(G.talent)drawTalents();else if(G.chron)drawChron();else if(G.comm)drawComm();else if(G.rec)drawRecords();else if(showSkills)drawSkills();else if(showChar)drawChar();else if(showShop)drawShop();else if(G.fac)drawFacPanel();
+  if(G.trade)drawTrade();if(G.talent)drawTalents();else if(G.chron)drawChron();else if(G.comm)drawComm();else if(G.anal)drawAnal();else if(G.rec)drawRecords();else if(showSkills)drawSkills();else if(showChar)drawChar();else if(showShop)drawShop();else if(G.fac)drawFacPanel();
   if(showInv&&!showSkills&&!G.talent&&!G.rec)drawInv();
+  if(!G.anal)button(G.kind==='hub'&&!G.comm?198:130,3,60,13,`분석기 (${keyLabel(kbCode('anal'))})`,()=>openAnal(true),{size:9,tip:[['전투력 분석기','#ffd35a',12],['어떤 스킬이 피해를 얼마나 넣었는지 보여줘요','#e6dcc3',11]]});
   if(G.kind==='hub'&&!G.comm)button(130,3,66,13,`커뮤니티 (${keyLabel(kbCode('comm'))})`,()=>openComm(true),{size:9,tip:[['친구 · 접속자 목록','#ffd35a',12],['멀리 있어도 파티 초대 · 정보 보기','#e6dcc3',11]]});
   if(G.insp)drawInsp();
   if(G.portalMenu)drawPortalMenu();
@@ -1645,7 +1662,7 @@ const OPT={bgm:0.8,sfx:0.8,shake:1,keys:{}};
 try{const o=JSON.parse(localStorage.getItem('bc_opt')||'null');if(o){if(typeof o.bgm==='number')OPT.bgm=clamp(o.bgm,0,1);if(typeof o.sfx==='number')OPT.sfx=clamp(o.sfx,0,1);if(typeof o.shake==='number')OPT.shake=clamp(o.shake,0,1);if(o.keys&&typeof o.keys==='object')OPT.keys=o.keys;}}catch(e){}
 function saveOpt(){try{localStorage.setItem('bc_opt',JSON.stringify(OPT));}catch(e){}}
 const KB_DEF=[];for(let i=0;i<SH.BAR_SIZE;i++)KB_DEF.push(['sk'+i,`스킬 ${i+1}`,'Digit'+(i+1)]);
-KB_DEF.push(['ctr','카운터 스킬','KeyR'],['talent','특성 창','KeyN'],['rec','기록 (업적·도감·펫)','KeyJ'],['chron','연대기 (이야기)','KeyL'],['comm','커뮤니티 (친구·접속자)','KeyO'],['ping','핑(신호)','KeyG'],['emote','감정표현','KeyT'],['potHp','체력 물약','KeyQ'],['potMp','마나 물약','KeyE'],['dodge','구르기','Space'],['act','상호작용·줍기','KeyF'],['inv','인벤토리','KeyI'],['skills','스킬 창','KeyK'],['char','캐릭터 창','KeyC'],['meter','기록표(누르고 있기)','Tab']);
+KB_DEF.push(['ctr','카운터 스킬','KeyR'],['talent','특성 창','KeyN'],['rec','기록 (업적·도감·펫)','KeyJ'],['chron','연대기 (이야기)','KeyL'],['comm','커뮤니티 (친구·접속자)','KeyO'],['anal','전투력 분석기','KeyU'],['ping','핑(신호)','KeyG'],['emote','감정표현','KeyT'],['potHp','체력 물약','KeyQ'],['potMp','마나 물약','KeyE'],['dodge','구르기','Space'],['act','상호작용·줍기','KeyF'],['inv','인벤토리','KeyI'],['skills','스킬 창','KeyK'],['char','캐릭터 창','KeyC'],['meter','기록표(누르고 있기)','Tab']);
 function kbCode(a){return OPT.keys[a]||KB_DEF.find(k=>k[0]===a)[2];}
 function kbAction(code){for(const k of KB_DEF)if(kbCode(k[0])===code)return k[0];return null;}
 function keyLabel(c){if(!c)return '-';if(c.startsWith('Key'))return c.slice(3);if(c.startsWith('Digit'))return c.slice(5);if(c.startsWith('Numpad'))return 'Num'+c.slice(6);return {Space:'Space',Tab:'Tab',ShiftLeft:'L-Shift',ShiftRight:'R-Shift',ControlLeft:'L-Ctrl',AltLeft:'L-Alt',Backquote:'`',Minus:'-',Equal:'=',BracketLeft:'[',BracketRight:']',Semicolon:';',Quote:"'",Comma:',',Period:'.',Slash:'/',CapsLock:'Caps'}[c]||c;}
@@ -1885,7 +1902,7 @@ const ENDINGS=[{id:'end1',n:'엔딩 1 · 심장이 멈춘 날',hint:'지하 100�
     {img:'art/intro1.jpg',t:'새벽의 종이 다시 울린다.\n엘라는 등불을 든 자에게 새벽의 맹세를 건넸다.\n"이제 당신도 새벽 기사예요."'}]}];
 function onFirstDawn(){unlockKnight();msg('새벽의 맹세를 받았다 · 히든 직업 「빛의 기사」 해금!','#ffd35a');G.knightNew=time;}
 function playEnding(id,done){const e=ENDINGS.find(q=>q.id===id);if(!e)return;playCine(e.list,{title:e.title,done});}
-function openChron(on){if(on)G.comm=false;G.chron=on;G.chronD=null;if(on){G.rec=false;G.talent=false;showSkills=false;showChar=false;showInv=false;closeFac();G.chronT=G.chronT||'act';}}
+function openChron(on){if(on){G.comm=false;G.anal=false;}G.chron=on;G.chronD=null;if(on){G.rec=false;G.talent=false;showSkills=false;showChar=false;showInv=false;closeFac();G.chronT=G.chronT||'act';}}
 function artCover(img,dx,dy,dw,dh,fx){const ir=img.width/img.height,r=dw/dh;let sw,sh,sx,sy;if(ir>r){sh=img.height;sw=sh*r;sx=Math.max(0,Math.min(img.width-sw,(fx==null?0.6:fx)*img.width-sw/2));sy=0;}else{sw=img.width;sh=sw/r;sx=0;sy=(img.height-sh)/2;}artDraw(img,sx,sy,sw,sh,dx,dy,dw,dh);}
 function drawChron(){const ch=G.ch;if(!ch)return;const x=22,y=12,w=436,h=246;panel(x,y,w,h,'연대기');const tab=G.chronT||'act';
   txt('달 없는 밤: 등불을 든 자',x+w-10,y+10,12,'#6b6275','right','serif');
