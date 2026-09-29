@@ -138,6 +138,9 @@ const FINAL_LINES=['왔구나… 여기까지. 이리 와, 여기 따뜻해.','�
 // ---------- 용병 ----------
 const MERCS={w:{n:'방패병',cls:'guardian',hp:1.0,mult:0.5,d:'적의 공격을 대신 받아 주는 근접 용병'},a:{n:'궁수',cls:'archer',hp:0.6,mult:0.42,d:'멀리서 화살을 쏘는 원거리 용병'},p:{n:'사제',cls:'priest',hp:0.7,mult:0.22,d:'체력이 줄면 치유해 주는 용병'}};
 function mercCost(lvl){return 150+(lvl|0)*25;}
+// ---------- 카운터 전용 스킬 (1레벨부터, R키) ----------
+const CTR_SKILL={warrior:{n:'저지 베기',d:'앞으로 짧게 파고들며 베어 180% 피해'},guardian:{n:'방패 밀치기',d:'방패로 밀쳐 140% 피해와 짧은 기절'},archer:{n:'견제 사격',d:'아주 빠른 화살 한 발, 170% 피해'},mage:{n:'마력 충격',d:'순식간에 날아가는 마력탄, 180% 피해'},priest:{n:'신성한 일격',d:'빛의 탄환을 쏘아 160% 피해'}};
+const CTR_CD=6;
 // ---------- 결투장 ----------
 function genArena(seed){const R=mulberry(seed);const W=32,H=22,tiles=new Uint8Array(W*H);const map={w:W,h:H,tiles,boss:false,floor:1,arena:true};
   for(let y=4;y<=17;y++)for(let x=3;x<=28;x++)tiles[y*W+x]=1;
@@ -224,11 +227,11 @@ const MAX_RANK=10,BAR_SIZE=6;
 const SKILLS={
   // 전사
   whirl:{n:'회전베기',mp:8,cd:1.2,desc:'주변의 모든 적에게 무기 피해 160%'},
-  charge:{n:'돌진 베기',mp:10,cd:4,desc:'커서 방향으로 돌진하며 경로의 적에게 180% 피해'},
+  charge:{ctr:1,n:'돌진 베기',mp:10,cd:4,desc:'커서 방향으로 돌진하며 경로의 적에게 180% 피해'},
   warcry:{n:'전쟁의 함성',mp:15,cd:14,desc:'주변 파티원의 피해 +25% (8초)'},
   cleave:{n:'대지 가르기',mp:14,cd:6,desc:'전방 부채꼴에 250% 피해, 1.2초 기절'},
   bloodlust:{n:'피의 갈증',pas:1,desc:'생명력 흡수',per:'등급당 생명력 흡수 +1.5%'},
-  leap:{n:'도약 강타',mp:16,cd:7,desc:'커서 위치로 뛰어올라 착지 지점에 200% 피해와 1초 기절'},
+  leap:{ctr:1,n:'도약 강타',mp:16,cd:7,desc:'커서 위치로 뛰어올라 착지 지점에 200% 피해와 1초 기절'},
   rend:{n:'출혈 베기',mp:12,cd:4,desc:'전방의 적을 베어 80% 피해, 5초간 출혈 250%'},
   berserk:{n:'광전사',mp:20,cd:20,desc:'8초간 공격 속도 +40%, 피해 +20%'},
   frenzy:{n:'전투 광기',pas:1,desc:'치명타 확률과 치명타 피해 증가',per:'등급당 치명타 +1.5%, 치명타 피해 +5%'},
@@ -237,7 +240,7 @@ const SKILLS={
   earthsplit:{n:'대지 분쇄',mp:35,cd:18,desc:'넓은 범위에 350% 피해와 2초 기절'},
   // 수호자
   taunt:{n:'도발',mp:6,cd:8,desc:'주변 적이 5초간 나만 노린다. 3초간 받는 피해 -30%'},
-  bash:{n:'방패 강타',mp:8,cd:3,desc:'앞의 적에게 140% 피해, 2초 기절'},
+  bash:{ctr:1,n:'방패 강타',mp:8,cd:3,desc:'앞의 적에게 140% 피해, 2초 기절'},
   bulwark:{n:'수호의 오라',mp:18,cd:18,desc:'주변 파티원이 받는 피해 -35% (6초)'},
   hook:{n:'쇠사슬 끌기',mp:10,cd:6,desc:'커서 방향 첫 적을 끌어오고 3초 도발'},
   ironskin:{n:'강철 피부',pas:1,desc:'방어력 증가',per:'등급당 방어력 +8%'},
@@ -246,11 +249,11 @@ const SKILLS={
   slam:{n:'대지 강타',mp:14,cd:6,desc:'주변 적에게 180% 피해, 3초 둔화'},
   undying:{n:'불굴',pas:1,desc:'치명상을 입으면 한 번 체력 30%로 버틴다',per:'등급당 재사용 대기 -8초 (기본 120초)'},
   rally:{n:'결집의 외침',mp:22,cd:20,desc:'주변 파티원에게 최대 체력 20% 보호막 (8초)'},
-  shieldthrow:{n:'방패 투척',mp:12,cd:4,desc:'적 사이를 3번 튕기는 방패, 각 150% 피해'},
+  shieldthrow:{ctr:1,n:'방패 투척',mp:12,cd:4,desc:'적 사이를 3번 튕기는 방패, 각 150% 피해'},
   bastion:{n:'최후의 보루',mp:40,cd:40,desc:'8초간 파티 받는 피해 -40%, 주변 모든 적 도발'},
   // 궁수
   multishot:{n:'다중 사격',mp:8,cd:1,desc:'부채꼴로 화살 5발, 각 70% 피해'},
-  pierce:{n:'관통 화살',mp:10,cd:3,desc:'모든 적을 꿰뚫는 화살, 220% 피해'},
+  pierce:{ctr:1,n:'관통 화살',mp:10,cd:3,desc:'모든 적을 꿰뚫는 화살, 220% 피해'},
   rain:{n:'화살비',mp:16,cd:8,desc:'커서 위치에 2.5초간 화살비, 초당 120% 피해'},
   vault:{n:'후퇴 사격',mp:8,cd:5,desc:'뒤로 도약하며 화살 3발 발사'},
   eagle:{n:'매의 눈',pas:1,desc:'치명타 피해 증가',per:'등급당 치명타 피해 +8%'},
@@ -258,13 +261,13 @@ const SKILLS={
   poison:{n:'독화살',mp:10,cd:3,desc:'맞은 적에게 100% 피해와 5초간 독 300%'},
   volley:{n:'일제 사격',mp:18,cd:6,desc:'넓은 부채꼴로 화살 9발, 각 60% 피해'},
   swift:{n:'바람걸음',pas:1,desc:'이동 속도와 공격 속도 증가',per:'등급당 이동 속도 +3%, 공격 속도 +2%'},
-  sniper:{n:'저격',mp:22,cd:10,desc:'1초 조준 후 모든 적을 꿰뚫는 600% 탄환'},
+  sniper:{ctr:1,n:'저격',mp:22,cd:10,desc:'1초 조준 후 모든 적을 꿰뚫는 600% 탄환'},
   barrage:{n:'연사',mp:24,cd:12,desc:'1.5초간 커서 방향으로 화살 12발, 각 80%'},
   starfall:{n:'별똥별 화살',mp:40,cd:22,desc:'커서 지역에 거대한 폭발 3회, 각 300%'},
   // 마법사
   fireball:{n:'화염구',mp:10,cd:0.6,desc:'폭발하는 화염구, 주문 피해 170%'},
   nova:{n:'얼음 폭발',mp:18,cd:5,desc:'주변 적에게 120% 피해, 3초간 50% 둔화'},
-  chain:{n:'연쇄 번개',mp:14,cd:2,desc:'적 사이를 4번 튀는 번개, 각 130% 피해'},
+  chain:{ctr:1,n:'연쇄 번개',mp:14,cd:2,desc:'적 사이를 4번 튀는 번개, 각 130% 피해'},
   blink:{n:'순간이동',mp:12,cd:3,desc:'커서 방향으로 최대 8칸 순간 이동'},
   arcane:{n:'비전 지식',pas:1,desc:'주문 피해 증가',per:'등급당 주문 피해 +6%'},
   meteor:{n:'운석',mp:26,cd:8,desc:'1초 뒤 커서 위치에 400% 폭발, 3초간 불바다'},
@@ -272,11 +275,11 @@ const SKILLS={
   flamewall:{n:'화염 벽',mp:18,cd:7,desc:'커서 위치에 4초간 불 장판, 초당 140%'},
   manaflow:{n:'마나 흐름',pas:1,desc:'마나 재생 증가',per:'등급당 마나 재생 +15%, 최대 마나 +5'},
   blizzard:{n:'눈보라',mp:30,cd:14,desc:'넓은 지역에 5초간 눈보라. 초당 100% 피해와 둔화'},
-  thunder:{n:'뇌우',mp:26,cd:9,desc:'커서 주변 적 최대 6명에게 낙뢰, 각 220%'},
+  thunder:{ctr:1,n:'뇌우',mp:26,cd:9,desc:'커서 주변 적 최대 6명에게 낙뢰, 각 220%'},
   armageddon:{n:'종말',mp:60,cd:45,desc:'5초간 주변에 운석이 쏟아진다. 각 250%'},
   // 사제
   heal:{n:'치유의 빛',mp:12,cd:1.5,desc:'커서 주변 파티원을 치유'},
-  smite:{n:'심판',mp:10,cd:2.5,desc:'커서 위치에 신성 폭발, 주문 피해 180%'},
+  smite:{ctr:1,n:'심판',mp:10,cd:2.5,desc:'커서 위치에 신성 폭발, 주문 피해 180%'},
   shield:{n:'보호의 축복',mp:16,cd:10,desc:'주변 파티원에게 6초간 보호막'},
   sanctuary:{n:'치유의 장',mp:20,cd:14,desc:'커서 위치에 5초간 치유 장판'},
   devotion:{n:'헌신',pas:1,desc:'치유량과 보호막량 증가',per:'등급당 치유력 +6%'},
@@ -285,7 +288,7 @@ const SKILLS={
   holyfire:{n:'성화',mp:14,cd:3,desc:'커서 방향으로 적을 꿰뚫는 빛줄기, 250% 피해'},
   grace:{n:'은총',pas:1,desc:'받는 피해 감소와 최대 마나 증가',per:'등급당 받는 피해 -2%, 최대 마나 +5'},
   blessing:{n:'축복',mp:28,cd:30,desc:'10초간 주변 파티원 피해 +20%, 받는 피해 -20%'},
-  lightpillar:{n:'빛의 기둥',mp:26,cd:12,desc:'커서 위치에 5초간 빛기둥. 적 초당 120%, 아군 지속 치유'},
+  lightpillar:{ctr:1,n:'빛의 기둥',mp:26,cd:12,desc:'커서 위치에 5초간 빛기둥. 적 초당 120%, 아군 지속 치유'},
   miracle:{n:'기적',mp:50,cd:90,desc:'던전의 모든 파티원 체력 완전 회복과 보호막'}
 };
 for(const c in CLASSES)CLASSES[c].skills.forEach((s,i)=>{SKILLS[s].lvl=UNLOCK[i];SKILLS[s].cls=c;});
@@ -501,7 +504,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
   THEMES,FINAL_BOSS,themeOf,ENH_MAX,ENH_RATE,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
