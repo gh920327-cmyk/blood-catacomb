@@ -109,6 +109,35 @@ const ACH=[
 let _cdx=null;function codexList(){if(_cdx)return _cdx;const L=[];THEMES.forEach((th,i)=>{for(const t of['zombie','skel','hound'])L.push({k:`m:${i}:${t}`,n:th.mon[t],g:'몬스터'});});THEMES.forEach((th,i)=>L.push({k:`b:${i}`,n:th.boss.n,g:'보스'}));L.push({k:'b:fin',n:FINAL_BOSS.n,g:'보스'});L.push({k:'gob',n:'보물 고블린',g:'몬스터'});
   for(const k in LEG)for(const n of LEG[k])L.push({k:'l:'+n,n,g:'전설 장비'});for(const f of FISH)L.push({k:'f:'+f.id,n:f.n,g:'물고기'});return _cdx=L;}
 function titleOf(id){const a=ACH.find(x=>x.id===id);return a?a.t:null;}
+// ---------- 이야기: 알드릭의 일지 (테마마다 한 장, 3·8·13…98층) ----------
+const LORE=[
+ ['첫째 장','새벽 기사단의 명을 받아 카타콤에 들어왔다.','마을을 덮친 피의 역병은 이 아래에서 시작되었다고 한다.','누이 엘라가 마지막으로 향한 곳도 여기다. 반드시 데려오겠다.'],
+ ['둘째 장','숨이 얼어붙는다. 여기 묻힌 자들은 추위 속에서도 잠들지 못한다.','얼음 속에서 엘라의 머리띠를 찾았다. 그녀는 더 아래로 갔다.','서리 여왕은 "심장의 부름"이라는 말을 중얼거렸다.'],
+ ['셋째 장','열기에 갑옷이 달아오른다. 불길 속 해골들이 누군가를 찬양한다.','"심연의 심장이 깨어나면 모든 피가 그분께 돌아가리라."','역병은 병이 아니었다. 부름이었다.'],
+ ['넷째 장','늪이 숨을 쉰다. 구울들이 무언가를 제물처럼 끌고 간다.','동료 기사 브란이 이곳에서 쓰러졌다. 그의 검을 대신 챙긴다.','끝까지 가야 할 이유가 하나 늘었다.'],
+ ['다섯째 장','물에 잠긴 신전. 이곳의 사제들은 스스로 가라앉았다고 한다.','벽화 속 붉은 심장 아래 사람들이 무릎 꿇고 있다.','그중 한 명의 얼굴이 엘라를 닮았다. 착각이겠지.'],
+ ['여섯째 장','고치마다 사람이 들어 있다. 아직 숨이 붙은 자도 있었다.','구해 낸 소년이 말했다. "흰 옷 입은 누나가 노래를 부르며 더 아래로 갔어요."','엘라는 노래를 좋아했다.'],
+ ['일곱째 장','누군가 이곳에서 태엽과 톱니로 심장을 "만들려" 했다.','설계도 여백의 글씨: "진짜 심장은 피로만 뛴다."','이 필체는… 기사단장의 것이다.'],
+ ['여덟째 장','금서 한 권이 내 이름을 불렀다.','"심장은 문이다. 백 개의 층은 백 개의 자물쇠. 수호자가 쓰러질 때마다 하나씩 풀린다."','…우리가 내려갈수록 그것을 깨우고 있는 건가?'],
+ ['아홉째 장','지하인데 번개가 친다. 이 탑은 아래로 솟아 있다.','토르강이 쓰러지자 벽 너머에서 심장 뛰는 소리가 들렸다.','쿵. 쿵. 내 심장도 그 박자를 따라가기 시작했다.'],
+ ['열째 장','왕좌는 비어 있어야 했다.','공허 속에서 엘라가 불렀다. "오빠, 여기 따뜻해. 이리 와."','나는 칼을 들었다. 그리고… 기억이 끊겼다.'],
+ ['열한째 장 · 붉은 잉크','다시 첫 번째 방이다. 하지만 모든 것이 붉다.','모르가스는 죽지 않았다. 심장이 그를 되살렸다.','손이 떨려 글씨가 비뚤다. 잉크에서 피 냄새가 난다.'],
+ ['열두째 장','서리가 녹지 않는다. 대신 피가 언다.','나는 더 이상 추위를 느끼지 않는다.','엘라의 머리띠를 꺼내 봤다. 얼굴이 잘 기억나지 않는다.'],
+ ['열셋째 장','불길 속 해골들이 나를 보고 고개를 숙였다.','"돌아오셨군요, 사도여." 나는 사도가 아니다. 나는…','나는 누구였더라.'],
+ ['열넷째 장','브란의 검이 무겁다. 브란이… 누구였지?','늪이 내 발을 붙잡지 않는다. 나를 알아보는 것처럼.','이 일지를 읽는 자여. 나를 만나면 망설이지 마라.'],
+ ['열다섯째 장','신전 벽화를 다시 봤다. 무릎 꿇은 사람들 사이에 나도 있었다.','언제 그려진 걸까. 백 년 전? 어제?','심장은 시간을 먹는다.'],
+ ['열여섯째 장','고치 속 소년을 다시 찾아갔다. 소년은 없었다.','작은 고치에 내 글씨가 적혀 있었다. "흰 옷 입은 누나는 심장이 되었다."','아니야. 아니야.'],
+ ['열일곱째 장','기사단장의 설계도를 끝까지 읽었다.','그는 완벽한 심장을 만들려고 엘라를 바쳤다. 역병은 그 대가였다.','용서하지 않는다. 그도 이 아래 어딘가에 있다.'],
+ ['열여덟째 장','금서가 마지막 쪽을 보여 주었다.','"심장을 멈추는 방법은 하나. 심장이 사랑했던 것이 그것을 베는 것."','엘라가 사랑했던 것. 노래, 봄꽃, 그리고… 나.'],
+ ['열아홉째 장','번개 속 거울에 비친 내 눈이 붉게 빛났다.','내가 나를 잃기 전에 백 층에 닿아야 한다.','이 일지를 발견한 모험가여, 부디 끝까지 가 다오.'],
+ ['마지막 장','문 너머에서 노랫소리가 들린다. 엘라의 목소리다.','나는 들어가지 못했다. 손이 이미 심장의 것이 되었다.','심장을 베는 자여, 엘라에게 전해 줘. 오빠가 끝까지 왔다고.']];
+function loreFloor(i){return i*5+3;}
+const BOSS_LINES=[['피가… 신선한 피가 내려왔구나!','심장이여… 내 피를… 받아 주소서…'],['여기선 아무도 따뜻할 수 없다.','드디어… 녹는구나…'],['재가 되어 심장의 불씨가 되어라!','불꽃은 꺼져도… 심장은 타오른다…'],['내 아이들이 배고프단다. 너를 먹여야겠구나.','꾸르륵… 아이들아… 흩어져라…'],['깊은 곳으로 가라앉아라. 거기서 심장이 기다린다.','물이… 빠져나간다…'],
+ ['좋은 고치가 되겠구나, 작은 벌레야.','내 실이… 끊어지다니…'],['시간 오차 발견. 제거를 시작한다.','태엽… 정지… 설계자님… 죄송…'],['네 이름은 이미 금서에 적혀 있다.','마지막 쪽이… 찢어지는구나…'],['천둥이 네 심장을 멈추리라!','하늘도 땅도 아닌 곳에서… 쓰러지다니…'],['공허가 너를 삼킨다. 아무것도 남지 않으리라.','텅 빈 곳으로… 돌아간다…']];
+const FINAL_LINES=['왔구나… 여기까지. 이리 와, 여기 따뜻해.','고마워… 이제… 다시 노래할 수 있어…'];
+// ---------- 용병 ----------
+const MERCS={w:{n:'방패병',cls:'guardian',hp:1.0,mult:0.5,d:'적의 공격을 대신 받아 주는 근접 용병'},a:{n:'궁수',cls:'archer',hp:0.6,mult:0.42,d:'멀리서 화살을 쏘는 원거리 용병'},p:{n:'사제',cls:'priest',hp:0.7,mult:0.22,d:'체력이 줄면 치유해 주는 용병'}};
+function mercCost(lvl){return 150+(lvl|0)*25;}
 // ---------- 결투장 ----------
 function genArena(seed){const R=mulberry(seed);const W=32,H=22,tiles=new Uint8Array(W*H);const map={w:W,h:H,tiles,boss:false,floor:1,arena:true};
   for(let y=4;y<=17;y++)for(let x=3;x<=28;x++)tiles[y*W+x]=1;
@@ -162,7 +191,7 @@ function genHub(){
     g[y*W+x]=road?0:1;}
   // 연못 (낚시터)
   const pond={cx:430,cy:584,rx:66,ry:30};for(let y=0;y<H;y++)for(let x=0;x<W;x++){const px=x*TS+8,py=y*TS+8;const d=((px-pond.cx)/pond.rx)**2+((py-pond.cy)/pond.ry)**2;if(d<=1){g[y*W+x]=2;tiles[y*W+x]=3;}else if(d<=1.5&&g[y*W+x]===0)g[y*W+x]=1;}
-  map.ground=g;map.pond=pond;map.fish={x:430,y:540};map.arena={x:620,y:510};map.tailor={x:742,y:212};
+  map.ground=g;map.pond=pond;map.fish={x:430,y:540};map.merc={x:566,y:176};map.arena={x:620,y:510};map.tailor={x:742,y:212};
   map.portal={x:480,y:100};map.merchant={x:206,y:330};map.spawn={x:480,y:356};map.board={x:392,y:252};
   map.forge={x:150,y:190};map.vault={x:812,y:190};map.tent={x:812,y:334};map.dummies=[{x:760,y:548},{x:820,y:548}];
   map.torches=[];
@@ -472,7 +501,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
   THEMES,FINAL_BOSS,themeOf,ENH_MAX,ENH_RATE,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
