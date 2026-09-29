@@ -1178,8 +1178,8 @@ function drawHUD(){const mv=G.mev,cls=myCls(),skills=CLASSES[cls].skills;
   if(G.ch&&talLeft()>0){const bl=(time*3|0)%2===0;pr(334,221,50,10,bl?'#c9a0e8':'#7a4a9a');pr(335,222,48,8,PAL.k);txt(`+${talLeft()} 특성`,359,226,11,'#c9a0e8','center');uiRects.push({x:334,y:221,w:50,h:10,click:()=>{G.talent=true;G.rec=false;showSkills=false;showInv=false;}});}
   drawCtrSlot();
   drawSynergy();
-  if(G.ch){const xf=G.ch.xp/SH.xpFor(G.ch.lvl);pr(64,261,352,5,PAL.k);pr(65,262,Math.round(350*xf),3,PAL.G);pr(65,262,Math.round(350*xf),1,PAL.y);for(let i=1;i<10;i++)pr(64+Math.round(i*35.2),261,1,5,PAL.k);
-    uiRects.push({x:64,y:259,w:352,h:9,block:true,tip:()=>[[`레벨 ${G.ch.lvl}`,'#ffd35a',13],[`경험치 ${G.ch.xp} / ${SH.xpFor(G.ch.lvl)}`,'#e6dcc3',12]]});}
+  if(G.ch){const capd=G.ch.lvl>=SH.LVL_CAP;const xf=capd?1:G.ch.xp/SH.xpFor(G.ch.lvl);pr(64,261,352,5,PAL.k);pr(65,262,Math.round(350*xf),3,PAL.G);pr(65,262,Math.round(350*xf),1,PAL.y);for(let i=1;i<10;i++)pr(64+Math.round(i*35.2),261,1,5,PAL.k);
+    uiRects.push({x:64,y:259,w:352,h:9,block:true,tip:()=>capd?[[`레벨 ${G.ch.lvl} (MAX)`,'#ffd35a',13],['만렙입니다 · 경험치는 골드와 마력 가루로 바뀝니다','#e6dcc3',12]]:[[`레벨 ${G.ch.lvl}`,'#ffd35a',13],[`경험치 ${G.ch.xp} / ${SH.xpFor(G.ch.lvl)}`,'#e6dcc3',12]]});if(capd)txt('MAX',240,263.5,8,'#ffd35a','center','px');}
   // 버프
   let bx=150;if(mv[5]>0){txt(`피해 증가 ${Math.ceil(mv[5])}초`,bx,226,11,'#ff9a6a');bx+=70;}if(mv[6]>0){txt(`피해 감소 ${Math.ceil(mv[6])}초`,bx,226,11,'#8fd0ff');}
   // 왼쪽 위 정보
@@ -1654,7 +1654,7 @@ const WARDROBE=outlineC(pcan(22,32,q=>{for(let j=2;j<31;j++)for(let i=1;i<21;i++
 // ---- 특성 ----
 function talLeft(){return G.ch?SH.talentPts(G.ch.lvl)-SH.talentSpent(G.ch):0;}
 function drawTalents(){const ch=G.ch;if(!ch)return;const x=70,y=22,w=340,h=212;panel(x,y,w,h,'특성');const left=talLeft();
-  txt(`특성 포인트 ${left} / ${SH.talentPts(ch.lvl)}  ·  레벨 5부터 3레벨마다 1포인트`,x+w/2,y+21,10,left>0?'#ffd35a':'#9e937a','center');
+  txt(`특성 포인트 ${left} / ${SH.talentPts(ch.lvl)}  ·  레벨 10부터 2레벨마다 1포인트 (최대 20)`,x+w/2,y+21,10,left>0?'#ffd35a':'#9e937a','center');
   const tr=SH.TALENTS[ch.cls];tr.forEach((br,bi)=>{const bx=x+10+bi*108,bw=104;const sp=SH.branchSpent(ch,bi);pr(bx,y+30,bw,160,'rgba(10,7,14,0.5)');txt(`${br.b} (${sp})`,bx+bw/2,y+38,12,'#ffd35a','center');
     br.n.forEach((nd,k)=>{const ny=y+50+k*46;const r=(ch.tal&&ch.tal[nd.id])|0;const err=SH.canTalent(ch,nd.id);const lock=err&&err.includes('윗단계');const hov=mouse.x>=bx+4&&mouse.x<bx+bw-4&&mouse.y>=ny&&mouse.y<ny+40;
       pr(bx+4,ny,bw-8,40,hov&&!err?PAL.y:r?'#b38a3a':PAL.k);pr(bx+5,ny+1,bw-10,38,lock?'#1b1622':r?'#2e2414':'#241e2b');

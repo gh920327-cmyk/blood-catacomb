@@ -73,7 +73,8 @@ const TALENTS={
   mage:[{b:'파괴',n:[tn('m1','화염 친화','spellPct',4),tn('m2','불안정한 마력','critDmg',8),tn('m3','집중','crit',1.5)]},{b:'비전',n:[tn('m4','마력 저장소','mpPct',6),tn('m5','시간 왜곡','cdr',3),tn('m6','마나 순환','mpRegen',10)]},{b:'마법 방벽',n:[tn('m7','비전 갑옷','armorPct',8),tn('m8','마력 보호막','dr',2),tn('m9','생명 흡수술','hpPct',4)]}],
   priest:[{b:'신성',n:[tn('p1','축복의 손','healPct',5),tn('p2','빛의 권능','spellPct',3),tn('p3','기도의 시간','cdr',3)]},{b:'응징자',n:[tn('p4','심판','dmgPct',4),tn('p5','성스러운 분노','crit',1.5),tn('p6','천벌','critDmg',8)]},{b:'인내',n:[tn('p7','순교자의 몸','hpPct',4),tn('p8','깊은 신앙','mpPct',6),tn('p9','고행','dr',2)]}]};
 const TAL_NEED=[0,5,10];
-function talentPts(lvl){return Math.max(0,Math.floor(((lvl|0)-5)/3));}
+const LVL_CAP=50;
+function talentPts(lvl){return Math.min(20,Math.max(0,Math.floor(((lvl|0)-8)/2)));}
 function talentSpent(ch){let n=0;if(ch.tal)for(const k in ch.tal)n+=ch.tal[k]|0;return n;}
 function talentSums(ch){const T={};const tr=TALENTS[ch.cls];if(!tr||!ch.tal)return T;for(const br of tr)for(const nd of br.n){const r=ch.tal[nd.id]|0;if(r)T[nd.k]=(T[nd.k]||0)+nd.v*r;}return T;}
 function branchSpent(ch,bi){const br=TALENTS[ch.cls][bi];let n=0;for(const nd of br.n)n+=(ch.tal&&ch.tal[nd.id])|0;return n;}
@@ -535,7 +536,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={TS,LVL_CAP,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,affScale,ENH_MAX,ENH_RATE,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
