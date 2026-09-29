@@ -608,23 +608,23 @@ const SK={
   barrage(inst,P,a,tx,ty,k){for(let n=0;n<12;n++)later(inst,n*0.125,()=>{if(!alive(inst,P))return;fx(inst,{k:'shot',id:P.id,a:r1(a)});spawnPProj(inst,P,'parrow',a+rf(-0.06,0.06),300,0.8*k);});},
   starfall(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,220);for(let n=0;n<3;n++){const x=tx+rf(-12,12),y=ty+rf(-8,8);fx(inst,{k:'tele',x:r1(x),y:r1(y),r:36,d:0.4+n*0.4});later(inst,0.4+n*0.4,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:36,c:1});fx(inst,{k:'shake',v:3});aoe(inst,P,x,y,36,3*k,{kb:5});});}},
   // ----- 마법사 -----
-  fireball(inst,P,a,tx,ty,k){fx(inst,{k:'shot',id:P.id,a:r1(a)});spawnPProj(inst,P,'fire',a,210,1.7*P.S.spell*k,{r:3,life:1.4,boom:24});fx(inst,{k:'sfx',n:'fire'});},
+  fireball(inst,P,a,tx,ty,k){fx(inst,{k:'shot',id:P.id,a:r1(a)});spawnPProj(inst,P,'fire',a,270,1.7*P.S.spell*k,{r:4,life:1.1,boom:26});fx(inst,{k:'sfx',n:'fire'});},
   nova(inst,P,a,tx,ty,k){fx(inst,{k:'nova',x:r1(P.x),y:r1(P.y)});aoe(inst,P,P.x,P.y,66,1.2*P.S.spell*k,{slow:3});},
   chain(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,180);let cur=null,bd=70;for(const m of inst.monsters){if(m.dead)continue;const d=Math.hypot(m.x-tx,m.y-ty);if(d<bd&&SH.los(inst.map,P.x,P.y,m.x,m.y)){bd=d;cur=m;}}
     const pts=[[r1(P.x),r1(P.y-6)]];if(!cur){pts.push([r1(tx),r1(ty)]);fx(inst,{k:'chain',pts});return;}const hit=new Set();
     for(let n=0;n<4&&cur;n++){hit.add(cur);pts.push([r1(cur.x),r1(cur.y-6)]);hitMonster(inst,cur,P,1.3*P.S.spell*k,{});let nx=null,nd=75;for(const m of inst.monsters){if(m.dead||hit.has(m))continue;const d=Math.hypot(m.x-cur.x,m.y-cur.y);if(d<nd){nd=d;nx=m;}}cur=nx;}
     fx(inst,{k:'chain',pts});},
   blink(inst,P,a,tx,ty){const d=Math.min(130,Math.hypot(tx-P.x,ty-P.y));let nx=P.x,ny=P.y;for(let s=d;s>=0;s-=4){const x=P.x+Math.cos(a)*s,y=P.y+Math.sin(a)*s;if(!SH.blocked(inst.map,x,y,4)){nx=x;ny=y;break;}}fx(inst,{k:'tp',x:r1(P.x),y:r1(P.y)});P.x=nx;P.y=ny;send(P,{t:'tp',x:nx,y:ny});fx(inst,{k:'tp',x:r1(nx),y:r1(ny)});},
-  meteor(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,220);fx(inst,{k:'tele',x:r1(tx),y:r1(ty),r:40,d:1,c:'o'});fx(inst,{k:'meteor',x:r1(tx),y:r1(ty),d:1});
-    later(inst,1,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:40});fx(inst,{k:'shake',v:5});aoe(inst,P,tx,ty,40,4*P.S.spell*k,{kb:6});addZone(inst,P,{x:tx,y:ty,r:34,t:3,iv:0.5,dmg:0.3*P.S.spell*k,vis:2});});},
-  frostorb(inst,P,a,tx,ty,k){fx(inst,{k:'shot',id:P.id,a:r1(a)});fx(inst,{k:'sfx',n:'ice'});spawnPProj(inst,P,'frostorb',a,90,0,{r:4,life:2.6,ghost:true,aura:{r:34,mult:0.4*P.S.spell*k,iv:0.25,tick:0}});},
+  meteor(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,220);fx(inst,{k:'tele',x:r1(tx),y:r1(ty),r:48,d:0.6,c:'o'});fx(inst,{k:'meteor',x:r1(tx),y:r1(ty),d:0.6});
+    later(inst,0.6,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:48});fx(inst,{k:'shake',v:5});aoe(inst,P,tx,ty,48,4*P.S.spell*k,{kb:6});addZone(inst,P,{x:tx,y:ty,r:34,t:3,iv:0.5,dmg:0.3*P.S.spell*k,vis:2});});},
+  frostorb(inst,P,a,tx,ty,k){fx(inst,{k:'shot',id:P.id,a:r1(a)});fx(inst,{k:'sfx',n:'ice'});spawnPProj(inst,P,'frostorb',a,130,0,{r:4,life:2.0,ghost:true,aura:{r:36,mult:0.4*P.S.spell*k,iv:0.25,tick:0}});},
   flamewall(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,200);addZone(inst,P,{x:tx,y:ty,r:34,t:4,iv:0.25,dmg:0.35*P.S.spell*k,vis:2});fx(inst,{k:'sfx',n:'fire'});},
   blizzard(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,220);addZone(inst,P,{x:tx,y:ty,r:60,t:5,iv:0.25,dmg:0.25*P.S.spell*k,slow:1,vis:3});fx(inst,{k:'sfx',n:'ice'});},
   thunder(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,220);const tg=inst.monsters.filter(m=>!m.dead&&Math.hypot(m.x-tx,m.y-ty)<70).sort((p,q)=>Math.hypot(p.x-tx,p.y-ty)-Math.hypot(q.x-tx,q.y-ty)).slice(0,6);
     if(!tg.length)fx(inst,{k:'strike',x:r1(tx),y:r1(ty)});tg.forEach((m,i)=>later(inst,i*0.08,()=>{if(m.dead||!P.inst)return;fx(inst,{k:'strike',x:r1(m.x),y:r1(m.y)});hitMonster(inst,m,P,2.2*P.S.spell*k,{stun:0.3});}));fx(inst,{k:'sfx',n:'bolt'});},
   armageddon(inst,P,a,tx,ty,k){fx(inst,{k:'shake',v:2});fx(inst,{k:'msg',m:`${P.ch.name}: 종말이 온다!`,c:'#ff8a3a'});
     for(let n=0;n<20;n++)later(inst,n*0.25,()=>{if(!P.inst||P.inst!==inst)return;const near=inst.monsters.filter(m=>!m.dead&&Math.hypot(m.x-P.x,m.y-P.y)<150);let x,y;if(near.length&&R()<0.7){const m=pick(near);x=m.x+rf(-8,8);y=m.y+rf(-8,8);}else{x=P.x+rf(-110,110);y=P.y+rf(-70,70);}
-      fx(inst,{k:'tele',x:r1(x),y:r1(y),r:26,d:0.5,c:'o'});fx(inst,{k:'meteor',x:r1(x),y:r1(y),d:0.5});later(inst,0.5,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:26});aoe(inst,P,x,y,26,2.5*P.S.spell*k,{kb:3});});});},
+      fx(inst,{k:'tele',x:r1(x),y:r1(y),r:30,d:0.35,c:'o'});fx(inst,{k:'meteor',x:r1(x),y:r1(y),d:0.35});later(inst,0.35,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:30});aoe(inst,P,x,y,30,2.5*P.S.spell*k,{kb:3});});});},
   // ----- 사제 -----
   heal(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,200);fx(inst,{k:'healburst',x:r1(tx),y:r1(ty)});let any=false;for(const q of livingPlayers(inst))if(Math.hypot(q.x-tx,q.y-ty)<42){healPlayer(inst,q,P.S.healPow*1.6*k,P);any=true;}
     if(!any){let b=null,bd=90;for(const q of livingPlayers(inst)){const d=Math.hypot(q.x-tx,q.y-ty);if(d<bd){bd=d;b=q;}}if(b)healPlayer(inst,b,P.S.healPow*1.6*k,P);}},
