@@ -221,23 +221,23 @@ function genHub(){
 // ---------- 직업 ----------
 const CLASSES={
   warrior:{n:'전사',role:'근거리 딜러',fam:'melee',prim:'str',range:'melee',base:{str:16,dex:10,vit:12,ene:6},hpMul:1.2,armorMul:1.1,atkRate:1.35,ms:80,
-    basic:{kind:'melee',mult:1.2},skills:['whirl','charge','warcry','cleave','bloodlust','leap','rend','berserk','frenzy','bladestorm','execute','earthsplit'],
+    basic:{kind:'melee',mult:1.2},skills:['whirl','charge','warcry','cleave','bloodlust','leap','rend','berserk','frenzy','bladestorm','execute','earthsplit','rageleap','shatter','endless'],ults:['ragnarok','wargod'],
     desc:'강력한 근접 공격과 돌진으로 적진을 가르는 딜러'},
   guardian:{n:'수호자',role:'탱커',fam:'melee',prim:'str',range:'melee',base:{str:12,dex:8,vit:18,ene:6},hpMul:1.4,armorMul:1.7,atkRate:1.1,ms:76,
-    basic:{kind:'melee',mult:0.8},skills:['taunt','bash','bulwark','hook','ironskin','shieldwall','consecrate','slam','undying','rally','shieldthrow','bastion'],
+    basic:{kind:'melee',mult:0.8},skills:['taunt','bash','bulwark','hook','ironskin','shieldwall','consecrate','slam','undying','rally','shieldthrow','bastion','shieldrush','judgechain','willpower'],ults:['aegisdome','judgehammer'],
     desc:'적의 공격을 끌어당기고 파티를 지키는 방패. 적은 수호자를 먼저 노린다'},
   archer:{n:'궁수',role:'원거리 딜러',fam:'bow',prim:'dex',range:'ranged',base:{str:8,dex:18,vit:10,ene:8},hpMul:0.85,armorMul:0.9,atkRate:1.45,ms:82,
-    basic:{kind:'shot',proj:1,speed:280,mult:0.9},skills:['multishot','pierce','rain','vault','eagle','trap','poison','volley','swift','sniper','barrage','starfall'],
+    basic:{kind:'shot',proj:1,speed:280,mult:0.9},skills:['multishot','pierce','rain','vault','eagle','trap','poison','volley','swift','sniper','barrage','starfall','shadowshot','galearrow','instinct'],ults:['skyrain','dragonarrow'],
     desc:'멀리서 화살을 퍼붓는 딜러. 체력이 낮아 위치 선정이 중요하다'},
   mage:{n:'마법사',role:'원거리 광역',fam:'staff',prim:'ene',range:'ranged',base:{str:5,dex:10,vit:9,ene:20},hpMul:0.8,armorMul:0.8,atkRate:1.2,ms:78,
-    basic:{kind:'shot',proj:2,speed:230,mult:0.85},skills:['fireball','nova','chain','blink','arcane','meteor','frostorb','flamewall','manaflow','blizzard','thunder','armageddon'],
+    basic:{kind:'shot',proj:2,speed:230,mult:0.85},skills:['fireball','nova','chain','blink','arcane','meteor','frostorb','flamewall','manaflow','blizzard','thunder','armageddon','overload','blackhole','resonance'],ults:['apocalypse','absolutezero'],
     desc:'화염과 얼음, 번개로 적 무리를 쓸어버리는 광역 딜러'},
   priest:{n:'사제',role:'힐러',fam:'staff',prim:'ene',range:'ranged',base:{str:6,dex:9,vit:13,ene:18},hpMul:0.95,armorMul:1,atkRate:1.1,ms:78,
-    basic:{kind:'shot',proj:3,speed:230,mult:0.7},skills:['heal','smite','shield','sanctuary','devotion','renew','purify','holyfire','grace','blessing','lightpillar','miracle'],
+    basic:{kind:'shot',proj:3,speed:230,mult:0.7},skills:['heal','smite','shield','sanctuary','devotion','renew','purify','holyfire','grace','blessing','lightpillar','miracle','lightchain','holyburst','saint'],ults:['angel','divinejudge'],
     desc:'파티를 치유하고 보호막을 씌운다. 쓰러진 동료를 두 배 빨리 일으킨다'}
 };
 const CLASS_ORDER=['warrior','guardian','archer','mage','priest'];
-const UNLOCK=[1,1,3,5,8,11,14,18,22,26,30,35];
+const UNLOCK=[1,1,3,5,8,11,14,18,22,26,30,35,38,42,46];const ULT_LVL=50;
 const MAX_RANK=10,BAR_SIZE=6;
 // lvl: 해금 레벨, pas: 패시브, per: 등급당 효과 설명
 const SKILLS={
@@ -305,9 +305,36 @@ const SKILLS={
   grace:{n:'은총',pas:1,desc:'받는 피해 감소와 최대 마나 증가',per:'등급당 받는 피해 -2%, 최대 마나 +5'},
   blessing:{n:'축복',mp:28,cd:30,desc:'10초간 주변 파티원 피해 +20%, 받는 피해 -20%'},
   lightpillar:{ctr:1,n:'빛의 기둥',mp:26,cd:12,desc:'커서 위치에 5초간 빛기둥. 적 초당 120%, 아군 지속 치유'},
-  miracle:{n:'기적',mp:50,cd:90,desc:'던전의 모든 파티원 체력 완전 회복과 보호막'}
+  miracle:{n:'기적',mp:50,cd:90,desc:'던전의 모든 파티원 체력 완전 회복과 보호막'},
+  // ----- 38·42·46 신규 -----
+  rageleap:{n:'분노의 도약',mp:20,cd:9,desc:'커서 방향으로 세 번 연속 도약, 착지마다 충격파 150%'},
+  shatter:{n:'파쇄 일격',mp:22,cd:10,desc:'앞의 적 하나에 500% 피해, 5초간 받는 피해 +15% (파쇄)'},
+  endless:{n:'끝없는 분노',pas:1,desc:'피해와 생명력 흡수 증가',per:'등급당 피해 +2%, 생명력 흡수 +0.5%'},
+  shieldrush:{n:'방패 돌격',mp:16,cd:8,desc:'방패를 앞세워 돌진, 끝에서 200% 충격과 1초 기절, 적을 밀쳐냄'},
+  judgechain:{n:'심판의 사슬',mp:20,cd:12,desc:'커서 주변 적 최대 5명을 빛의 사슬로 묶어 150% 피해와 3초 속박'},
+  willpower:{n:'철벽 의지',pas:1,desc:'최대 체력 증가와 받는 피해 감소',per:'등급당 최대 체력 +3%, 받는 피해 -1%'},
+  shadowshot:{n:'그림자 사격',mp:18,cd:16,desc:'6초간 그림자 분신이 기본 공격을 따라 쏜다 (추가 화살 60%)'},
+  galearrow:{n:'폭풍 화살',mp:22,cd:11,desc:'천천히 나아가는 회오리 화살. 주변 적을 끌어당기며 초당 200%'},
+  instinct:{n:'사냥꾼의 직감',pas:1,desc:'치명타 확률과 보스 피해 증가',per:'등급당 치명타 +1%, 보스 피해 +2%'},
+  overload:{n:'마력 폭주',mp:25,cd:20,desc:'6초간 모든 피해 +30%, 공격 속도 +20%'},
+  blackhole:{n:'블랙홀',mp:30,cd:14,desc:'커서 위치에 3초간 블랙홀. 적을 끌어당기며 초당 120%, 끝에 300% 폭발'},
+  resonance:{n:'원소 공명',pas:1,desc:'주문 피해와 재사용 대기 감소',per:'등급당 주문 피해 +3%, 재사용 대기 -1%'},
+  lightchain:{n:'빛의 사슬',mp:18,cd:6,desc:'가장 다친 파티원부터 최대 4명에게 튀는 치유'},
+  holyburst:{n:'신성 폭발',mp:24,cd:10,desc:'주변 적에게 250% 피해와 밀치기, 주변 파티원에게 보호막'},
+  saint:{n:'성인의 가호',pas:1,desc:'치유력 증가와 받는 피해 감소',per:'등급당 치유력 +4%, 받는 피해 -1%'},
+  // ----- 50레벨 궁극기 (V) -----
+  ragnarok:{ult:1,n:'라그나로크',mp:0,cd:100,desc:'하늘로 도약해 불꽃 대검을 내려찍는다(600%). 땅이 세 번 갈라지며 폭발(각 300%)하고 불길이 남는다'},
+  wargod:{ult:1,n:'전쟁신 강림',mp:0,cd:110,desc:'12초간 거대해진다. 피해 +30%, 모든 공격이 충격파를 일으키고 속박·둔화 면역'},
+  aegisdome:{ult:1,n:'천상의 방벽',mp:0,cd:110,desc:'8초간 황금 방패 돔. 안의 파티원 받는 피해 -60%, 끝날 때 폭발(400%)해 적을 밀어낸다'},
+  judgehammer:{ult:1,n:'심판의 망치',mp:0,cd:100,desc:'거대한 빛의 망치로 세 번 내려찍는다(각 350%). 마지막 일격은 적을 기절시키고 보스를 휘청이게 한다'},
+  skyrain:{ult:1,n:'천공의 폭우',mp:0,cd:90,desc:'5초간 넓은 지역에 빛의 화살비. 초당 360%'},
+  dragonarrow:{ult:1,n:'용의 화살',mp:0,cd:90,desc:'1초간 힘을 모아 용의 형상을 한 화살을 쏜다. 경로의 모든 적 800%, 끝에서 400% 폭발'},
+  apocalypse:{ult:1,n:'아마겟돈',mp:0,cd:110,desc:'하늘이 붉게 물들며 운석 12개가 적을 노려 떨어지고(각 400%), 마지막에 거대 운석(1000%)'},
+  absolutezero:{ult:1,n:'절대 영도',mp:0,cd:100,desc:'주변을 3초간 얼린다(보스는 둔화). 얼음이 산산조각 나며 700% 폭발'},
+  angel:{ult:1,n:'천사 강림',mp:0,cd:120,desc:'10초간 천사가 내려와 주변 파티원을 계속 치유하고, 쓰러진 동료를 즉시 일으킨다'},
+  divinejudge:{ult:1,n:'신의 심판',mp:0,cd:100,desc:'빛기둥 10개가 적을 쫓아 떨어진다(각 300%). 주변 파티원에게 최대 체력 20% 보호막'}
 };
-for(const c in CLASSES)CLASSES[c].skills.forEach((s,i)=>{SKILLS[s].lvl=UNLOCK[i];SKILLS[s].cls=c;});
+for(const c in CLASSES){CLASSES[c].skills.forEach((s,i)=>{SKILLS[s].lvl=UNLOCK[i];SKILLS[s].cls=c;});(CLASSES[c].ults||[]).forEach(s=>{SKILLS[s].lvl=ULT_LVL;SKILLS[s].cls=c;});}
 function skillMul(rank){return 1+0.12*Math.max(0,rank-1);}
 function defaultSkills(cls){const s=CLASSES[cls].skills;return{sk:{[s[0]]:1,[s[1]]:1},bar:[s[0],s[1],null,null,null,null]};}
 function skillPointsTotal(lvl){return Math.max(0,lvl-1);}
@@ -523,6 +550,8 @@ function calcStats(ch){
   if(r('grace')){S.dr=0.02*r('grace');S.maxMp+=5*r('grace');}
   if(T.hpPct)S.maxHp=Math.round(S.maxHp*(1+T.hpPct/100));if(T.mpPct)S.maxMp=Math.round(S.maxMp*(1+T.mpPct/100));if(T.armorPct)S.armor=Math.round(S.armor*(1+T.armorPct/100));
   if(T.dr)S.dr=(S.dr||0)+T.dr/100;S.cdr=Math.min(0.4,(T.cdr||0)/100);if(T.healPct)S.healPow=Math.round(S.healPow*(1+T.healPct/100));if(T.spellPct)S.spell*=1+T.spellPct/100;
+  if(r('endless')){S.dmgMul*=1+0.02*r('endless');S.ls+=0.5*r('endless');}if(r('willpower')){S.maxHp=Math.round(S.maxHp*(1+0.03*r('willpower')));S.dr=(S.dr||0)+0.01*r('willpower');}
+  if(r('instinct')){S.crit=Math.min(75,S.crit+r('instinct'));S.bossDmg=0.02*r('instinct');}if(r('resonance')){S.spell*=1+0.03*r('resonance');S.cdr=Math.min(0.45,S.cdr+0.01*r('resonance'));}if(r('saint')){S.healPow=Math.round(S.healPow*(1+0.04*r('saint')));S.dr=(S.dr||0)+0.01*r('saint');}
   S.regen=1+(T.regen||0)/100;if(T.mpRegen)S.mpRegen*=1+T.mpRegen/100;
   S.myth=[];for(const s2 of['weapon','armor','ring']){const it=ch.eq[s2];if(it&&it.rar===4&&it.myth&&MYTH[it.myth]&&canEquip(it,ch.cls))S.myth.push(it.myth);}
   if(S.myth.includes('vamp'))S.ls+=4;if(S.myth.includes('haste'))S.cdr=Math.min(0.5,(S.cdr||0)+0.15);
@@ -536,7 +565,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={TS,LVL_CAP,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,affScale,ENH_MAX,ENH_RATE,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;

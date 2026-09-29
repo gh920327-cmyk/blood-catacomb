@@ -410,14 +410,14 @@ function rollDmg(P,mult){const S=P.S;const bonus=1+bOn(P,'dmg')+bOn(P,'sdmg')+bO
 function hitMonster(inst,m,P,mult,o){if(m.dead)return;o=o||{};if(m.pvp){pvpHit(inst,m,P,mult,o);return;}
   const pos=m.boss?bossSide(m,P):0;
   if(m.cwEnd&&inst.time<m.cwEnd&&(o.ctr||inst._ctr)&&!m.hidden){if(pos===1)counterHit(inst,m,P);else if(!P._ctrWarn||inst.time-P._ctrWarn>0.8){P._ctrWarn=inst.time;fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-28),s:'헤드에서 쳐야 해요!',c:'#ffb03a'});}}
-  if(m.grog>inst.time)mult*=1.3;if(pos===-1)mult*=1.1;if(m.hidden)return;if(m.invul>0){if(!o.dotHit&&R()<0.3)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-(m.boss?34:18)),s:'무적',c:'#9e937a'});return;}if(m.vuln>0)mult*=2;if(o.exec&&m.hp<m.maxHp*0.3)mult*=2;if(m.boss&&mythOn(P,'wrath'))mult*=1.2;const r=rollDmg(P,mult);let v=r.d;if(m.shV>0&&m.shT>0){const ab=Math.min(m.shV,v);m.shV-=ab;v-=ab;if(v<=0){if(R()<0.4)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-20),s:'보호막',c:'#8fd0ff'});return;}}const real=Math.min(v,m.hp);m.hp-=v;m.flash=0.09;if(!m.alert)alertPack(inst,m);
+  if(m.grog>inst.time)mult*=1.3;if(pos===-1)mult*=1.1;if(m.hidden)return;if(m.invul>0){if(!o.dotHit&&R()<0.3)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-(m.boss?34:18)),s:'무적',c:'#9e937a'});return;}if(m.vuln>0)mult*=2;if(o.exec&&m.hp<m.maxHp*0.3)mult*=2;if(m.boss&&mythOn(P,'wrath'))mult*=1.2;if(m.boss&&P.S.bossDmg)mult*=1+P.S.bossDmg;if(m.brk>inst.time)mult*=1.15;const r=rollDmg(P,mult);let v=r.d;if(m.shV>0&&m.shT>0){const ab=Math.min(m.shV,v);m.shV-=ab;v-=ab;if(v<=0){if(R()<0.4)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-20),s:'보호막',c:'#8fd0ff'});return;}}const real=Math.min(v,m.hp);m.hp-=v;m.flash=0.09;if(!m.alert)alertPack(inst,m);
   addMeter(inst,P,'dmg',real);const el=o.el||inst._el||baseEl(P);fx(inst,{k:'dmg',x:r1(m.x),y:r1(m.y-(m.boss?32:17)),v,c:o.dotHit?2:r.crit?1:0,e:SH.EL_LIST.indexOf(el)});
   if(o.slow)m.slow=Math.max(m.slow,o.slow);if(o.stun)m.stun=Math.max(m.stun,m.boss?o.stun*0.25:o.stun);
   if(o.dot){m.dots=m.dots||[];m.dots.push({pid:P.id,per:o.dot.mult/(o.dot.dur*2),n:Math.round(o.dot.dur*2),t:0.5,c:o.dot.c||'r'});}
   if(m.type==='goblin'&&R()<0.3)addDrop(inst,{kind:'gold',owner:P.id,amt:Math.max(1,Math.round(ri(2,5)*inst.floor*BAL.gold))},m.x,m.y);
   if(m.dummy){m.hp=m.maxHp;const w=P.dps||(P.dps={t0:inst.time,last:0,tot:0,win:[]});if(inst.time-w.last>4){w.t0=inst.time;w.tot=0;w.win=[];}w.last=inst.time;w.tot+=v;w.win.push([inst.time,v]);return;}
   if(o.kb&&!m.boss){const a=Math.atan2(m.y-P.y,m.x-P.x);SH.moveEnt(inst.map,m,Math.cos(a)*o.kb,Math.sin(a)*o.kb);}
-  if(P.S.ls&&!P.downed)P.hp=Math.min(P.S.maxHp,P.hp+real*P.S.ls/100);
+  if(P.S.ls&&!P.downed)P.hp=Math.min(P.S.maxHp,P.hp+real*P.S.ls/100);if(bOn(P,'god')&&!P.downed)P.hp=Math.min(P.S.maxHp,P.hp+real*0.05);
   if(r.crit&&!o.myth&&!o.dotHit&&m.hp>0)mythCrit(inst,m,P,v);
   if(m.hp<=0)killMonster(inst,m,P);}
 function hurtPlayer(inst,P,d,src,o){o=o||{};if(P.downed||P.inst!==inst)return;
@@ -471,8 +471,9 @@ function killMonster(inst,m,killer){if(m.dummy)return;m.dead=true;m.hp=0;fx(inst
 function spawnPProj(inst,P,type,a,speed,mult,o){o=o||{};const p={id:inst.pid++,type,owner:'p',pid:P.id,x:P.x+Math.cos(a)*6,y:P.y-2+Math.sin(a)*6,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,mult,r:o.r||2,life:o.life||1.3,h:8,pierce:!!o.pierce,hit:new Set(),boom:o.boom||0,dot:o.dot||null,bounce:o.bounce||0,aura:o.aura||null,slow:o.slow||0,ghost:!!o.ghost,el:inst._el||null,ctr:inst._ctr||null};inst.projs.push(p);return p;}
 function basicAttack(inst,P,a){const C=CLASSES[P.ch.cls];if(P.atkCd>0.06)return;P.atkCd=1/(P.S.atkRate*atkMul(P));P.face=Math.cos(a)<0?-1:1;
   if(C.basic.kind==='melee'){const dur=clamp(0.3*1.25/(P.S.atkRate*atkMul(P)),0.12,0.36);fx(inst,{k:'swing',id:P.id,a:r1(a),d:r1(dur)});
-    for(const m of inst.monsters){if(m.dead)continue;const dx=m.x-P.x,dy=m.y-(P.y-4),d=Math.hypot(dx,dy);if(d>4+m.r+20)continue;if(d<4+m.r+3||angDiff(Math.atan2(dy,dx),a)<1.15)hitMonster(inst,m,P,C.basic.mult,{kb:3});}}
-  else{fx(inst,{k:'shot',id:P.id,a:r1(a)});spawnPProj(inst,P,SH.PROJ_LIST[C.basic.proj],a,C.basic.speed,C.basic.mult);}}
+    for(const m of inst.monsters){if(m.dead)continue;const dx=m.x-P.x,dy=m.y-(P.y-4),d=Math.hypot(dx,dy);if(d>4+m.r+20)continue;if(d<4+m.r+3||angDiff(Math.atan2(dy,dx),a)<1.15)hitMonster(inst,m,P,C.basic.mult,{kb:3});}
+    if(bOn(P,'god')){const gx=P.x+Math.cos(a)*22,gy=P.y+Math.sin(a)*22;fx(inst,{k:'quake',x:r1(gx),y:r1(gy),r:30});aoe(inst,P,gx,gy,30,C.basic.mult*0.7,{kb:5});}}
+  else{fx(inst,{k:'shot',id:P.id,a:r1(a)});spawnPProj(inst,P,SH.PROJ_LIST[C.basic.proj],a,C.basic.speed,C.basic.mult);const sh=bOn(P,'shadow');if(sh)for(const o of[-0.14,0.14])spawnPProj(inst,P,SH.PROJ_LIST[C.basic.proj],a+o,C.basic.speed,C.basic.mult*sh);}}
 function clampTarget(P,tx,ty,max){const dx=tx-P.x,dy=ty-P.y,d=Math.hypot(dx,dy);if(d<=max)return[tx,ty];return[P.x+dx/d*max,P.y+dy/d*max];}
 function partyNear(inst,P,r){return livingPlayers(inst).filter(q=>Math.hypot(q.x-P.x,q.y-P.y)<=r&&(!inst.arena||q.arenaTeam===P.arenaTeam));}
 function dashTo(inst,P,a,dist){let nx=P.x,ny=P.y;for(let s=dist;s>=0;s-=4){const x=P.x+Math.cos(a)*s,y=P.y+Math.sin(a)*s;if(!SH.blocked(inst.map,x,y,4)&&SH.los(inst.map,P.x,P.y,x,y,3)){nx=x;ny=y;break;}}const ox=P.x,oy=P.y;P.x=nx;P.y=ny;send(P,{t:'tp',x:nx,y:ny});return[ox,oy];}
@@ -559,8 +560,55 @@ const SK={
   holyfire(inst,P,a,tx,ty,k){fx(inst,{k:'shot',id:P.id,a:r1(a)});fx(inst,{k:'sfx',n:'holy'});spawnPProj(inst,P,'holybeam',a,380,2.5*P.S.spell*k,{pierce:true,r:3,life:0.8});},
   blessing(inst,P,a,tx,ty,k,rank){fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:200,c:'y',c2:'w'});fx(inst,{k:'sfx',n:'revive'});for(const q of partyNear(inst,P,200)){buff(q,'bdmg',0.2+0.02*(rank-1),10);buff(q,'red',0.2+0.02*(rank-1),10);}},
   lightpillar(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,200);addZone(inst,P,{x:tx,y:ty,r:30,t:5,iv:0.25,dmg:0.3*P.S.spell*k,heal:P.S.healPow*0.12*k,vis:5});fx(inst,{k:'sfx',n:'holy'});},
-  miracle(inst,P,a,tx,ty,k){fx(inst,{k:'msg',m:`${P.ch.name}: 기적이여!`,c:'#ffe9a8'});fx(inst,{k:'sfx',n:'revive'});for(const q of livingPlayers(inst)){healPlayer(inst,q,q.S.maxHp,P);q.shield=Math.max(q.shield,Math.round(q.S.maxHp*0.25*k));q.shieldT=8;q.shieldBy=P.id;fx(inst,{k:'revive',id:q.id});}}
+  miracle(inst,P,a,tx,ty,k){fx(inst,{k:'msg',m:`${P.ch.name}: 기적이여!`,c:'#ffe9a8'});fx(inst,{k:'sfx',n:'revive'});for(const q of livingPlayers(inst)){healPlayer(inst,q,q.S.maxHp,P);q.shield=Math.max(q.shield,Math.round(q.S.maxHp*0.25*k));q.shieldT=8;q.shieldBy=P.id;fx(inst,{k:'revive',id:q.id});}},
+  // ----- 38·42 신규 -----
+  rageleap(inst,P,a,tx,ty,k){for(let i=0;i<3;i++)later(inst,i*0.3,()=>{if(!alive(inst,P))return;const[ox,oy]=dashTo(inst,P,a,38);P.dodgeT=Math.max(P.dodgeT,0.22);fx(inst,{k:'leap',x1:r1(ox),y1:r1(oy),x2:r1(P.x),y2:r1(P.y)});
+    later(inst,0.18,()=>{if(!alive(inst,P))return;fx(inst,{k:'quake',x:r1(P.x),y:r1(P.y),r:34});fx(inst,{k:'shake',v:2});aoe(inst,P,P.x,P.y,34,1.5*k,{kb:5});});});},
+  shatter(inst,P,a,tx,ty,k){let b=null,bd=1e9;for(const m of inst.monsters){if(m.dead)continue;const d=Math.hypot(m.x-P.x,m.y-P.y);if(d<36+m.r&&(d<10||angDiff(Math.atan2(m.y-P.y,m.x-P.x),a)<0.8)&&d<bd){bd=d;b=m;}}
+    fx(inst,{k:'swing',id:P.id,a:r1(a),d:0.3});if(b){fx(inst,{k:'execute',x:r1(b.x),y:r1(b.y)});fx(inst,{k:'boom',x:r1(b.x),y:r1(b.y),r:18,c:1});hitMonster(inst,b,P,5*k,{kb:6});b.brk=inst.time+5;fx(inst,{k:'txt',x:r1(b.x),y:r1(b.y-30),s:'파쇄!',c:'#ffb03a'});fx(inst,{k:'shake',v:4});}},
+  shieldrush(inst,P,a,tx,ty,k){const[ox,oy]=dashTo(inst,P,a,80);fx(inst,{k:'dash',x1:r1(ox),y1:r1(oy),x2:r1(P.x),y2:r1(P.y)});fx(inst,{k:'quake',x:r1(P.x+Math.cos(a)*10),y:r1(P.y+Math.sin(a)*10),r:30});fx(inst,{k:'shake',v:3});
+    aoe(inst,P,P.x+Math.cos(a)*10,P.y+Math.sin(a)*10,30,2.0*k,{stun:1,kb:16});},
+  judgechain(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,200);const ts=inst.monsters.filter(m=>!m.dead&&Math.hypot(m.x-tx,m.y-ty)<60+m.r).slice(0,5);if(!ts.length){msg(P,'사슬로 묶을 적이 없습니다','#9e937a');return false;}
+    const pts=[[r1(P.x),r1(P.y-8)]];for(const m of ts){pts.push([r1(m.x),r1(m.y-8)]);hitMonster(inst,m,P,1.5*k,{stun:3});fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-26),s:'속박',c:'#ffe9a8'});}fx(inst,{k:'chain',pts});fx(inst,{k:'sfx',n:'hook'});},
+  shadowshot(inst,P,a,tx,ty,k){buff(P,'shadow',0.6*k,6);fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:30,c:'p',c2:'k'});fx(inst,{k:'sfx',n:'bow'});},
+  galearrow(inst,P,a,tx,ty,k){fx(inst,{k:'shot',id:P.id,a:r1(a)});addZone(inst,P,{x:P.x+Math.cos(a)*10,y:P.y+Math.sin(a)*10,r:26,t:2.2,iv:0.25,dmg:0.5*k,vis:16,vx:Math.cos(a)*100,vy:Math.sin(a)*100,pull:55});fx(inst,{k:'sfx',n:'whirl'});},
+  overload(inst,P,a,tx,ty,k){buff(P,'sdmg',0.3*k,6);buff(P,'as',0.2,6);fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:44,c:'p',c2:'c'});fx(inst,{k:'sfx',n:'cast'});},
+  blackhole(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,200);addZone(inst,P,{x:tx,y:ty,r:46,t:3,iv:0.25,dmg:0.3*P.S.spell*k,vis:10,pull:75});
+    later(inst,3,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:56,c:1});fx(inst,{k:'shake',v:4});aoe(inst,P,tx,ty,56,3.0*P.S.spell*k,{kb:10});});},
+  lightchain(inst,P,a,tx,ty,k){const ts=livingPlayers(inst).filter(q=>Math.hypot(q.x-P.x,q.y-P.y)<180&&(!inst.arena||q.arenaTeam===P.arenaTeam)).sort((x,y)=>x.hp/x.S.maxHp-y.hp/y.S.maxHp).slice(0,4);
+    const pts=[[r1(P.x),r1(P.y-8)]];for(const q of ts){pts.push([r1(q.x),r1(q.y-8)]);healPlayer(inst,q,P.S.healPow*1.2*k,P);}fx(inst,{k:'chain',pts});fx(inst,{k:'sfx',n:'holy'});},
+  holyburst(inst,P,a,tx,ty,k){fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:60,c:'y',c2:'w'});fx(inst,{k:'smite',x:r1(P.x),y:r1(P.y)});fx(inst,{k:'shake',v:3});aoe(inst,P,P.x,P.y,50,2.5*P.S.spell*k,{kb:12});
+    for(const q of partyNear(inst,P,60)){q.shield=Math.max(q.shield,Math.round(q.S.maxHp*0.1*k));q.shieldT=5;q.shieldBy=P.id;}},
+  // ----- 궁극기 -----
+  ragnarok(inst,P,a,tx,ty){[tx,ty]=clampTarget(P,tx,ty,140);if(SH.blocked(inst.map,tx,ty,4)){tx=P.x;ty=P.y;}P.dodgeT=Math.max(P.dodgeT,1.3);fx(inst,{k:'rag',id:P.id,x:r1(tx),y:r1(ty),a:r1(a)});
+    later(inst,0.95,()=>{if(!P.inst||P.inst!==inst)return;P.x=tx;P.y=ty;send(P,{t:'tp',x:tx,y:ty});fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:60});fx(inst,{k:'quake',x:r1(tx),y:r1(ty),r:70});fx(inst,{k:'shake',v:9});aoe(inst,P,tx,ty,60,6,{kb:10});
+      for(let i=1;i<=3;i++)later(inst,i*0.22,()=>{if(!P.inst||P.inst!==inst)return;const x=tx+Math.cos(a)*i*40,y=ty+Math.sin(a)*i*40;fx(inst,{k:'fissure',x:r1(x),y:r1(y),a:r1(a)});fx(inst,{k:'shake',v:5});aoe(inst,P,x,y,40,3,{kb:6});addZone(inst,P,{x,y,r:30,t:3,iv:0.5,dmg:0.4,vis:14});});});},
+  wargod(inst,P){buff(P,'god',1,12);buff(P,'sdmg',0.3,12);P.rootT=0;P.slowT=0;fx(inst,{k:'god',id:P.id,d:12});fx(inst,{k:'shake',v:6});},
+  aegisdome(inst,P){const x=P.x,y=P.y;addZone(inst,P,{x,y,r:72,t:8,iv:0.25,vis:11,dr:0.6});fx(inst,{k:'dome',x:r1(x),y:r1(y),r:72,d:8});
+    later(inst,8,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'domeburst',x:r1(x),y:r1(y),r:80});fx(inst,{k:'shake',v:7});aoe(inst,P,x,y,80,4,{kb:18});});},
+  judgehammer(inst,P,a,tx,ty){[tx,ty]=clampTarget(P,tx,ty,160);for(let i=0;i<3;i++){const last=i===2;later(inst,0.15+i*0.55,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'hammer',x:r1(tx),y:r1(ty),d:0.35,big:last?1:0});
+      later(inst,0.35,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:54,c:1});fx(inst,{k:'quake',x:r1(tx),y:r1(ty),r:60});fx(inst,{k:'shake',v:last?9:6});
+        for(const m of inst.monsters){if(m.dead||Math.hypot(m.x-tx,m.y-ty)>54+m.r)continue;hitMonster(inst,m,P,3.5,{kb:8,stun:last?3:0});if(last&&m.boss){m.grog=Math.max(m.grog||0,inst.time+2.5);fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-40),s:'휘청!',c:'#ffe9a8'});}}});});}},
+  skyrain(inst,P,a,tx,ty){[tx,ty]=clampTarget(P,tx,ty,200);addZone(inst,P,{x:tx,y:ty,r:100,t:5,iv:0.25,dmg:0.9,vis:12});fx(inst,{k:'sfx',n:'bow'});},
+  dragonarrow(inst,P,a,tx,ty){P.rootT=Math.max(P.rootT,1.0);fx(inst,{k:'dcharge',id:P.id,d:1,a:r1(a)});
+    later(inst,1.0,()=>{if(!alive(inst,P))return;const len=340,sp=230,x0=P.x,y0=P.y-4;fx(inst,{k:'dragon',x:r1(x0),y:r1(y0),a:r1(a),len,sp});fx(inst,{k:'shake',v:5});const hit=new Set();const n=Math.ceil(len/10);
+      for(let j=1;j<=n;j++)later(inst,j*10/sp,()=>{if(!P.inst||P.inst!==inst)return;const x=x0+Math.cos(a)*j*10,y=y0+Math.sin(a)*j*10;for(const m of inst.monsters){if(m.dead||hit.has(m.id))continue;if(Math.hypot(m.x-x,m.y-y)<20+m.r){hit.add(m.id);hitMonster(inst,m,P,8,{kb:8});}}
+        if(j===n){fx(inst,{k:'boom',x:r1(x),y:r1(y),r:70});fx(inst,{k:'shake',v:8});aoe(inst,P,x,y,70,4,{kb:10});}});});},
+  apocalypse(inst,P,a,tx,ty){fx(inst,{k:'redsky',d:4.6});fx(inst,{k:'shake',v:3});
+    for(let n=0;n<12;n++)later(inst,0.3+n*0.25,()=>{if(!P.inst||P.inst!==inst)return;const near=inst.monsters.filter(m=>!m.dead&&Math.hypot(m.x-P.x,m.y-P.y)<180);let x,y;if(near.length){const m=pick(near);x=m.x+rf(-6,6);y=m.y+rf(-6,6);}else{x=P.x+rf(-120,120);y=P.y+rf(-80,80);}
+      fx(inst,{k:'tele',x:r1(x),y:r1(y),r:32,d:0.6,c:'o'});fx(inst,{k:'meteor',x:r1(x),y:r1(y),d:0.6});later(inst,0.6,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:32});fx(inst,{k:'shake',v:3});aoe(inst,P,x,y,32,4*P.S.spell,{kb:4});});});
+    [tx,ty]=clampTarget(P,tx,ty,180);later(inst,3.4,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'tele',x:r1(tx),y:r1(ty),r:72,d:1.1,c:'o'});fx(inst,{k:'bigmeteor',x:r1(tx),y:r1(ty),d:1.1});
+      later(inst,1.1,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:72});fx(inst,{k:'quake',x:r1(tx),y:r1(ty),r:90});fx(inst,{k:'shake',v:10});aoe(inst,P,tx,ty,72,10*P.S.spell,{kb:14});addZone(inst,P,{x:tx,y:ty,r:50,t:3,iv:0.5,dmg:0.6*P.S.spell,vis:14});});});},
+  absolutezero(inst,P){const x=P.x,y=P.y,R0=140;const ids=[];for(const m of inst.monsters){if(m.dead||Math.hypot(m.x-x,m.y-y)>R0+m.r)continue;ids.push(m.id);if(m.boss)m.slow=Math.max(m.slow,3);else m.stun=Math.max(m.stun,3);}
+    fx(inst,{k:'freeze',x:r1(x),y:r1(y),r:R0,d:3,ids});addZone(inst,P,{x,y,r:R0,t:3,iv:9,vis:13});
+    later(inst,3,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'shatter',x:r1(x),y:r1(y),r:R0,ids});fx(inst,{k:'shake',v:9});aoe(inst,P,x,y,R0,7*P.S.spell,{kb:6});});},
+  angel(inst,P){addZone(inst,P,{r:150,t:10,iv:0.5,heal:P.S.healPow*0.6,vis:15,follow:true,revive:true});fx(inst,{k:'angel',id:P.id,d:10});reviveNear(inst,P,150);},
+  divinejudge(inst,P,a,tx,ty){for(const q of partyNear(inst,P,200)){q.shield=Math.max(q.shield,Math.round(q.S.maxHp*0.2));q.shieldT=8;q.shieldBy=P.id;fx(inst,{k:'shieldfx',x:r1(q.x),y:r1(q.y)});}
+    for(let n=0;n<10;n++)later(inst,0.2+n*0.4,()=>{if(!P.inst||P.inst!==inst)return;const near=inst.monsters.filter(m=>!m.dead&&Math.hypot(m.x-P.x,m.y-P.y)<200);let x,y;if(near.length){const m=pick(near);x=m.x;y=m.y;}else{x=P.x+rf(-100,100);y=P.y+rf(-70,70);}
+      fx(inst,{k:'dpillar',x:r1(x),y:r1(y),d:0.3});later(inst,0.3,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:26,c:1});fx(inst,{k:'shake',v:3});aoe(inst,P,x,y,26,3*P.S.spell,{kb:3});});});},
 };
+function reviveNear(inst,P,r){for(const q of instPlayers(inst)){if(!q.downed||Math.hypot(q.x-P.x,q.y-P.y)>r)continue;q.downed=false;q.rev=0;q.hp=Math.round(q.S.maxHp*0.6);addMeter(inst,P,'heal',q.hp);fx(inst,{k:'revive',id:q.id});fx(inst,{k:'msg',m:`천사가 ${q.ch.name}님을 일으켰습니다`,c:'#ffe9a8'});}}
+const ULT_OK=new Set((process.env.ULT_OK||'').split(',').filter(Boolean));function ultOk(id){return ULT_OK.has(id)||!!process.env.BC_DEBUG;}
 function castSkill(inst,P,i,tx,ty){const sid=P.ch.bar&&P.ch.bar[i];if(!sid)return;const sk=SKILLS[sid];if(!sk||sk.pas||!SK[sid])return;const rank=(P.ch.sk&&P.ch.sk[sid])|0;if(rank<1)return;
   if((P.scd[sid]||0)>0.1)return;if(P.mp<sk.mp){msg(P,'마나가 부족합니다','#7aa2ff');return;}
   P.mp-=sk.mp;P.scd[sid]=sk.cd*(1-(P.S.cdr||0));const a=Math.atan2(ty-P.y,tx-P.x);P.face=Math.cos(a)<0?-1:1;
@@ -574,7 +622,7 @@ function updatePlayers(inst,dt){
     if(P.downed){if(inst.arena)continue;const helpers=livingPlayers(inst).filter(q=>Math.hypot(q.x-P.x,q.y-P.y)<22);
       if(helpers.length){P.rev+=dt*(helpers.some(q=>q.ch.cls==='priest')?2:1);if(P.rev>=3){P.downed=false;P.rev=0;P.hp=Math.round(P.S.maxHp*0.4);fx(inst,{k:'revive',id:P.id});fx(inst,{k:'msg',m:`${P.ch.name}님이 일어났습니다`,c:'#7fd05a'});}}
       else P.rev=Math.max(0,P.rev-dt*0.5);continue;}
-    mythTick(inst,P,dt);P.hp=Math.min(P.S.maxHp,P.hp+P.S.maxHp*0.006*dt*synMods(inst,P).regen*(P.S.regen||1));P.mp=Math.min(P.S.maxMp,P.mp+P.S.mpRegen*dt);
+    mythTick(inst,P,dt);if(bOn(P,'god')){P.rootT=0;P.slowT=0;P.slowV=0;}P.hp=Math.min(P.S.maxHp,P.hp+P.S.maxHp*0.006*dt*synMods(inst,P).regen*(P.S.regen||1));P.mp=Math.min(P.S.maxMp,P.mp+P.S.mpRegen*dt);
     for(let i=inst.drops.length-1;i>=0;i--){const d=inst.drops[i];if(d.kind==='item'||d.owner!==P.id||inst.time-d.born<0.45)continue;if(Math.hypot(d.x-P.x,d.y-P.y)<((P.ch.pet&&(d.kind==='gold'||d.kind==='gem'))?46:12)){
       if(d.kind==='gold'){P.ch.gold+=d.amt;send(P,{t:'fxp',k:'gold',x:d.x,y:d.y,v:d.amt});}
       else if(d.kind==='gem'){P.ch.gems[d.g]=(P.ch.gems[d.g]|0)+1;send(P,{t:'fxp',k:'gem',x:d.x,y:d.y,g:d.g});msg(P,`${SH.gemName(d.g)} 획득`,SH.GEM_COL[d.g[0]]);bump(P,'gem',1);}
@@ -604,10 +652,14 @@ function explode(inst,p){const P=players.get(p.pid);fx(inst,{k:'boom',x:r1(p.x),
 function updateZones(inst,dt){for(let i=inst.zones.length-1;i>=0;i--){const z=inst.zones[i];z.t-=dt;const P=players.get(z.pid);
   if(!P||P.inst!==inst||z.t<=0){inst.zones.splice(i,1);continue;}
   if(z.follow){z.x=P.x;z.y=P.y;}
+  if(z.vx){const nx=z.x+z.vx*dt,ny=z.y+z.vy*dt;if(SH.blocked(inst.map,nx,ny,4)){z.vx=0;z.vy=0;}else{z.x=nx;z.y=ny;}}
+  if(z.pull)for(const m of inst.monsters){if(m.dead||m.boss||m.dummy||m.d.stat)continue;const dx=z.x-m.x,dy=z.y-m.y,d=Math.hypot(dx,dy);if(d<4||d>z.r+34)continue;SH.moveEnt(inst.map,m,dx/d*z.pull*dt,dy/d*z.pull*dt);}
+  if(z.dr)for(const q of livingPlayers(inst))if(Math.hypot(q.x-z.x,q.y-z.y)<z.r)buff(q,'tred',z.dr,0.35);
   if(z.trap){const hit=inst.monsters.find(m=>!m.dead&&foe(inst,P,m)&&Math.hypot(m.x-z.x,m.y-z.y)<z.r+m.r);if(hit){fx(inst,{k:'boom',x:r1(z.x),y:r1(z.y),r:30});fx(inst,{k:'shake',v:2});aoe(inst,P,z.x,z.y,30,z.dmg,{slow:z.slow,kb:3});inst.zones.splice(i,1);}continue;}
   z.tick-=dt;if(z.tick>0)continue;z.tick=z.iv;
   if(z.dmg)aoe(inst,P,z.x,z.y,z.r,z.dmg,{slow:z.slow,ctr:z.ctr});
-  if(z.heal)for(const q of livingPlayers(inst))if(Math.hypot(q.x-z.x,q.y-z.y)<z.r)healPlayer(inst,q,z.heal,P);}}
+  if(z.heal)for(const q of livingPlayers(inst))if(Math.hypot(q.x-z.x,q.y-z.y)<z.r)healPlayer(inst,q,z.heal,P);
+  if(z.revive)reviveNear(inst,P,z.r);}}
 function updateTimers(inst,dt){for(let i=inst.timers.length-1;i>=0;i--){const t=inst.timers[i];t.t-=dt;if(t.t<=0){inst.timers.splice(i,1);inst._el=t.el;inst._ctr=t.ctr;try{t.f();}catch(e){console.error('timer',e);}inst._el=null;inst._ctr=null;}}}
 function updateDungeon(inst,dt){
   if(inst.arena){updateArena(inst,dt);return;}
@@ -778,7 +830,7 @@ const RAID_H={
 
 // ================= 스냅샷 =================
 function snapshot(inst){
-  const ps=instPlayers(inst).map(p=>[p.id,r1(p.x),r1(p.y),p.face,Math.ceil(p.hp),p.S.maxHp,(p.downed?1:0)|(p.dodgeT>0?2:0)|(p.moving?4:0)|(p.shield>0?8:0),r1(p.rev/3)]);
+  const ps=instPlayers(inst).map(p=>[p.id,r1(p.x),r1(p.y),p.face,Math.ceil(p.hp),p.S.maxHp,(p.downed?1:0)|(p.dodgeT>0?2:0)|(p.moving?4:0)|(p.shield>0?8:0)|(p.buffs.godT>0?16:0),r1(p.rev/3)]);
   const base={t:'s',p:ps,fx:inst.fx};
   if(inst.type==='hub'){base.m=inst.monsters.map(m=>[m.id,m.tc,r1(m.x),r1(m.y),1,1,m.face,(m.flash>0?8:0)|(m.slow>0?2:0)|(m.stun>0?4:0),0,0,m.r]);base.j=inst.projs.map(p=>[p.id,SH.PROJ_LIST.indexOf(p.type),r1(p.x),r1(p.y),Math.round(p.vx),Math.round(p.vy),p.h]);base.z=inst.zones.map(z=>[z.vis,r1(z.x),r1(z.y),z.r,r1(z.t),z.pid]);}
   if(inst.type==='dungeon'){
@@ -822,6 +874,7 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
   ch.merc=typeof o.merc==='string'&&SH.MERCS[o.merc]?o.merc:null;
   ch.raidD={};if(o.raidD&&typeof o.raidD==='object')for(const r of SH.RAIDS)if(typeof o.raidD[r.id]==='string')ch.raidD[r.id]=o.raidD[r.id].slice(0,10);
   if((o.lvl|0)>SH.LVL_CAP){const C0=CLASSES[ch.cls];ch.str=C0.base.str;ch.dex=C0.base.dex;ch.vit=C0.base.vit;ch.ene=C0.base.ene;ch.pts=3*(SH.LVL_CAP-1);ch.xp=0;ch.tal={};ch.sk=SH.defaultSkills(ch.cls).sk;ch.spts=SH.skillPointsTotal(SH.LVL_CAP)-(Object.values(ch.sk).reduce((a,b)=>a+b,0)-2);ch.bar=SH.defaultSkills(ch.cls).bar.slice();while(ch.bar.length<SH.BAR_SIZE)ch.bar.push(null);ch._capped=1;}
+  ch.ult=typeof o.ult==='string'&&(C.ults||[]).includes(o.ult)&&ch.lvl>=SH.ULT_LVL?o.ult:null;
   ch.cos={cape:!(o.cos&&o.cos.cape===0)?1:0,glow:!(o.cos&&o.cos.glow===0)?1:0};
   return ch;}
 function okItem(it){return !!(it&&typeof it==='object'&&['weapon','armor','ring'].includes(it.slot)&&Number.isInteger(it.rar)&&it.rar>=0&&it.rar<=4&&(it.rar<4||SH.MYTH[it.myth])&&it.base&&typeof it.base==='object'&&Array.isArray(it.aff)&&typeof it.name==='string');}
@@ -923,7 +976,7 @@ const H={
     for(const q of members){leaveInst(q);q.inst=inst;inst.players.add(q.id);resetCombat(q);q.hp=q.S.maxHp;q.mp=q.S.maxMp;}
     loadFloor(inst,floor);bcastRoster(hub);sendParty(pt);},
   pause(P){const inst=P.inst;if(!inst||inst.type!=='dungeon'||inst.arena||inst.raid){if(inst&&inst.raid)msg(P,'레이드에서는 일시정지할 수 없어요','#9e937a');return;}inst.paused=inst.paused?null:P.ch.name;bcast(inst,{t:'paused',by:inst.paused});},
-  learn(P,d){const sid=d.sid;const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls)return;if(P.ch.lvl<sk.lvl){msg(P,`레벨 ${sk.lvl}에 해금됩니다`,'#ff6a5a');return;}if((P.ch.spts|0)<=0){msg(P,'스킬 포인트가 없습니다','#ff6a5a');return;}
+  learn(P,d){const sid=d.sid;const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.ult)return;if(P.ch.lvl<sk.lvl){msg(P,`레벨 ${sk.lvl}에 해금됩니다`,'#ff6a5a');return;}if((P.ch.spts|0)<=0){msg(P,'스킬 포인트가 없습니다','#ff6a5a');return;}
     const r=P.ch.sk[sid]|0;if(r>=SH.MAX_RANK)return;P.ch.sk[sid]=r+1;P.ch.spts--;if(r===0&&!sk.pas&&!P.ch.bar.includes(sid)){const e=P.ch.bar.indexOf(null);if(e>=0)P.ch.bar[e]=sid;}recalc(P);send(P,{t:'fxp',k:'learn'});},
   bar(P,d){const i=d.i|0;if(i<0||i>=SH.BAR_SIZE)return;const sid=d.sid||null;if(sid){const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.pas||!(P.ch.sk[sid]>0))return;const j=P.ch.bar.indexOf(sid);if(j>=0)P.ch.bar[j]=P.ch.bar[i];}P.ch.bar[i]=sid;markDirty(P);},
   shop(P){if(P.inst!==hub||!near(P,hub.map.merchant,48))return;const lvl=P.ch.lvl;if(!P.stock||P.stockLvl!==lvl||Date.now()-P.stockT>300000){P.stock=[];const fam=CLASSES[P.ch.cls].fam;for(let i=0;i<6;i++){const it=SH.genItem(lvl+ri(0,2),fam,i<2?1:0,i===5?15:5,R,2);it.price=it.value*4;P.stock.push(it);}P.stockLvl=lvl;P.stockT=Date.now();}
@@ -982,6 +1035,12 @@ const H={
   pet(P,d){const id=d.id||null;if(id&&!(P.ch.pets||[]).includes(id))return;P.ch.pet=id;markDirty(P);if(P.inst)bcastRoster(P.inst);},
   merc(P,d){if(P.inst!==hub||!near(P,hub.map.merc,50))return;if(!d.k){P.ch.merc=null;markDirty(P);msg(P,'용병을 돌려보냈습니다','#9e937a');return;}const M=SH.MERCS[d.k];if(!M)return;const cost=SH.mercCost(P.ch.lvl);
     if(P.ch.gold<cost){msg(P,'골드가 부족합니다','#ff6a5a');return;}P.ch.gold-=cost;P.ch.merc=d.k;markDirty(P);send(P,{t:'fxp',k:'gold'});msg(P,`${M.n} 용병을 고용했습니다 · 혼자 던전에 들어가면 함께 싸웁니다`,'#7fd05a');},
+  ult(P,d){const inst=P.inst;if(!inst||P.downed||inst.paused)return;if(inst.type!=='dungeon'&&!inYard(P))return;if(inst.arena&&(inst.arena.cd>0||inst.arena.over))return;
+    const id=P.ch.ult;if(!id||P.ch.lvl<SH.ULT_LVL||!SK[id]||!ultOk(id))return;const sk=SKILLS[id];const now=Date.now();if(now<(P.ucdEnd||0)-150){send(P,{t:'ucd',left:Math.round((P.ucdEnd-now)/100)/10});return;}
+    const cd=sk.cd*(1-Math.min(0.3,P.S.cdr||0));P.ucdEnd=now+cd*1000;send(P,{t:'ucd',left:cd});const tx=+d.x||P.x,ty=+d.y||P.y;const a=Math.atan2(ty-P.y,tx-P.x);P.face=Math.cos(a)<0?-1:1;
+    fx(inst,{k:'ult',id:P.id,n:sk.n,s:id});fx(inst,{k:'sfx',n:'ult'});inst._el=SKILL_EL[id]||null;try{withFoes(inst,P,()=>SK[id](inst,P,a,tx,ty,1,1));}finally{inst._el=null;}},
+  ultsel(P,d){const C=CLASSES[P.ch.cls];if(!(C.ults||[]).includes(d.id)||!ultOk(d.id))return;if(P.ch.lvl<SH.ULT_LVL){msg(P,`궁극기는 ${SH.ULT_LVL}레벨에 배웁니다`,'#ff6a5a');return;}
+    if(P.ch.ult&&P.ch.ult!==d.id&&P.inst!==hub){msg(P,'궁극기는 마을에서만 바꿀 수 있어요','#ff6a5a');return;}if(P.ch.ult===d.id)return;P.ch.ult=d.id;markDirty(P);msg(P,`궁극기: ${SKILLS[d.id].n}`,'#ffd35a');},
   ctr(P,d){const inst=P.inst;if(!inst||P.downed||inst.paused)return;if(inst.type!=='dungeon'&&!inYard(P))return;if(inst.arena&&(inst.arena.cd>0||inst.arena.over))return;const now=Date.now();if(now-(P.ctrT||0)<SH.CTR_CD*1000-150)return;P.ctrT=now;
     const tx=+d.x||P.x,ty=+d.y||P.y;const a=Math.atan2(ty-P.y,tx-P.x);P.face=Math.cos(a)<0?-1:1;const cls=P.ch.cls;inst._ctr=1;
     try{withFoes(inst,P,()=>{
@@ -1000,7 +1059,7 @@ wss.on('connection',ws=>{
   ws.on('pong',()=>{P.alive=true;});
   ws.on('message',raw=>{let d;try{d=JSON.parse(raw);}catch(e){return;}if(!d||typeof d.t!=='string')return;
     if(++P.msgs>200)return;
-    if(!P.ch){if(d.t==='join'){const ch=sanitizeChar(d.ch);if(!ch){send(P,{t:'err',m:'캐릭터 정보가 올바르지 않습니다'});return;}P.ch=ch;P.S=SH.calcStats(ch);P.stash=sanitizeStash(d.stash);players.set(P.id,P);newParty(P);send(P,{t:'welcome',id:P.id});if(ch._capped){delete ch._capped;markDirty(P);setTimeout(()=>{msg(P,`만렙이 ${SH.LVL_CAP}으로 정해져 레벨이 ${SH.LVL_CAP}이 되었어요`,'#ffd35a');msg(P,'스탯·스킬·특성 포인트를 모두 돌려드렸어요. 다시 찍어 주세요 (C · K · N)','#ffd35a');},1500);}joinHub(P);P.prevParty=Array.isArray(d.prev)?d.prev.slice(0,4).map(String):null;restoreParty(P);sendParty(P.party);send(P,{t:'ch',ch:P.ch,S:P.S});send(P,{t:'stash',s:P.stash});}return;}
+    if(!P.ch){if(d.t==='join'){const ch=sanitizeChar(d.ch);if(!ch){send(P,{t:'err',m:'캐릭터 정보가 올바르지 않습니다'});return;}P.ch=ch;P.S=SH.calcStats(ch);P.stash=sanitizeStash(d.stash);players.set(P.id,P);newParty(P);send(P,{t:'welcome',id:P.id,ultok:process.env.BC_DEBUG?null:[...ULT_OK]});if(ch._capped){delete ch._capped;markDirty(P);setTimeout(()=>{msg(P,`만렙이 ${SH.LVL_CAP}으로 정해져 레벨이 ${SH.LVL_CAP}이 되었어요`,'#ffd35a');msg(P,'스탯·스킬·특성 포인트를 모두 돌려드렸어요. 다시 찍어 주세요 (C · K · N)','#ffd35a');},1500);}joinHub(P);P.prevParty=Array.isArray(d.prev)?d.prev.slice(0,4).map(String):null;restoreParty(P);sendParty(P.party);send(P,{t:'ch',ch:P.ch,S:P.S});send(P,{t:'stash',s:P.stash});}return;}
     const h=H[d.t];if(h){try{h(P,d);}catch(e){console.error('handler',d.t,e);}}});
   ws.on('close',()=>{if(!P.ch)return;leaveInst(P);const pt=P.party;leaveParty(P);players.delete(P.id);});
 });
