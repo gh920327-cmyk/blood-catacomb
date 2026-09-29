@@ -647,7 +647,9 @@ function handle(d){switch(d.t){
   case 'msg':msg(d.m,d.c||'#e6dcc3');break;
   case 'chat':{G.chatLog.push({name:d.name,m:d.m,t:time});if(G.chatLog.length>40)G.chatLog.shift();G.bubbles.set(d.id,{m:d.m,t:time});sfx('chat');break;}
   case 'invite':G.invite={from:d.from,name:d.name,t:time};sfx('chat');break;
-  case 'treq':G.treq={from:d.from,name:d.name,t:time};sfx('chat');break;
+  case 'who':G.who=d.list;G.whoT=time;break;
+case 'insp':G.insp=d.v;break;
+case 'treq':G.treq={from:d.from,name:d.name,t:time};sfx('chat');break;
   case 'trade':{const was=G.trade;G.trade=d.st;if(d.st){showInv=true;showChar=false;showSkills=false;G.ctxMenu=null;closeFac();if(!was)sfx('pick');}if(d.done)sfx('gold');break;}
   case 'stairs':G.stairsOpen=true;SH.openStairs(G.map);drawMini();break;
   case 'stairsAsk':G.stairsAsk={floor:d.floor};sfx('stairs');break;
@@ -838,6 +840,7 @@ window.addEventListener('keydown',e=>{
   if(G.bintro&&c==='Escape'){G.bintro.t0=time-3.2;return;}
   if(raidSelKey(c)){e.preventDefault();return;}
   if(c==='Escape'&&G.loreView){G.loreView=null;return;}
+  if(c==='Escape'&&G.insp){G.insp=null;return;}
   if(c==='Escape'&&G.trade){net({t:'tcancel'});return;}
   if(c==='Escape'){
     if(G.opts){G.opts=false;return;}if(G.emoWheel){G.emoWheel=false;return;}if(G.chronD!=null&&G.chron){G.chronD=null;return;}if(G.talent||G.rec||G.chron){G.talent=false;G.rec=false;G.chron=false;return;}if(G.fishS){G.fishS=null;return;}
@@ -857,6 +860,7 @@ window.addEventListener('keydown',e=>{
   if(act==='talent'){G.talent=!G.talent;if(G.talent){G.rec=false;showSkills=false;showChar=false;showInv=false;closeFac();}return;}
   if(act==='rec'){G.rec=!G.rec;if(G.rec){G.talent=false;G.chron=false;showSkills=false;showChar=false;showInv=false;closeFac();}return;}
   if(act==='chron'){openChron(!G.chron);return;}
+  if(act==='comm'){openComm(!G.comm);return;}
   if(G.treq&&!G.invite&&(c==='KeyY'||c==='KeyN')){net({t:'tans',from:G.treq.from,ok:c==='KeyY'});G.treq=null;return;}
   if(G.invite&&(c==='KeyY'||c==='KeyN')){net({t:'ians',from:G.invite.from,ok:c==='KeyY'});G.invite=null;return;}
   if(inDungeon()&&G.paused)return;
@@ -1220,7 +1224,7 @@ function itemTip(it,where,by){const cls=myCls();const L=[[SH.itemName(it),itemCo
   if(it.so&&it.so.length){for(const g of it.so){if(g){const e=SH.gemEff(g,it.slot);L.push([`◇ ${SH.gemName(g)}: ${SH.AFF[e.k].f(e.v)}`,SH.GEM_COL[g[0]],12]);}else L.push(['◇ 빈 소켓','#6b6275',11]);}}
   if(!SH.canEquip(it,cls))L.push([`${CLASSES[cls].n}은(는) 착용 불가`,'#e0574a',12]);
   else if(where!=='eq'&&G.ch){const cur=G.ch.eq[it.slot];if(cur!==it){const p0=SH.power(G.ch),p1=SH.power(G.ch,{[it.slot]:it}),dv=p1-p0;L.push([dv===0?'전투력 변화 없음':`전투력 ${dv>0?'+':''}${dv.toLocaleString()} ${dv>0?'▲':'▼'}  (${p1.toLocaleString()})`,dv>0?'#7fd05a':dv<0?'#e0574a':'#9e937a',13]);}if(!cur)L.push(['빈 칸 · 바로 장착 가능','#7fd05a',11]);else if(cur!==it){L.push(['장착 중인 아이템과 비교','#9e937a',11]);const a=SH.itemStats(it),b=SH.itemStats(cur);let any=false;for(const k of new Set([...Object.keys(a),...Object.keys(b)])){const d=(a[k]||0)-(b[k]||0);if(d){any=true;L.push([diffLine(k,d),d>0?'#7fd05a':'#e0574a',12]);}}if(!any)L.push(['차이 없음','#9e937a',11]);}}
-  if(by)L.push([`${by}님이 내려놓은 아이템`,'#c77ad8',11]);
+  if(by)L.push([`${by}님이 내려놓은 아이템`,'#c77ad8',11]);if(where==='insp')return L;
   if(where==='forge'||where==='gam')return L;if(where==='stash'){L.push(['클릭: 가방으로 꺼내기','#6b6275',11]);return L;}
   if(G.fac==='forge'&&(where==='bag'||where==='eq')){L.push(['클릭: 대장간에 올리기','#ffd35a',11]);return L;}if(G.fac==='vault'&&where==='bag'){L.push(['클릭: 창고에 넣기','#ffd35a',11]);return L;}
   if(where==='shop')L.push([`가격 ${it.price}골드 · 클릭해서 구입`,'#ffd35a',12]);else L.push([where==='bag'?(showShop?`클릭: 장착   우클릭·Shift+클릭: 판매 ${it.value}골드`:'클릭: 장착   우클릭·Shift+클릭: 바닥에 버리기 (거래)'):where==='ground'?'클릭해서 줍기 (F)':'클릭: 장착 해제','#6b6275',11]);return L;}
@@ -1350,8 +1354,42 @@ function drawMeterTable(title,rows,x,y,w,sub){const h=46+Math.max(1,rows.length)
   rows.forEach((r,n)=>{const ry=y+42+n*22;pr(x+8,ry,w-16,18,n%2?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.2)');pr(x+8,ry,2,18,CLASS_COL[r.cls]||'#fff');txt(r.name,x+14,ry+6,12,'#e6dcc3');txt(CLASSES[r.cls]?CLASSES[r.cls].n:'',x+14,ry+14,10,'#9e937a');
     cols.forEach(([k,l,c],i)=>{const bx=cx0+i*cw+4,bw=cw-8;pr(bx,ry+12,bw,3,PAL.k);pr(bx,ry+12,Math.round(bw*r[k]/max[k]),3,c);txt(r[k]>=100000?Math.round(r[k]/1000)+'k':r[k].toLocaleString(),bx+bw/2,ry+6,w<300?11:12,'#f2eadb','center');});});
   if(!rows.length)txt('아직 기록이 없습니다',x+w/2,y+52,12,'#6b6275','center');return h;}
+/* ---- 커뮤니티: 친구(이 브라우저에 저장) · 접속자 목록, 원거리 파티 초대·정보 보기 ---- */
+function friends(){try{return JSON.parse(localStorage.getItem('bc_friends')||'[]');}catch(e){return [];}}
+function setFriends(a){try{localStorage.setItem('bc_friends',JSON.stringify(a.slice(0,50)));}catch(e){}}
+function openComm(on){G.comm=on;if(on){G.chron=false;G.rec=false;G.talent=false;showSkills=false;showChar=false;closeFac();G.commT=G.commT||'all';G.commPg=0;net({t:'who'});}}
+function drawComm(){const x=6,y=38,w=236,h=194;panel(x,y,w,h,'커뮤니티');button(x+w-18,y+4,12,11,'×',()=>{G.comm=false;},{size:10});uiRects.push({x,y,w,h,block:true});
+  if(time-(G.whoT||0)>3&&time-(G.whoAsk||0)>3){G.whoAsk=time;net({t:'who'});}
+  const fr=friends();const all=G.who||[];const T=G.commT;
+  [['all',`접속자 ${all.length}`],['fr',`친구 ${fr.length}`]].forEach(([k,l],i)=>button(x+8+i*62,y+17,58,13,l,()=>{G.commT=k;G.commPg=0;},{size:10,main:T===k}));
+  let rows;if(T==='fr'){rows=fr.map(n=>all.find(p=>p.name===n)||{name:n,off:true});rows.sort((a,b)=>(a.off?1:0)-(b.off?1:0));}else rows=all.slice().sort((a,b)=>(b.me?1:0)-(a.me?1:0)||(b.lvl-a.lvl));
+  const per=8,pages=Math.max(1,Math.ceil(rows.length/per));G.commPg=Math.min(G.commPg|0,pages-1);const pg=G.commPg;
+  const myHub=G.kind==='hub';const pt=G.party;
+  rows.slice(pg*per,pg*per+per).forEach((r,i)=>{const ry=y+34+i*18;pr(x+6,ry,w-12,16,r.me?'rgba(90,64,16,0.45)':'rgba(10,7,14,0.5)');
+    txt(r.name,x+10,ry+5,11,r.off?'#6b6275':(CLASS_COL[r.cls]||'#e6dcc3'));
+    txt(r.off?'접속 안 함':`${CLASSES[r.cls]?CLASSES[r.cls].n:''} ${r.lvl} · ${r.where}${r.pt>1?' · 파티 '+r.pt+'명':''}`,x+10,ry+12,8,r.off?'#4a4452':'#9e937a','left','px');
+    if(r.me){txt('나',x+w-12,ry+8,10,'#ffd35a','right');return;}
+    let bx=x+w-10;const b=(l,f,o)=>{const bw=l.length>2?30:22;bx-=bw+2;button(bx,ry+2,bw,12,l,f,Object.assign({size:9},o||{}));};
+    const isF=fr.includes(r.name);b(isF?'삭제':'친구+',()=>{const a=friends();if(isF)setFriends(a.filter(n=>n!==r.name));else if(!a.includes(r.name)){a.push(r.name);setFriends(a);net({t:'fadd',n:r.name});msg(`${r.name}님을 친구로 추가했어요`,'#8fd0ff');}},{tip:[[isF?'친구 목록에서 지우기':'친구로 추가 (이 기기에 저장돼요)','#e6dcc3',11]]});
+    if(!r.off){b('정보',()=>net({t:'insp',id:r.id}));const inMy=pt&&pt.members.some(m=>m.id===r.id);if(!inMy)b('초대',()=>net({t:'inv',id:r.id}),{dis:!(myHub&&r.hub),tip:[[myHub&&r.hub?'파티 초대 보내기':'둘 다 마을에 있을 때 초대할 수 있어요','#e6dcc3',11]]});}});
+  if(!rows.length)txt(T==='fr'?'아직 친구가 없어요 · 접속자 탭에서 [친구+]':'접속한 플레이어가 없어요',x+w/2,y+80,11,'#6b6275','center');
+  if(pages>1){button(x+8,y+h-18,20,13,'◀',()=>{G.commPg=(pg-1+pages)%pages;},{size:9});txt(`${pg+1} / ${pages}`,x+w/2,y+h-12,10,'#9e937a','center');button(x+w-28,y+h-18,20,13,'▶',()=>{G.commPg=(pg+1)%pages;},{size:9});}
+  else txt(`${keyLabel(kbCode('comm'))} 키로 열고 닫기`,x+w/2,y+h-12,9,'#6b6275','center');}
+/* 다른 플레이어 정보(스펙) 보기 */
+function drawInsp(){const v=G.insp;const x=150,y=30,w=180,h=204;panel(x,y,w,h,`${v.name}`);button(x+w-18,y+4,12,11,'×',()=>{G.insp=null;},{size:10});uiRects.push({x,y,w,h,block:true});
+  const C=CLASSES[v.cls]||{n:'?'};txt(`${C.n} · 레벨 ${v.lvl}${v.title?' · '+v.title:''}`,x+w/2,y+21,11,CLASS_COL[v.cls]||'#e6dcc3','center');
+  txt(`전투력 ${(v.cp|0).toLocaleString()}`,x+w/2,y+34,14,'#ffd35a','center');if(G.cp!=null){const dv=v.cp-G.cp;txt(dv===0?'나와 같음':`나보다 ${Math.abs(dv).toLocaleString()} ${dv>0?'높음':'낮음'}`,x+w/2,y+45,10,dv>0?'#ff9a7a':'#7fd05a','center');}
+  [['weapon','무기'],['armor','갑옷'],['ring','반지']].forEach(([sl,l],i)=>{const sx=x+w/2-51+i*38,sy=y+53;itemSlot(sx,sy,26,v.eq[sl]||null,null,null,'insp');txt(l,sx+13,sy+32,10,'#9e937a','center');});
+  let ly=y+98;const S=v.S||{};const row=(a,b,c)=>{txt(a,x+12,ly,11,'#9e937a');txt(b,x+w-12,ly,11,c||'#e6dcc3','right');ly+=11;};
+  row('힘 · 민첩 · 활력 · 에너지',`${S.str||v.str} · ${S.dex||v.dex} · ${S.vit||v.vit} · ${S.ene||v.ene}`);
+  if(S.dmgBase)row('공격력',`${Math.round(S.dmgBase*0.8*S.dmgMul)} - ${Math.round(S.dmgBase*1.2*S.dmgMul)}`);if(S.crit!=null)row('치명타',`${S.crit.toFixed(1)}%  x${S.critMul.toFixed(2)}`);if(S.atkRate)row('공격 속도',`${S.atkRate.toFixed(2)} / 초`);
+  row('체력 · 방어력',`${S.maxHp||'-'} · ${S.armor||0}`,'#ff9a8a');if(v.cls==='priest'&&S.healPow)row('치유력',String(S.healPow),'#7fd05a');
+  const ul=v.ult&&SH.SKILLS[v.ult];row('궁극기',ul?ul.n:'없음',ul?'#ffd35a':'#6b6275');
+  const rc=SH.RAIDS.map(r=>(v.rclr[r.id]|0)?`${r.n.split(' ').pop()} ${v.rclr[r.id]}`:null).filter(Boolean);row('최고 기록',`지하 ${v.best}층`);
+  txt(rc.length?'레이드 클리어: '+rc.join(' · '):'레이드 클리어 기록 없음',x+w/2,ly+2,9,'#9e937a','center');
+  txt('장비에 마우스를 올리면 내 장비와 비교해요 · Esc 닫기',x+w/2,y+h-8,9,'#6b6275','center');}
 function drawCtxMenu(){const c=G.ctxMenu;const p=G.players.get(c.id);if(!p){G.ctxMenu=null;return;}const pt=G.party;const inMy=pt&&pt.members.some(m=>m.id===c.id);
-  const items=[];if(!inMy)items.push(['파티 초대',()=>net({t:'inv',id:c.id})]);if(inMy&&pt.leader===myId&&G.kind==='hub')items.push(['파티에서 추방',()=>net({t:'kick',id:c.id})]);if(G.kind==='hub'&&!G.trade)items.push(['거래 신청',()=>net({t:'treq',id:c.id})]);items.push(...duelMenuItems(c));items.push(['닫기',()=>{}]);
+  const items=[];if(!inMy)items.push(['파티 초대',()=>net({t:'inv',id:c.id})]);if(inMy&&pt.leader===myId&&G.kind==='hub')items.push(['파티에서 추방',()=>net({t:'kick',id:c.id})]);if(G.kind==='hub'&&!G.trade)items.push(['거래 신청',()=>net({t:'treq',id:c.id})]);items.push(['정보 보기',()=>net({t:'insp',id:c.id})]);items.push(...duelMenuItems(c));items.push(['닫기',()=>{}]);
   const w=80,h=16+items.length*16;let x=Math.min(c.x,W-w-2),y=Math.min(c.y,H-h-2);panel(x,y,w,h);txt(p.name||'',x+w/2,y+8,11,'#ffd35a','center');
   items.forEach(([l,f],i)=>button(x+4,y+14+i*16,w-8,14,l,()=>{f();G.ctxMenu=null;},{size:11}));}
 function drawInvite(){const iv=G.invite;if(!iv)return;if(time-iv.t>30){net({t:'ians',from:iv.from,ok:false});G.invite=null;return;}const w=200,h=40,x=240-w/2,y=30;panel(x,y,w,h);
@@ -1395,8 +1433,10 @@ function render(){
     const n=Math.floor(time*3)%4;txt('.'.repeat(n),240,106,14,'#ffd35a','center');}return;}
   const [icx,icy]=renderWorld();drawUltScreen();
   drawWorldUI(icx,icy);drawPartyArrows(icx,icy);drawHUD();drawTut();drawChat();
-  if(G.trade)drawTrade();if(G.talent)drawTalents();else if(G.chron)drawChron();else if(G.rec)drawRecords();else if(showSkills)drawSkills();else if(showChar)drawChar();else if(showShop)drawShop();else if(G.fac)drawFacPanel();
+  if(G.trade)drawTrade();if(G.talent)drawTalents();else if(G.chron)drawChron();else if(G.comm)drawComm();else if(G.rec)drawRecords();else if(showSkills)drawSkills();else if(showChar)drawChar();else if(showShop)drawShop();else if(G.fac)drawFacPanel();
   if(showInv&&!showSkills&&!G.talent&&!G.rec)drawInv();
+  if(G.kind==='hub'&&!G.comm)button(130,3,66,13,`커뮤니티 (${keyLabel(kbCode('comm'))})`,()=>openComm(true),{size:9,tip:[['친구 · 접속자 목록','#ffd35a',12],['멀리 있어도 파티 초대 · 정보 보기','#e6dcc3',11]]});
+  if(G.insp)drawInsp();
   if(G.portalMenu)drawPortalMenu();
   if(G.stairsAsk)drawStairsAsk();
   msgs.forEach((m,i)=>{ctx.globalAlpha=Math.min(1,m.life);txt(m.t,240,48+i*11,13,m.c,'center');});ctx.globalAlpha=1;
@@ -1605,7 +1645,7 @@ const OPT={bgm:0.8,sfx:0.8,shake:1,keys:{}};
 try{const o=JSON.parse(localStorage.getItem('bc_opt')||'null');if(o){if(typeof o.bgm==='number')OPT.bgm=clamp(o.bgm,0,1);if(typeof o.sfx==='number')OPT.sfx=clamp(o.sfx,0,1);if(typeof o.shake==='number')OPT.shake=clamp(o.shake,0,1);if(o.keys&&typeof o.keys==='object')OPT.keys=o.keys;}}catch(e){}
 function saveOpt(){try{localStorage.setItem('bc_opt',JSON.stringify(OPT));}catch(e){}}
 const KB_DEF=[];for(let i=0;i<SH.BAR_SIZE;i++)KB_DEF.push(['sk'+i,`스킬 ${i+1}`,'Digit'+(i+1)]);
-KB_DEF.push(['ctr','카운터 스킬','KeyR'],['talent','특성 창','KeyN'],['rec','기록 (업적·도감·펫)','KeyJ'],['chron','연대기 (이야기)','KeyL'],['ping','핑(신호)','KeyG'],['emote','감정표현','KeyT'],['potHp','체력 물약','KeyQ'],['potMp','마나 물약','KeyE'],['dodge','구르기','Space'],['act','상호작용·줍기','KeyF'],['inv','인벤토리','KeyI'],['skills','스킬 창','KeyK'],['char','캐릭터 창','KeyC'],['meter','기록표(누르고 있기)','Tab']);
+KB_DEF.push(['ctr','카운터 스킬','KeyR'],['talent','특성 창','KeyN'],['rec','기록 (업적·도감·펫)','KeyJ'],['chron','연대기 (이야기)','KeyL'],['comm','커뮤니티 (친구·접속자)','KeyO'],['ping','핑(신호)','KeyG'],['emote','감정표현','KeyT'],['potHp','체력 물약','KeyQ'],['potMp','마나 물약','KeyE'],['dodge','구르기','Space'],['act','상호작용·줍기','KeyF'],['inv','인벤토리','KeyI'],['skills','스킬 창','KeyK'],['char','캐릭터 창','KeyC'],['meter','기록표(누르고 있기)','Tab']);
 function kbCode(a){return OPT.keys[a]||KB_DEF.find(k=>k[0]===a)[2];}
 function kbAction(code){for(const k of KB_DEF)if(kbCode(k[0])===code)return k[0];return null;}
 function keyLabel(c){if(!c)return '-';if(c.startsWith('Key'))return c.slice(3);if(c.startsWith('Digit'))return c.slice(5);if(c.startsWith('Numpad'))return 'Num'+c.slice(6);return {Space:'Space',Tab:'Tab',ShiftLeft:'L-Shift',ShiftRight:'R-Shift',ControlLeft:'L-Ctrl',AltLeft:'L-Alt',Backquote:'`',Minus:'-',Equal:'=',BracketLeft:'[',BracketRight:']',Semicolon:';',Quote:"'",Comma:',',Period:'.',Slash:'/',CapsLock:'Caps'}[c]||c;}
@@ -1845,7 +1885,7 @@ const ENDINGS=[{id:'end1',n:'엔딩 1 · 심장이 멈춘 날',hint:'지하 100�
     {img:'art/intro1.jpg',t:'새벽의 종이 다시 울린다.\n엘라는 등불을 든 자에게 새벽의 맹세를 건넸다.\n"이제 당신도 새벽 기사예요."'}]}];
 function onFirstDawn(){unlockKnight();msg('새벽의 맹세를 받았다 · 히든 직업 「빛의 기사」 해금!','#ffd35a');G.knightNew=time;}
 function playEnding(id,done){const e=ENDINGS.find(q=>q.id===id);if(!e)return;playCine(e.list,{title:e.title,done});}
-function openChron(on){G.chron=on;G.chronD=null;if(on){G.rec=false;G.talent=false;showSkills=false;showChar=false;showInv=false;closeFac();G.chronT=G.chronT||'act';}}
+function openChron(on){if(on)G.comm=false;G.chron=on;G.chronD=null;if(on){G.rec=false;G.talent=false;showSkills=false;showChar=false;showInv=false;closeFac();G.chronT=G.chronT||'act';}}
 function artCover(img,dx,dy,dw,dh,fx){const ir=img.width/img.height,r=dw/dh;let sw,sh,sx,sy;if(ir>r){sh=img.height;sw=sh*r;sx=Math.max(0,Math.min(img.width-sw,(fx==null?0.6:fx)*img.width-sw/2));sy=0;}else{sw=img.width;sh=sw/r;sx=0;sy=(img.height-sh)/2;}artDraw(img,sx,sy,sw,sh,dx,dy,dw,dh);}
 function drawChron(){const ch=G.ch;if(!ch)return;const x=22,y=12,w=436,h=246;panel(x,y,w,h,'연대기');const tab=G.chronT||'act';
   txt('달 없는 밤: 등불을 든 자',x+w-10,y+10,12,'#6b6275','right','serif');

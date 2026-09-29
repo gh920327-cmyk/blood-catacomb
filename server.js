@@ -1269,6 +1269,9 @@ const H={
     const st=traderStock(inst,P),i=st.findIndex(x=>x.id===d.id);if(i<0)return;const it=st[i];if(P.ch.gold<it.price){msg(P,'골드가 부족합니다','#ff6a5a');return;}const cp=Object.assign({},it);delete cp.price;if(!addBag(P,cp)){msg(P,'가방이 가득 찼습니다','#ff6a5a');return;}P.ch.gold-=it.price;st.splice(i,1);markDirty(P);msg(P,`${it.name} 구입`,'#ffd35a');send(P,{t:'fxp',k:'gold'});H.trader(P);},
   ping(P,d){const inst=P.inst;if(!inst)return;const now=Date.now();if(now-(P.pingT||0)<700)return;P.pingT=now;const x=+d.x,y=+d.y;if(!isFinite(x)||!isFinite(y))return;const k=clamp(d.k|0,0,2);
     const o={t:'ping',x:r1(x),y:r1(y),k,id:P.id,name:P.ch.name};const tg=P.party?partyList(P.party).filter(q=>q.inst===inst):[P];for(const q of tg)send(q,o);},
+  who(P){const L=[];for(const q of players.values()){if(!q.ch)continue;const i=q.inst;const where=!i?'-':i===hub?'마을':i.raid?'레이드':i.arena?'결투장':i.type==='dungeon'?`던전 지하 ${i.floor|0}층`:'마을';L.push({id:q.id,name:q.ch.name,cls:q.ch.cls,lvl:q.ch.lvl,where,hub:i===hub,pt:q.party?q.party.members.size:0,me:q===P});if(L.length>=100)break;}send(P,{t:'who',list:L});},
+  fadd(P,d){if(typeof d.n!=='string')return;for(const q of players.values())if(q.ch&&q.ch.name===d.n&&q!==P){msg(q,`${P.ch.name}님이 당신을 친구로 추가했어요`,'#8fd0ff');break;}},
+  insp(P,d){let T=d.id!=null?players.get(d.id):null;if(!T&&typeof d.n==='string')for(const q of players.values())if(q.ch&&q.ch.name===d.n){T=q;break;}if(!T||!T.ch){msg(P,'접속 중인 플레이어가 아니에요','#9e937a');return;}const c=T.ch;send(P,{t:'insp',v:{id:T.id,name:c.name,cls:c.cls,lvl:c.lvl,title:c.title||null,eq:c.eq,S:T.S,cp:SH.power(c),str:c.str,dex:c.dex,vit:c.vit,ene:c.ene,best:c.best|0,kills:c.kills|0,rclr:c.rclr||{},ult:c.ult||null,bar:c.bar||[],sk:c.sk||{},pvp:c.pvp||null}});},
   treq(P,d){const T=players.get(d.id);if(!T||T===P||!T.ch)return;if(P.inst!==hub||T.inst!==hub){msg(P,'마을에서만 거래할 수 있습니다','#ff6a5a');return;}
     if(P.trade||T.trade){msg(P,T.trade?`${T.ch.name}님은 다른 사람과 거래 중입니다`:'이미 거래 중입니다','#ff6a5a');return;}
     T.treq={from:P.id,t:Date.now()};send(T,{t:'treq',from:P.id,name:P.ch.name});msg(P,`${T.ch.name}님에게 거래를 신청했습니다`,'#9e937a');},
@@ -1344,7 +1347,7 @@ setInterval(()=>{
   for(const inst of dungeons.values()){try{updateDungeon(inst,DT);snapshot(inst);}catch(e){console.error('tick',e);}}
   hub.time+=DT;
   for(let i=hub.drops.length-1;i>=0;i--)if(hub.time-hub.drops[i].born>300)remDrop(hub,hub.drops[i]);
-  for(const P of instPlayers(hub)){P.hp=P.S.maxHp;P.mp=P.S.maxMp;P.atkCd-=DT;P.potCd-=DT;P.dodgeT-=DT;P.dodgeCd-=DT;for(const k in P.scd)P.scd[k]-=DT;const b=P.buffs;for(const k in b)if(k.endsWith('T'))b[k]-=DT;if(P.shieldT>0){P.shieldT-=DT;if(P.shieldT<=0)P.shield=0;}
+  for(const P of instPlayers(hub)){P.hp=P.S.maxHp;P.mp=P.S.maxMp;/* 마을(훈련장)에서도 속박·둔화가 풀리게 — 용의 화살 뒤 멈춰 있던 버그 */if(P.rootT>0)P.rootT-=DT;if(P.slowT>0){P.slowT-=DT;if(P.slowT<=0)P.slowV=0;}P.atkCd-=DT;P.potCd-=DT;P.dodgeT-=DT;P.dodgeCd-=DT;for(const k in P.scd)P.scd[k]-=DT;const b=P.buffs;for(const k in b)if(k.endsWith('T'))b[k]-=DT;if(P.shieldT>0){P.shieldT-=DT;if(P.shieldT<=0)P.shield=0;}
     const w=P.dps;if(w){while(w.win.length&&hub.time-w.win[0][0]>5)w.win.shift();if(hub.time-w.last<=4.5&&((hub.time*2)|0)!==w.sent){w.sent=(hub.time*2)|0;const span=Math.min(5,Math.max(1,hub.time-w.t0));send(P,{t:'dps',v:Math.round(w.win.reduce((a,b)=>a+b[1],0)/span),tot:Math.round(w.tot),dur:Math.round((w.last-w.t0)*10)/10});}}}
   try{updateDots(hub,DT);updateProjs(hub,DT);updateZones(hub,DT);updateTimers(hub,DT);for(const m of hub.monsters){m.flash-=DT;m.slow-=DT;m.stun-=DT;}}catch(e){console.error('hub',e);}
   snapshot(hub);
