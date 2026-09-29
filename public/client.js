@@ -414,13 +414,13 @@ function musicTick(){if(!MUS||!AC)return;try{const t=AC.currentTime,ahead=t+0.45
 const EL_SPARK={zap:'c',fire:'o',ice:'C',holy:'y',poison:'z',void:'P',magic:'p',arrow:'w',blunt:'S',quake:'S'};
 function nzF(dur,vol,type,freq,q,delay){const t=AC.currentTime+(delay||0);const s2=AC.createBufferSource();s2.buffer=NB;const f=AC.createBiquadFilter();f.type=type;f.frequency.value=freq;if(q)f.Q.value=q;const g=AC.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);s2.connect(f).connect(g).connect(SFXG);s2.start(t,R()*0.3);s2.stop(t+dur+0.03);}
 function hitThump(f,vol,dur){tone('sine',f,f*0.45,dur,vol);}
-function hitSfx(el,crit,mine,boss){if(!AC||soundMode===2)return;const now=AC.currentTime,key='h_'+el+(mine?'m':'');if(lastS[key]&&now-lastS[key]<(mine?0.035:0.06))return;lastS[key]=now;const v=rf(0.9,1.12);const lv=mine?1:0.55;
-  try{if(mine){nzF(0.014,0.16*lv,'highpass',4200*v);hitThump((boss?68:92)*v,(crit?0.2:0.12)*lv,boss?0.16:0.1);}}catch(e){}
+function hitSfx(el,crit,mine,boss){if(!AC||soundMode===2)return;const now=AC.currentTime,key='h_'+el+(mine?'m':'');if(lastS[key]&&now-lastS[key]<(mine?0.06:0.09))return;lastS[key]=now;const v=rf(0.9,1.12);const lv=mine?1:0.55;
+  try{if(mine){nzF(0.05,0.07,'lowpass',900*v);hitThump((boss?62:84)*v,(crit?0.16:0.1),boss?0.18:0.12);}}catch(e){}
   try{switch(el){
-  case'slash':nzF(0.06,0.11,'highpass',2600*v);tone('sawtooth',1100*v,350,0.05,0.022);tone('triangle',2200*v,1900*v,0.09,0.012);break;
+  case'slash':nzF(0.09,0.09*lv,'bandpass',1500*v,1.4);nzF(0.05,0.05*lv,'lowpass',700*v);tone('triangle',520*v,260,0.06,0.02*lv);break;
   case'blunt':tone('sine',130*v,48,0.13,0.13);noise(0.1,0.12,520*v);break;
   case'heavy':tone('sine',95*v,35,0.2,0.15);noise(0.16,0.15,700);nzF(0.08,0.08,'highpass',2400);break;
-  case'arrow':nzF(0.045,0.11,'bandpass',1900*v,3);tone('square',300*v,120,0.04,0.03);break;
+  case'arrow':nzF(0.06,0.08*lv,'bandpass',1300*v,2);tone('triangle',260*v,110,0.05,0.03*lv);break;
   case'magic':tone('sine',820*v,320,0.12,0.05);nzF(0.08,0.05,'bandpass',2600*v,2);break;
   case'zap':for(let i=0;i<6;i++)tone('square',rf(1500,4200),rf(250,900),0.022,0.032,i*rf(0.012,0.028));nzF(0.2,0.075,'highpass',3600);tone('sawtooth',130,95,0.16,0.028);break;
   case'fire':noise(0.24,0.1,1300*v);tone('sawtooth',210*v,70,0.2,0.04);for(let i=0;i<3;i++)nzF(0.015,0.06,'highpass',3200,0,0.03+i*rf(0.03,0.07));break;
@@ -430,7 +430,7 @@ function hitSfx(el,crit,mine,boss){if(!AC||soundMode===2)return;const now=AC.cur
   case'void':tone('sine',560*v,60,0.3,0.07);nzF(0.2,0.05,'bandpass',320,4);break;
   case'quake':tone('sine',72*v,30,0.35,0.15);noise(0.3,0.14,320);break;
   default:noise(0.09,0.12,900);tone('square',180,90,0.06,0.03);}
-  if(crit){tone('square',rf(700,900),280,0.1,0.05);nzF(0.1,0.08,'highpass',3000);tone('triangle',rf(1500,1800),rf(1400,1600),0.18,0.035,0.02);hitThump(55,0.18,0.22);}}catch(e){}}
+  if(crit){tone('triangle',rf(620,720),300,0.12,0.04);nzF(0.12,0.06,'bandpass',1100,1.2);hitThump(55,0.16,0.24);}}catch(e){}}
 // ---- 몬스터 소리: 종류별(시체·해골·짐승·알·촉수·수호·환영·보스) × 테마별 음높이 ----
 const TH_PITCH=[1,1.25,0.8,0.9,0.85,1.1,1.15,1.05,1.2,0.7];
 function monSfx(tc,kind,wc){if(!AC||soundMode===2)return;const type=SH.MT_LIST[tc]||'zombie';const key='m_'+type+kind;const now=AC.currentTime;if(lastS[key]&&now-lastS[key]<0.12)return;lastS[key]=now;
@@ -451,10 +451,10 @@ function monSfx(tc,kind,wc){if(!AC||soundMode===2)return;const type=SH.MT_LIST[t
     else if(type==='boss'){}
     else{tone('sawtooth',140*p,50,0.4,0.05);noise(0.3,0.07,420);}}}catch(e){}}
 function sfx(n){if(!AC||soundMode===2)return;const now=AC.currentTime;if(lastS[n]&&now-lastS[n]<0.045)return;lastS[n]=now;try{switch(n){
-  case'swing':nzF(0.11,0.06,'bandpass',rf(900,1300),1.2);nzF(0.07,0.04,'highpass',3200,0,0.02);break;
+  case'swing':nzF(0.12,0.045,'bandpass',rf(700,1000),1.1);break;
   case'hit':noise(0.09,0.12,900);tone('square',180,90,0.06,0.03);break;
   case'crit':noise(0.12,0.16,1400);tone('square',520,260,0.1,0.05);break;
-  case'mdie':noise(0.25,0.1,500);tone('sawtooth',160,50,0.25,0.04);tone('sine',90,35,0.22,0.14);nzF(0.02,0.1,'highpass',3800);break;
+  case'mdie':noise(0.25,0.1,500);tone('sawtooth',160,50,0.25,0.04);tone('sine',90,35,0.22,0.12);break;
   case'hurt':tone('square',140,70,0.14,0.07);noise(0.08,0.08,700);break;
   case'fire':tone('sawtooth',300,90,0.22,0.05);noise(0.2,0.06,1800);break;
   case'boom':noise(0.3,0.16,600);tone('sine',120,40,0.3,0.1);break;
