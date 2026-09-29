@@ -667,10 +667,14 @@ const SK={
       later(inst,0.35,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:54,c:1});fx(inst,{k:'quake',x:r1(tx),y:r1(ty),r:60});fx(inst,{k:'shake',v:last?9:6});
         for(const m of inst.monsters){if(m.dead||Math.hypot(m.x-tx,m.y-ty)>54+m.r)continue;hitMonster(inst,m,P,3.5,{kb:8,stun:last?3:0});if(last&&m.boss){m.grog=Math.max(m.grog||0,inst.time+2.5);fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-40),s:'휘청!',c:'#ffe9a8'});}}});});}},
   skyrain(inst,P,a,tx,ty){[tx,ty]=clampTarget(P,tx,ty,200);addZone(inst,P,{x:tx,y:ty,r:100,t:5,iv:0.25,dmg:0.9,vis:12});fx(inst,{k:'sfx',n:'bow'});},
-  dragonarrow(inst,P,a,tx,ty){P.rootT=Math.max(P.rootT,1.0);fx(inst,{k:'dcharge',id:P.id,d:1,a:r1(a)});
-    later(inst,1.0,()=>{if(!alive(inst,P))return;const len=340,sp=230,x0=P.x,y0=P.y-4;fx(inst,{k:'dragon',x:r1(x0),y:r1(y0),a:r1(a),len,sp});fx(inst,{k:'shake',v:5});const hit=new Set();const n=Math.ceil(len/10);
-      for(let j=1;j<=n;j++)later(inst,j*10/sp,()=>{if(!P.inst||P.inst!==inst)return;const x=x0+Math.cos(a)*j*10,y=y0+Math.sin(a)*j*10;for(const m of inst.monsters){if(m.dead||hit.has(m.id))continue;if(Math.hypot(m.x-x,m.y-y)<20+m.r){hit.add(m.id);hitMonster(inst,m,P,8,{kb:8});}}
-        if(j===n){fx(inst,{k:'boom',x:r1(x),y:r1(y),r:70});fx(inst,{k:'shake',v:8});aoe(inst,P,x,y,70,4,{kb:10});}});});},
+  dragonarrow(inst,P,a,tx,ty){P.rootT=Math.max(P.rootT,0.8);fx(inst,{k:'dcharge',id:P.id,d:0.8,a:r1(a)});
+    later(inst,0.8,()=>{if(!alive(inst,P))return;const len=360,sp=240,BODY=190,x0=P.x+Math.cos(a)*10,y0=P.y-4+Math.sin(a)*10;fx(inst,{k:'dragon',x:r1(x0),y:r1(y0),a:r1(a),len,sp});fx(inst,{k:'shake',v:5});
+      /* 다단히트: 용의 몸통(머리~꼬리 190px)이 지나가는 동안 0.1초마다 닿은 적에게 피해, 적마다 최대 10회 */
+      const cnt=new Map(),T=(len+BODY)/sp,N=Math.ceil(T/0.1);const ca=Math.cos(a),sa=Math.sin(a);
+      for(let j=1;j<=N;j++)later(inst,j*0.1,()=>{if(!P.inst||P.inst!==inst)return;const hd=Math.min(len,j*0.1*sp),tl=Math.max(0,j*0.1*sp-BODY);if(tl>=len)return;
+        for(const m of inst.monsters){if(m.dead)continue;const n=cnt.get(m.id)|0;if(n>=10)continue;const rx=m.x-x0,ry=m.y-y0;const along=rx*ca+ry*sa,perp=Math.abs(-rx*sa+ry*ca);if(along<tl-m.r||along>hd+m.r+8||perp>18+m.r)continue;
+          cnt.set(m.id,n+1);hitMonster(inst,m,P,n===0?8:6.5,{kb:n===0?8:2});}});
+      later(inst,len/sp,()=>{if(!P.inst||P.inst!==inst)return;const x=x0+ca*len,y=y0+sa*len;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:70});fx(inst,{k:'shake',v:8});aoe(inst,P,x,y,70,6,{kb:10});});});},
   apocalypse(inst,P,a,tx,ty){fx(inst,{k:'redsky',d:4.6});fx(inst,{k:'shake',v:3});
     for(let n=0;n<12;n++)later(inst,0.3+n*0.25,()=>{if(!P.inst||P.inst!==inst)return;const near=inst.monsters.filter(m=>!m.dead&&Math.hypot(m.x-P.x,m.y-P.y)<180);let x,y;if(near.length){const m=pick(near);x=m.x+rf(-6,6);y=m.y+rf(-6,6);}else{x=P.x+rf(-120,120);y=P.y+rf(-80,80);}
       fx(inst,{k:'tele',x:r1(x),y:r1(y),r:32,d:0.6,c:'o'});fx(inst,{k:'meteor',x:r1(x),y:r1(y),d:0.6});later(inst,0.6,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:32});fx(inst,{k:'shake',v:3});aoe(inst,P,x,y,32,4*P.S.spell,{kb:4});});});

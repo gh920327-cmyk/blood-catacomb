@@ -534,7 +534,7 @@ function onHitJuice(o){const el=SH.EL_LIST[o.e]||'slash';const mine=o.p===myId;c
   if(mine&&(el==='slash'||el==='heavy'||crit))HITFX.push({x:o.x,y:o.y+8,a:Math.atan2(ay,ax)+Math.PI/2+rf(-0.4,0.4),t0:time,big:crit||el==='heavy',c:crit?'#fff6d0':'#ffffff'});
   if(m){if(!boss)m.flash=Math.max(m.flash||0,crit?0.1:0.07);else if(crit&&mine)m.flash=Math.max(m.flash||0,0.03);m.kx=ax*(crit?3:heavy?2.5:1.5);m.ky=ay*(crit?2:1);m.kt=time;}
   hitSfx(el,crit,mine,boss);
-  if(mine){const now=performance.now()/1000;const hs=crit?0.075:heavy||o.sk?0.045:0.028;if(crit||now-lastHS>0.14){HSTOP=Math.max(HSTOP,hs);lastHS=now;}shake=Math.max(shake,crit?3:heavy?1.8:0.8);if(crit)screenFlash=Math.max(screenFlash,0.05);}
+  if(mine){const now=performance.now()/1000;const hs=crit?0.075:heavy||o.sk?0.045:0.028;/* 궁극기 연출 중에는 역경직 없음(용이 멈춰 보이던 문제) · 치명타도 간격 제한 */if(!UFX.length&&now-lastHS>(crit?0.1:0.14)){HSTOP=Math.max(HSTOP,hs);lastHS=now;}shake=Math.max(shake,crit?3:heavy?1.8:0.8);if(crit)screenFlash=Math.max(screenFlash,0.05);}
   else if(crit)shake=Math.max(shake,1);}
 const HITFX=[];
 function drawHitFx(icx,icy){for(let i=HITFX.length-1;i>=0;i--){const h=HITFX[i];const t=time-h.t0,d=0.11;if(t>d){HITFX.splice(i,1);continue;}const k=t/d;const L=(h.big?14:9)*(1-k*0.3);const x=Math.round(h.x-icx),y=Math.round(h.y-icy);const ca=Math.cos(h.a),sa=Math.sin(h.a);
@@ -2223,7 +2223,7 @@ function drawUltWorld(icx,icy){for(let i=UFX.length-1;i>=0;i--){const e=UFX[i];c
   else if(e.type==='hammer'){if(t<e.d){const kk=t/e.d;const y=sy-190+kk*kk*190;const sc=e.big?1.3:1;wx.globalAlpha=0.35;wglow(sx,sy,18*kk*sc,'#ffe9a8',0.4);wx.globalAlpha=1;drawRot(HAMMER,sx,Math.round(y),0,17,43,sc);}
     else{const kk=(t-e.d)/0.45;wx.globalAlpha=1-kk;drawRot(HAMMER,sx,sy,0,17,43,e.big?1.3:1);wx.globalAlpha=1;wglow(sx,sy,60*(0.5+kk),'#ffe9a8',0.35*(1-kk));for(let j=0;j<200;j+=2){wx.globalAlpha=(1-kk)*0.6;wx.fillStyle='#ffffff';wx.fillRect(sx-2,sy-j,4,2);}wx.globalAlpha=1;if(t-e.d<0.05)screenFlash=Math.max(screenFlash,e.big?0.22:0.12);}}
   else if(e.type==='dcharge'){const p=e.pid===myId?me:G.players.get(e.pid);if(!p)continue;const px=(e.pid===myId?me.x:p.dx)-icx,py=(e.pid===myId?me.y:p.dy)-icy-8;wglow(px,py,10+k*16,'#b8e070',0.3+0.3*k);for(let n=0;n<4;n++){const a=R()*Math.PI*2,d2=rf(20,40);part(px+icx+Math.cos(a)*d2,py+icy+Math.sin(a)*d2,-Math.cos(a)*d2*3,-Math.sin(a)*d2*3,pick(['z','y','w']),0.3,{z:0,glow:true});}}
-  else if(e.type==='dragon'){const dist=Math.min(e.len,t*e.sp);const fade=t>e.len/e.sp?1-(t-e.len/e.sp)/0.35:1;if(fade<=0)continue;const ca=Math.cos(e.a),sa=Math.sin(e.a);const L=Math.min(dist,190);const s0=dist-L;
+  else if(e.type==='dragon'){const dist=t*e.sp;const fade=t>e.len/e.sp?1-(t-e.len/e.sp)/0.35:1;if(fade<=0)continue;const ca=Math.cos(e.a),sa=Math.sin(e.a);const L=Math.min(dist,190);const s0=dist-L;
     const P=u=>{const s1=s0+u*L;const w=Math.sin(s1*0.045-t*9)*14*(1-u*0.55);return[e.x+ca*s1-sa*w-icx,e.y+sa*s1+ca*w-icy];};const N=40;const pts=[],nrm=[];for(let n=0;n<=N;n++){const u=n/N;pts.push(P(u));}
     for(let n=0;n<=N;n++){const a=pts[Math.max(0,n-1)],b=pts[Math.min(N,n+1)];const dx=b[0]-a[0],dy=b[1]-a[1],d=Math.hypot(dx,dy)||1;nrm.push([-dy/d,dx/d]);}
     const wid=u=>2+11*Math.pow(u,0.65);wx.globalAlpha=fade;
