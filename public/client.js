@@ -787,7 +787,7 @@ window.addEventListener('keydown',e=>{
   if(G.bintro&&c==='Escape'){G.bintro.t0=time-3.2;return;}
   if(raidSelKey(c)){e.preventDefault();return;}
   if(c==='Escape'){
-    if(G.opts){G.opts=false;return;}if(G.emoWheel){G.emoWheel=false;return;}if(G.talent||G.rec){G.talent=false;G.rec=false;return;}if(G.fishS){G.fishS=null;return;}
+    if(G.opts){G.opts=false;return;}if(G.emoWheel){G.emoWheel=false;return;}if(G.chronD!=null&&G.chron){G.chronD=null;return;}if(G.talent||G.rec||G.chron){G.talent=false;G.rec=false;G.chron=false;return;}if(G.fishS){G.fishS=null;return;}
     if(G.ctxMenu){G.ctxMenu=null;return;}if(G.result){G.result=null;return;}
     if(G.fac){closeFac();showInv=false;return;}
     if(showInv||showChar||showShop||showSkills||G.portalMenu){showInv=showChar=showShop=showSkills=false;G.portalMenu=false;return;}
@@ -802,7 +802,8 @@ window.addEventListener('keydown',e=>{
   if(G.emoWheel&&c.startsWith('Digit')){const i=+c.slice(5)-1;if(i>=0&&i<8){net({t:'emo',i});G.emoWheel=false;return;}}
   if(act==='emote'){G.emoWheel=!G.emoWheel;return;}
   if(act==='talent'){G.talent=!G.talent;if(G.talent){G.rec=false;showSkills=false;showChar=false;showInv=false;closeFac();}return;}
-  if(act==='rec'){G.rec=!G.rec;if(G.rec){G.talent=false;showSkills=false;showChar=false;showInv=false;closeFac();}return;}
+  if(act==='rec'){G.rec=!G.rec;if(G.rec){G.talent=false;G.chron=false;showSkills=false;showChar=false;showInv=false;closeFac();}return;}
+  if(act==='chron'){openChron(!G.chron);return;}
   if(G.invite&&(c==='KeyY'||c==='KeyN')){net({t:'ians',from:G.invite.from,ok:c==='KeyY'});G.invite=null;return;}
   if(inDungeon()&&G.paused)return;
   if(act&&act.startsWith('sk')){const i=+act.slice(2);if(i>=0&&i<SH.BAR_SIZE){G.sel=i;castSkill(i,mouse.wx,mouse.wy);}}
@@ -1317,7 +1318,7 @@ function render(){
     const n=Math.floor(time*3)%4;txt('.'.repeat(n),240,106,14,'#ffd35a','center');}return;}
   const [icx,icy]=renderWorld();drawUltScreen();
   drawWorldUI(icx,icy);drawPartyArrows(icx,icy);drawHUD();drawTut();drawChat();
-  if(G.talent)drawTalents();else if(G.rec)drawRecords();else if(showSkills)drawSkills();else if(showChar)drawChar();else if(showShop)drawShop();else if(G.fac)drawFacPanel();
+  if(G.talent)drawTalents();else if(G.chron)drawChron();else if(G.rec)drawRecords();else if(showSkills)drawSkills();else if(showChar)drawChar();else if(showShop)drawShop();else if(G.fac)drawFacPanel();
   if(showInv&&!showSkills&&!G.talent&&!G.rec)drawInv();
   if(G.portalMenu)drawPortalMenu();
   if(G.stairsAsk)drawStairsAsk();
@@ -1513,7 +1514,7 @@ const OPT={bgm:0.8,sfx:0.8,shake:1,keys:{}};
 try{const o=JSON.parse(localStorage.getItem('bc_opt')||'null');if(o){if(typeof o.bgm==='number')OPT.bgm=clamp(o.bgm,0,1);if(typeof o.sfx==='number')OPT.sfx=clamp(o.sfx,0,1);if(typeof o.shake==='number')OPT.shake=clamp(o.shake,0,1);if(o.keys&&typeof o.keys==='object')OPT.keys=o.keys;}}catch(e){}
 function saveOpt(){try{localStorage.setItem('bc_opt',JSON.stringify(OPT));}catch(e){}}
 const KB_DEF=[];for(let i=0;i<SH.BAR_SIZE;i++)KB_DEF.push(['sk'+i,`스킬 ${i+1}`,'Digit'+(i+1)]);
-KB_DEF.push(['ctr','카운터 스킬','KeyR'],['talent','특성 창','KeyN'],['rec','기록 (업적·도감·펫)','KeyJ'],['ping','핑(신호)','KeyG'],['emote','감정표현','KeyT'],['potHp','체력 물약','KeyQ'],['potMp','마나 물약','KeyE'],['dodge','구르기','Space'],['act','상호작용·줍기','KeyF'],['inv','인벤토리','KeyI'],['skills','스킬 창','KeyK'],['char','캐릭터 창','KeyC'],['meter','기록표(누르고 있기)','Tab']);
+KB_DEF.push(['ctr','카운터 스킬','KeyR'],['talent','특성 창','KeyN'],['rec','기록 (업적·도감·펫)','KeyJ'],['chron','연대기 (이야기)','KeyL'],['ping','핑(신호)','KeyG'],['emote','감정표현','KeyT'],['potHp','체력 물약','KeyQ'],['potMp','마나 물약','KeyE'],['dodge','구르기','Space'],['act','상호작용·줍기','KeyF'],['inv','인벤토리','KeyI'],['skills','스킬 창','KeyK'],['char','캐릭터 창','KeyC'],['meter','기록표(누르고 있기)','Tab']);
 function kbCode(a){return OPT.keys[a]||KB_DEF.find(k=>k[0]===a)[2];}
 function kbAction(code){for(const k of KB_DEF)if(kbCode(k[0])===code)return k[0];return null;}
 function keyLabel(c){if(!c)return '-';if(c.startsWith('Key'))return c.slice(3);if(c.startsWith('Digit'))return c.slice(5);if(c.startsWith('Numpad'))return 'Num'+c.slice(6);return {Space:'Space',Tab:'Tab',ShiftLeft:'L-Shift',ShiftRight:'R-Shift',ControlLeft:'L-Ctrl',AltLeft:'L-Alt',Backquote:'`',Minus:'-',Equal:'=',BracketLeft:'[',BracketRight:']',Semicolon:';',Quote:"'",Comma:',',Period:'.',Slash:'/',CapsLock:'Caps'}[c]||c;}
@@ -1691,7 +1692,7 @@ function drawRecords(){const ch=G.ch;if(!ch)return;const x=60,y=18,w=360,h=220;p
   else if(tab==='cdx'){const all=SH.codexList(),have=new Set(ch.cdx||[]);txt(`등록 ${have.size}/${all.length}`,x+w-12,y+24,10,'#9e937a','right');const groups=['몬스터','보스','전설 장비','물고기'];const g=G.cdxG||groups[0];
     groups.forEach((gn,i)=>{const n=all.filter(e=>e.g===gn),hv=n.filter(e=>have.has(e.k)).length;button(x+10+i*86,y+33,82,12,`${gn} ${hv}/${n.length}`,()=>{G.cdxG=gn;},{size:9,main:g===gn});});
     const list=all.filter(e=>e.g===g);list.forEach((e,i)=>{const c=i%3,r=(i/3)|0,bx=x+8+c*116,by=y+50+r*12;if(by>y+h-10)return;const k=have.has(e.k);txt(k?e.n:'???',bx+2,by+5,10,k?(g==='보스'?'#ff8a7a':g==='전설 장비'?'#ff8a1f':'#e6dcc3'):'#4a4452');});}
-  else if(tab==='lore'){drawLoreTab(x,y,w,h);}
+  else if(tab==='lore'){drawLoreTab(x,y,w,h);button(x+w/2-60,y+h-20,120,14,`연대기 열기 (${keyLabel(kbCode('chron'))})`,()=>openChron(true),{size:11,main:true});}
   else{const own=new Set(ch.pets||[]);txt('펫은 떨어진 골드·보석을 멀리서도 주워 줘요',x+w/2,y+38,10,'#9e937a','center');
     SH.PETS.forEach((p,i)=>{const c=i%3,r=(i/3)|0,bx=x+10+c*114,by=y+48+r*84;const has=own.has(p.id),cur=ch.pet===p.id;pr(bx,by,110,80,cur?PAL.y:PAL.k);pr(bx+1,by+1,108,78,cur?'#2e2414':'#1c1622');
       const fr=petFrames();if(fr&&fr[i]){const f=fr[i][((time*4)|0)%4].r;ctx.globalAlpha=has?1:0.25;ctx.drawImage(f,Math.round((bx+55-f.width)*SC),Math.round((by+8)*SC),f.width*2*SC,f.height*2*SC);ctx.globalAlpha=1;}
@@ -1735,6 +1736,48 @@ function drawLoreView(){const V=G.loreView;if(!V)return;const pg=SH.LORE[V.i];if
 function drawLoreTab(x,y,w,h){const read=new Set((G.ch&&G.ch.lore)||[]);txt(`읽은 일지 ${read.size}/${SH.LORE.length}  ·  테마마다 3번째 층(3·8·13…98층)에 떨어져 있어요`,x+w/2,y+38,10,'#9e937a','center');
   SH.LORE.forEach((pg,i)=>{const c=i%4,r=(i/4)|0,bx=x+10+c*86,by=y+48+r*32;const ok=read.has(i);pr(bx,by,82,28,ok?'#3a2e1a':'#1c1622');txt(ok?pg[0]:'???',bx+41,by+10,10,ok?'#f2e6c8':'#4a4452','center');txt(`${SH.loreFloor(i)}층`,bx+41,by+21,9,'#6b6275','center');
     if(ok)uiRects.push({x:bx,y:by,w:82,h:28,click:()=>{G.loreView={i,first:false};}});});}
+// ---- 연대기 (이야기 흐름 · 일지 · 보스 도감 · 다시 보기) ----
+const ACTS=[{n:'1막 · 꺼지지 않는 등불',r:'지하 1~35층',s:['알드릭의 일지를 주워 등불을 들고 지하묘지로 내려간다.','흑월 아래 되살아난 망자들과 서리, 불길의 층을 지나','일지에 남은 흔적을 따라 엘라의 행방을 쫓는다.'],ok:()=>true,done:ch=>(ch.best|0)>=36,hint:''},
+  {n:'2막 · 심장의 부름',r:'지하 36~100층',s:['내려갈수록 벽 너머의 심장 소리가 커진다.','알드릭은 끝내 심장에 삼켜졌고, 엘라는 그 안에서 노래하고 있다.','백 번째 층에서 심장을 멈추고 엘라를 풀어 주어야 한다.'],ok:ch=>(ch.best|0)>=36,done:ch=>(ch.cleared|0)>0,hint:'지하 36층에 닿으면 열려요'},
+  {n:'3막 · 흑월',r:'레이드 20·30·40·50',s:['풀려난 엘라와 함께, 흑왕의 편에 선 이들을 차례로 쓰러뜨린다.','종지기, 쌍둥이 마녀, 태엽 기사, 그리고 흑월의 왕좌.','흑왕이 쓰러질 때, 하렌에 첫 새벽이 온다.'],ok:ch=>(ch.lvl|0)>=20||(ch.cleared|0)>0,done:ch=>((ch.rclr||{}).moon|0)>0,hint:'레벨 20이 되면 열려요'}];
+const BOSS_BIO={bell:['하렌의 종지기. 흑월이 뜨던 밤, 경고의 종을 울리지 않았다.','카르나스가 약속한 "영원한 새벽"을 믿었기 때문이다.','이제 그는 아무도 울릴 수 없는 종을 끌고 다닌다.'],
+  mirror:['왕실 점성술사였던 쌍둥이. 둘 다 별에서 흑월을 먼저 읽었다.','언니 리라는 침묵했고, 동생 노라는 그것을 반겼다.','거울 속에서 서로를 비추며 영원히 같은 밤을 산다.'],
+  clock:['새벽 기사단의 부단장. 명령을 끝까지 따르려고','멈추지 않는 태엽 심장을 제 몸에 박아 넣었다.','그 명령이 무엇이었는지는 이미 잊었다.'],
+  moon:['새벽 기사단장이자 지금의 흑왕.','밤을 끝낼 힘을 원했고, 가장 아끼던 기사 엘라를 바쳐 심연의 심장을 빚었다.','흑월은 그가 스스로 연 문이다.']};
+const ENDINGS=[{id:'end1',n:'엔딩 1 · 심장이 멈춘 날',hint:'지하 100층을 정복하면 열려요',ok:ch=>(ch.cleared|0)>0,list:null},{id:'end2',n:'엔딩 2 · 첫 새벽',hint:'흑왕 카르나스를 쓰러뜨리면 열려요',ok:ch=>((ch.rclr||{}).moon|0)>0,list:null}];
+function openChron(on){G.chron=on;G.chronD=null;if(on){G.rec=false;G.talent=false;showSkills=false;showChar=false;showInv=false;closeFac();G.chronT=G.chronT||'act';}}
+function artCover(img,dx,dy,dw,dh,fx){const ir=img.width/img.height,r=dw/dh;let sw,sh,sx,sy;if(ir>r){sh=img.height;sw=sh*r;sx=Math.max(0,Math.min(img.width-sw,(fx==null?0.6:fx)*img.width-sw/2));sy=0;}else{sw=img.width;sh=sw/r;sx=0;sy=(img.height-sh)/2;}artDraw(img,sx,sy,sw,sh,dx,dy,dw,dh);}
+function drawChron(){const ch=G.ch;if(!ch)return;const x=22,y=12,w=436,h=246;panel(x,y,w,h,'연대기');const tab=G.chronT||'act';
+  txt('달 없는 밤: 등불을 든 자',x+w-10,y+10,12,'#6b6275','right','serif');
+  [['act','이야기 흐름'],['lore','알드릭의 일지'],['boss','보스 도감'],['cine','다시 보기']].forEach(([k,l],i)=>button(x+8,y+24+i*20,76,16,l,()=>{G.chronT=k;G.chronD=null;},{size:12,main:tab===k}));
+  txt(`${keyLabel(kbCode('chron'))} / Esc: 닫기`,x+46,y+h-10,10,'#6b6275','center');
+  const cx=x+92,cy=y+22,cw=w-100,chh=h-30;pr(cx-2,cy,1,chh,'#3a3144');
+  if(tab==='act'){ACTS.forEach((a,i)=>{const by=cy+2+i*72,ok=a.ok(ch),dn=ok&&a.done(ch);pr(cx+4,by,cw-8,68,ok?'rgba(40,28,20,0.6)':'rgba(10,7,14,0.6)');pr(cx+4,by,2,68,dn?'#ffd35a':ok?'#e0574a':'#3a3144');
+      txt(ok?a.n:'???',cx+12,by+10,20,ok?'#f2eadb':'#4a4452',null,'serif');txt(a.r,cx+cw-10,by+10,13,'#9e937a','right');
+      if(ok){a.s.forEach((l,k)=>txt(l,cx+12,by+26+k*11,13,'#c9c1b2'));
+        const st=i===0?(dn?'완료':`진행 중 · 가장 깊이 내려간 곳 지하 ${ch.best|0}층`):i===1?(dn?`완료 · 심장을 ${ch.cleared}번 멈춤`:`진행 중 · 가장 깊이 내려간 곳 지하 ${ch.best|0}층`):(dn?'완료 · 첫 새벽이 왔다':'진행 중 · '+SH.RAIDS.map(r=>(((ch.rclr||{})[r.id]|0)>0?'✓ ':'· ')+r.boss.split(' ').slice(-1)[0]).join('  '));
+        txt(st,cx+12,by+61,12,dn?'#ffd35a':'#7fd05a');}
+      else txt(a.hint,cx+12,by+36,13,'#6b6275');});}
+  else if(tab==='lore'){const read=new Set(ch.lore||[]);txt(`읽은 일지 ${read.size}/${SH.LORE.length} · 테마마다 3번째 층(3·8·13…98층)에 떨어져 있어요`,cx+cw/2,cy+8,12,'#9e937a','center');
+    SH.LORE.forEach((pg,i)=>{const c=i%4,r=(i/4)|0,bw=(cw-12)/4,bx=cx+4+c*(bw+1),by=cy+18+r*40;const ok=read.has(i);pr(bx,by,bw-2,37,ok?'#3a2e1a':'#1c1622');
+      txt(ok?pg[0]:'???',bx+bw/2-1,by+11,13,ok?'#f2e6c8':'#4a4452','center','serif');txt(ok?pg[1].slice(0,14)+'…':`지하 ${SH.loreFloor(i)}층`,bx+bw/2-1,by+26,10,ok?'#9e8a6a':'#6b6275','center');
+      if(ok)uiRects.push({x:bx,y:by,w:bw-2,h:37,click:()=>{G.loreView={i,first:false};}});});}
+  else if(tab==='boss'){const D=G.chronD;
+    if(D!=null){const r=SH.RAIDS[D],c=BCARD[r.id],img=bossArt(r.id);const n=((ch.rclr||{})[r.id]|0);const bh=112;pr(cx+4,cy+4,cw-8,bh,'#0a070e');
+      if(img)artCover(img,cx+4,cy+4,cw-8,bh,0.62);const g=ctx.createLinearGradient((cx+4)*SC,0,(cx+170)*SC,0);g.addColorStop(0,'rgba(10,7,14,0.95)');g.addColorStop(1,'rgba(10,7,14,0)');ctx.fillStyle=g;ctx.fillRect((cx+4)*SC,(cy+4)*SC,166*SC,bh*SC);
+      txt(`${r.n} · ${r.lvl}`,cx+12,cy+20,14,'#9e937a',null,'serif');txt(r.boss,cx+12,cy+44,r.boss.length>9?30:38,'#f2eadb',null,'serif');txt(c.ep,cx+12,cy+68,16,'#ffd35a',null,'serif');txt(c.q,cx+12,cy+84,13,'#c9a0e8',null,'serif');
+      BOSS_BIO[r.id].forEach((l,k)=>txt(l,cx+10,cy+bh+18+k*14,14,'#c9c1b2'));txt(`처치 ${n}번`,cx+10,cy+bh+64,13,'#7fd05a');
+      button(cx+cw-56,cy+bh+58,50,15,'목록',()=>{G.chronD=null;},{size:12});}
+    else SH.RAIDS.forEach((r,i)=>{const c=i%2,rw=(cw-14)/2,bx=cx+4+c*(rw+6),by=cy+4+((i/2)|0)*108;const n=((ch.rclr||{})[r.id]|0),ok=n>0,img=bossArt(r.id);const C=BCARD[r.id];
+      pr(bx,by,rw,104,ok?'#ffd35a':'#3a3144');pr(bx+1,by+1,rw-2,102,'#0a070e');
+      if(img){ctx.globalAlpha=ok?1:0.18;artCover(img,bx+1,by+1,rw-2,64,0.62);ctx.globalAlpha=1;}
+      txt(ok?r.boss:'???',bx+6,by+76,r.boss.length>9?15:18,ok?'#f2eadb':'#6b6275',null,'serif');txt(ok?C.ep:`레벨 ${r.lvl} 레이드 · ${r.n}`,bx+6,by+90,12,ok?'#ffd35a':'#6b6275');txt(ok?`처치 ${n}번`:'',bx+rw-6,by+90,11,'#7fd05a','right');
+      if(ok)uiRects.push({x:bx,y:by,w:rw,h:104,click:()=>{G.chronD=i;},tip:[['클릭: 자세히 보기','#ffd35a',11]]});});}
+  else{const items=[{n:'인트로 · 달 없는 밤',img:'art/intro6.jpg',ok:true,go:()=>playIntro()}].concat(ENDINGS.map(e=>({n:e.n,img:e.list?e.list[e.list.length-1].img:null,ok:e.ok(ch)&&!!e.list,hint:e.list?e.hint:'준비 중',go:()=>playCine(e.list,{})})));
+    items.forEach((it,i)=>{const by=cy+4+i*70,bw=cw-8;pr(cx+4,by,bw,66,it.ok?'#ffd35a':'#3a3144');pr(cx+5,by+1,bw-2,64,'#0a070e');const im=it.img?artOf(it.img):null;
+      if(im){ctx.globalAlpha=it.ok?1:0.15;artCover(im,cx+5,by+1,118,64,0.5);ctx.globalAlpha=1;}
+      txt(it.n,cx+132,by+22,20,it.ok?'#f2eadb':'#6b6275',null,'serif');txt(it.ok?'클릭해서 다시 보기':it.hint,cx+132,by+42,13,it.ok?'#ffd35a':'#6b6275');
+      if(it.ok)uiRects.push({x:cx+4,y:by,w:bw,h:66,click:it.go});});}}
 // ---- 보스 대사 ----
 function onBsay(o){G.bsay={id:o.id,m:o.m,t:time,x:o.x,y:o.y,dead:o.dead};if(o.dead)msg(`「${o.m}」`,'#c9bfa8');}
 function drawBsay(icx,icy){const B=G.bsay;if(!B)return;if(time-B.t>4.5){G.bsay=null;return;}const m=G.monsters.get(B.id);const x=m?m.dx:B.x,y=m?m.dy:B.y;if(x==null)return;const px=Math.round(x-icx),py=Math.round(y-icy)-58;

@@ -953,7 +953,7 @@ function raidClear(inst,m){const r=inst.raid;if(r.done)return;r.done=true;r.endT
   fx(inst,{k:'bsay',id:m.id,x:r1(m.x),y:r1(m.y),m:(RAID_LINES[r.id]||['',''])[1],dead:1});fx(inst,{k:'shake',v:7});r.rings=[];r.tethers=[];inst.hz=[];r.bb=null;
   {const rows=inst.bossMeter?meterRows(inst.bossMeter):[];const res={title:`${m.bname} 처치 · ${def.n} (${r.hard?'하드':r.practice?'연습':'노말'})`,floor:def.lvl,time:Math.round(r.bossT),rows};(inst.bossHist=inst.bossHist||[]).push(res);bcast(inst,Object.assign({t:'result'},res));inst.bossMeter=null;inst.bossId=null;}
   fx(inst,{k:'msg',m:`${def.n} 클리어!`,c:'#ffd35a'});fx(inst,{k:'sfx',n:'legend'});
-  const ps=instPlayers(inst);for(const P of ps){if(!r.elig.includes(P.ch.id))continue;(P.ch.raidD=P.ch.raidD||{})[r.id]=r.day;P.ch.gold+=def.lvl*40;P.ch.mats.myth=(P.ch.mats.myth|0)+(r.hard?2:1);P.ch.mats.ess+=1;stInc(P,'raid');markDirty(P);msg(P,`클리어 보상: ${def.lvl*40}골드 · 신화의 파편 ${r.hard?2:1} · 핏빛 정수 1`,'#ffd35a');}
+  const ps=instPlayers(inst);for(const P of ps){if(!r.elig.includes(P.ch.id))continue;(P.ch.raidD=P.ch.raidD||{})[r.id]=r.day;if(!r.practice){const RC=P.ch.rclr||(P.ch.rclr={});RC[r.id]=(RC[r.id]|0)+1;}P.ch.gold+=def.lvl*40;P.ch.mats.myth=(P.ch.mats.myth|0)+(r.hard?2:1);P.ch.mats.ess+=1;stInc(P,'raid');markDirty(P);msg(P,`클리어 보상: ${def.lvl*40}골드 · 신화의 파편 ${r.hard?2:1} · 핏빛 정수 1`,'#ffd35a');}
   raidState(inst);raidMvp(inst);
   if(r.practice||!r.elig.length)return;
   const fams=[...new Set(ps.map(P=>CLASSES[P.ch.cls].fam))];const L=def.lvl+5;const items=[];
@@ -1052,6 +1052,7 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
   ch.lore=Array.isArray(o.lore)?[...new Set(o.lore.filter(i=>Number.isInteger(i)&&i>=0&&i<SH.LORE.length))]:[];
   ch.merc=typeof o.merc==='string'&&SH.MERCS[o.merc]?o.merc:null;
   ch.raidD={};if(o.raidD&&typeof o.raidD==='object')for(const r of SH.RAIDS)if(typeof o.raidD[r.id]==='string')ch.raidD[r.id]=o.raidD[r.id].slice(0,10);
+  ch.rclr={};if(o.rclr&&typeof o.rclr==='object')for(const r of SH.RAIDS){const v=Math.max(0,o.rclr[r.id]|0);if(v)ch.rclr[r.id]=v;}
   if((o.lvl|0)>SH.LVL_CAP){const C0=CLASSES[ch.cls];ch.str=C0.base.str;ch.dex=C0.base.dex;ch.vit=C0.base.vit;ch.ene=C0.base.ene;ch.pts=3*(SH.LVL_CAP-1);ch.xp=0;ch.tal={};ch.sk=SH.defaultSkills(ch.cls).sk;ch.spts=SH.skillPointsTotal(SH.LVL_CAP)-(Object.values(ch.sk).reduce((a,b)=>a+b,0)-2);ch.bar=SH.defaultSkills(ch.cls).bar.slice();while(ch.bar.length<SH.BAR_SIZE)ch.bar.push(null);ch._capped=1;}
   ch.ult=typeof o.ult==='string'&&(C.ults||[]).includes(o.ult)&&ch.lvl>=SH.ULT_LVL?o.ult:null;
   ch.cos={cape:!(o.cos&&o.cos.cape===0)?1:0,glow:!(o.cos&&o.cos.glow===0)?1:0};
