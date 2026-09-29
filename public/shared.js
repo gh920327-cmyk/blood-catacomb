@@ -367,13 +367,15 @@ function synergies(clsList){const has=c=>clsList.includes(c);const out=[];
   if(has('priest'))out.push({id:'grace',n:'신의 가호',d:'파티 체력 재생 두 배'});
   if(has('warrior')&&has('guardian'))out.push({id:'van',n:'선봉대',d:'근접 직업 피해 +15%'});
   if(has('archer')&&has('mage'))out.push({id:'art',n:'원거리 포격',d:'원거리 직업 피해 +15%'});
+  if(has('knight')&&has('priest'))out.push({id:'dawnpray',n:'새벽의 기도',d:'모든 피해 +8%, 받는 피해 -5%'});
   if(has('guardian')&&has('priest')&&has('warrior')&&(has('archer')||has('mage')))out.push({id:'full',n:'완벽한 파티',d:'모든 피해 +10%, 받는 피해 -10%'});
   const cnt={};for(const c of clsList)cnt[c]=(cnt[c]||0)+1;for(const c in cnt)if(cnt[c]>=2)out.push({id:'bro_'+c,n:CLASSES[c].n+' 형제단',d:CLASSES[c].n+' 피해 +8%'});
   return out;}
+const SYN_INFO=[{id:'wall',n:'철벽 대형',req:[['guardian']],d:'파티 받는 피해 -10%'},{id:'grace',n:'신의 가호',req:[['priest']],d:'파티 체력 재생 두 배'},{id:'van',n:'선봉대',req:[['warrior'],['guardian']],d:'근접 직업 피해 +15%'},{id:'art',n:'원거리 포격',req:[['archer'],['mage']],d:'원거리 직업 피해 +15%'},{id:'dawnpray',n:'새벽의 기도',req:[['knight'],['priest']],d:'모든 피해 +8%, 받는 피해 -5%',hidden:1},{id:'full',n:'완벽한 파티',req:[['guardian'],['priest'],['warrior'],['archer','mage']],d:'모든 피해 +10%, 받는 피해 -10%'},{id:'bro',n:'○○ 형제단',req:[],d:'같은 직업 2명 이상: 그 직업 피해 +8%'}];
 function synergyMods(list,cls){let dmg=1,dr=0,regen=1;const ids=new Set(list.map(s=>s.id));
   if(ids.has('wall'))dr+=0.1;if(ids.has('grace'))regen=2;
   if(ids.has('van')&&CLASSES[cls].range==='melee')dmg*=1.15;if(ids.has('art')&&CLASSES[cls].range==='ranged')dmg*=1.15;
-  if(ids.has('full')){dmg*=1.1;dr+=0.1;}if(ids.has('bro_'+cls))dmg*=1.08;return{dmg,dr,regen};}
+  if(ids.has('full')){dmg*=1.1;dr+=0.1;}if(ids.has('dawnpray')){dmg*=1.08;dr+=0.05;}if(ids.has('bro_'+cls))dmg*=1.08;return{dmg,dr,regen};}
 
 // ---------- 몬스터 ----------
 const MT={
@@ -603,7 +605,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;

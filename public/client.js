@@ -540,6 +540,16 @@ let chosenCls='warrior',delArm=null;
 function clsPreview(cls,ch){const c=document.createElement('canvas');c.width=16;c.height=16;const x=c.getContext('2d');const lk=ch?{a:ch.eq.armor&&ch.eq.armor.kind,ar:ch.eq.armor?ch.eq.armor.rar:0}:{};x.drawImage(playerFrames(cls,lk).idle[0].r.c,0,0);return c;}
 function knightUnlocked(){try{if(localStorage.getItem('bc_knight'))return true;}catch(e){}return loadChars().some(c=>((c.rclr||{}).moon|0)>0);}
 function unlockKnight(){try{localStorage.setItem('bc_knight','1');}catch(e){}}
+function renderSyn(){const L=document.getElementById('synList'),Pk=document.getElementById('synPick'),O=document.getElementById('synOut');if(!L)return;const un=knightUnlocked();
+  const chip=c=>`<span class="chip" style="color:${CLASS_COL[c]}">${CLASSES[c].n}</span>`;
+  L.innerHTML=SH.SYN_INFO.map(sy=>{if(sy.hidden&&!un)return `<div class="it"><b>???</b><div class="d">히든 직업과 함께할 때 열리는 시너지</div></div>`;
+    const req=sy.req.length?sy.req.map(g=>g.map(chip).join('<span style="color:#6b6275;font-size:11px">또는</span>')).join(''):'<span class="chip" style="color:#9e937a">같은 직업 2명</span>';
+    return `<div class="it"><b>${sy.n}</b><div>${req}</div><div class="d">${sy.d}</div></div>`;}).join('');
+  const opts=SH.CLASS_ORDER.filter(c=>!CLASSES[c].hidden||un);
+  if(!Pk.childElementCount||Pk.dataset.un!==String(un)){Pk.dataset.un=String(un);const prev=[...Pk.querySelectorAll('select')].map(x=>x.value);Pk.innerHTML='';
+    const def=['guardian','warrior','priest','mage'];for(let i=0;i<4;i++){const sel=document.createElement('select');sel.setAttribute('aria-label',`파티원 ${i+1}`);sel.innerHTML='<option value="">(비어 있음)</option>'+opts.map(c=>`<option value="${c}">${CLASSES[c].n}</option>`).join('');sel.value=prev[i]!=null&&(prev[i]===''||opts.includes(prev[i]))?prev[i]:def[i];sel.onchange=upd;Pk.appendChild(sel);}}
+  function upd(){const list=[...Pk.querySelectorAll('select')].map(x=>x.value).filter(Boolean);const on=SH.synergies(list);O.innerHTML=on.length?on.map(x=>`<span class="on">✓ ${x.n} · ${x.d}</span>`).join(''):'<span class="none">켜지는 시너지가 없어요</span>';}
+  upd();}
 function renderSelect(){
   const slots=document.getElementById('slots');slots.innerHTML='';const a=loadChars();
   document.getElementById('noSlots').hidden=a.length>0;
@@ -555,6 +565,7 @@ function renderSelect(){
     const cvs=clsPreview(k);b.appendChild(cvs);const n=document.createElement('div');n.innerHTML=`<div class="nm" style="font-size:15px"></div><div class="role"></div><div class="d"></div>`;n.querySelector('.nm').textContent=C.n;n.querySelector('.role').textContent=C.role;n.querySelector('.d').textContent=C.desc;b.appendChild(n);
     if(C.hidden)b.classList.add('hid');b.onclick=()=>{chosenCls=k;[...cl.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===k?'true':'false'));};cl.appendChild(b);});}
   {const un=knightUnlocked();[...cl.children].forEach(x=>{if(CLASSES[x.dataset.k].hidden)x.hidden=!un;});if(!un&&CLASSES[chosenCls]&&CLASSES[chosenCls].hidden)chosenCls='warrior';}
+  renderSyn();
   [...cl.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===chosenCls?'true':'false'));
 }
 document.getElementById('createBtn').onclick=()=>{const name=document.getElementById('newName').value.trim();const err=document.getElementById('createErr');
