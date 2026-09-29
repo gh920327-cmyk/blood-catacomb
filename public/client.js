@@ -2282,7 +2282,7 @@ function mkAngel(fl){return pcan(72,56,q=>{const cx=36;const inE=(x,y,ex,ey,a,b,
   for(let j=9;j<17;j++)for(let i=-3;i<=3;i++)if(i*i+(j-13)*(j-13)<=10)q(cx+i,j,j<11?'#ffd35a':'#f2dcc0');q(cx-1,13,'#5a4a3a');q(cx+1,13,'#5a4a3a');
   for(let j=17;j<54;j++){const hw=3+(j-17)*0.3;for(let i=-hw;i<=hw;i++)q(cx+i,j,Math.abs(i)<1.2?'#ffe9a8':i<-hw+1.5?'#cdc6d2':i>hw-1.2?'#e6dcc3':'#ffffff');}for(let i=-14;i<=14;i++)q(cx+i,54,'#ffd35a');for(let j=24;j<34;j++){q(cx-5-((j-24)>>2),j,'#ffd35a');q(cx+5+((j-24)>>2),j,'#ffd35a');}});}
 const ANGEL_F=[mkAngel(0),mkAngel(1)];
-let DRAGON_SKIN=0;
+let DRAGON_SKIN=1;
 /* 역동적인 이미지 용: 활에서 튀어나오며 커지고, 몸통 전체에 흐르는 파동 · 잔상 · 발광 맥동 · 비늘 불꽃 · 속도선 · 끝에서 흩어짐 */
 function dragonBodyPts(e,dist,tt,BL,sc){const ca=Math.cos(e.a),sa=Math.sin(e.a);const M=56,out=[];
   for(let n=0;n<=M;n++){const u=n/M;const s1=dist-BL*(1-u);const amp=(15-u*9)*sc;const w=Math.sin(s1*0.05-tt*11+e.seed)*amp+Math.sin(tt*6+e.seed)*4*u*sc;out.push([e.x+ca*s1-sa*w,e.y+sa*s1+ca*w,s1]);}return out;}
