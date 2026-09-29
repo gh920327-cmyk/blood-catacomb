@@ -12,6 +12,7 @@
 *{box-sizing:border-box;}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:"Nanum Gothic","Malgun Gothic","Apple SD Gothic Neo",sans-serif;overflow:hidden;}
 #game{display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);image-rendering:pixelated;image-rendering:crisp-edges;cursor:none;outline:none;touch-action:none;}
+#numBox{position:absolute;display:none;background:rgba(10,7,14,.95);border:2px solid #ffd35a;color:#ffd35a;font:800 14px "Nanum Gothic",sans-serif;padding:4px 8px;outline:none;text-align:right;}
 #chatBox{position:absolute;display:none;background:rgba(10,7,14,.92);border:2px solid var(--edge);color:var(--text);font:800 14px "Nanum Gothic",sans-serif;padding:6px 8px;outline:none;}
 #select{position:absolute;inset:0;overflow:auto;background:radial-gradient(ellipse at 50% 20%,#2a0f14 0%,#0b080e 55%,#050407 100%);display:flex;justify-content:center;padding:28px 16px 40px;}
 #select[hidden]{display:none;}
@@ -79,6 +80,7 @@ textarea{width:100%;min-height:60px;resize:vertical;font-weight:400;font-size:12
 </head>
 <body>
 <canvas id="game" width="960" height="540" tabindex="0" aria-label="게임 화면"></canvas>
+<input id="numBox" inputmode="numeric" maxlength="12" autocomplete="off" aria-label="숫자 입력">
 <input id="chatBox" maxlength="80" autocomplete="off" aria-label="채팅 입력">
 <div id="toast"></div>
 <div id="select">

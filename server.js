@@ -769,14 +769,14 @@ const RAID_TF={bell:1,mirror:36,clock:31,moon:46}; // 타일 테마용 층
 function raidScale(L,n,hard){const f=L;return (1+BAL.monHpPerFloor*(f-1))*(1+BAL.monHpCurve*(f-1))*(1+BAL.bossHpCurve*(f-1))*BAL.bossHp*(hard?40:32)*[0,0.22,0.5,0.76,1][clamp(n,1,4)];}
 function createRaid(pt,id,mode,members){const def=SH.RAIDS.find(r=>r.id===id);const seed=(Math.random()*2147483647)|0;const hard=mode==='hard',practice=mode==='practice';const day=dayKey();
   const inst={id:'r'+(nextId++),type:'dungeon',party:pt,players:new Set(),floor:def.lvl,seed,map:SH.genRaid(id,seed),monsters:[],projs:[],drops:[],zones:[],timers:[],hz:[],dark:0,fx:[],paused:null,mid:1,pid:1,did:1,time:0,flows:new Map(),meter:new Map(),bossMeter:null,bossStart:0,trans:null,wipeT:0,meterT:0,stairsOpen:false,ev:null,traps:[],
-    raid:{id,def,mode,hard,practice,deaths:3,stage:'gate',bossT:0,enr:hard?420:540,day,elig:members.filter(q=>!practice&&(q.ch.raidD||{})[id]!==day).map(q=>q.ch.id),done:false,fail:false,endT:0,rings:[],tethers:[],bb:null,pz:null,gT:4,auc:null,n:members.length}};
+    raid:{id,def,mode,hard,practice,deaths:3,stage:'gate',bossT:0,enr:hard?420:540,day,elig:members.filter(q=>!practice).map(q=>q.ch.id)/* 보상 횟수 제한 없음: 클리어할 때마다 보상 */,done:false,fail:false,endT:0,rings:[],tethers:[],bb:null,pz:null,gT:4,auc:null,n:members.length}};
   dungeons.set(inst.id,inst);pt.inst=inst;
   for(const q of members){leaveInst(q);q.inst=inst;inst.players.add(q.id);resetCombat(q);q.hp=q.S.maxHp;q.mp=q.S.maxMp;q.raidRev=0;q.raidDown=false;}
   let k=0;for(const q of members){q.x=inst.map.startPt.x+(k%2?12:-12);q.y=inst.map.startPt.y-(k>>1)*12;k++;}
   RAIDX[id].init(inst);
   for(const q of members){sendMap(q);}bcastRoster(inst);bcastRoster(hub);sendParty(pt);raidState(inst);
   fx(inst,{k:'msg',m:`${def.n} (${hard?'하드':practice?'연습':'노말'}) · 파티 데스 카운트 ${practice?'무제한':3}`,c:'#ffd35a'});
-  if(!inst.raid.elig.length&&!practice)fx(inst,{k:'msg',m:'오늘 이 레이드 보상을 이미 받은 파티원만 있어요 (경매 없음)',c:'#9e937a'});}
+  }
 function rst(inst,P){const r=inst.raid;if(!r||!P||!P.ch)return null;const S=r.st||(r.st={});return S[P.id]||(S[P.id]={ctr:0,gim:0,deaths:0,mit:0});}
 function raidMvp(inst){const r=inst.raid;const ps=instPlayers(inst);const T=Math.max(1,r.bossT||1);const rows=ps.map(P=>{const m=inst.meter.get(P.id)||{dmg:0,taken:0,heal:0,shield:0};const s=rst(inst,P);return{id:P.id,name:P.ch.name,cls:P.ch.cls,dmg:Math.round(m.dmg),dps:Math.round(m.dmg/Math.max(1,inst.time)),heal:Math.round(m.heal),shield:Math.round(m.shield),taken:Math.round(m.taken),mit:Math.round(s.mit),ctr:s.ctr,gim:s.gim,deaths:s.deaths};});
   const mx=k=>Math.max(1,...rows.map(x=>x[k]));for(const x of rows)x.score=Math.round(x.dmg/mx('dmg')*50+(x.heal+x.shield+x.mit)/mx2(rows)*30+x.taken/mx('taken')*8+x.ctr*4+x.gim*3-x.deaths*6);
@@ -1077,7 +1077,7 @@ const RAID_H={
   clashp(P,d){const inst=P.inst;if(!inst||!inst.raid||inst.raid.id!=='moon')return;RAIDX.moon.clashPress(inst,P,+d.v||0);},
   beatres(P,d){const inst=P.inst;if(!inst||!inst.raid||inst.raid.id!=='moon')return;RAIDX.moon.beatRes(inst,P,d.hit|0);},
   bid(P,d){const inst=P.inst;if(!inst||!inst.raid||!inst.raid.auc)return;const a=inst.raid.auc,x=a.items[a.cur];if(!x||x.done)return;
-    if(!inst.raid.elig.includes(P.ch.id)){msg(P,'오늘 보상을 이미 받아 입찰할 수 없어요','#9e937a');return;}
+    if(!inst.raid.elig.includes(P.ch.id)){msg(P,'이 레이드의 보상 대상이 아니에요','#9e937a');return;}
     const amt=Math.floor(+d.amt||0);const mn=aucMin(x);if(amt<mn){msg(P,`최소 입찰가는 ${mn}골드입니다`,'#ff6a5a');return;}if(P.ch.gold<amt){msg(P,'골드가 부족합니다','#ff6a5a');return;}if(x.by===P.id){msg(P,'이미 최고 입찰자입니다','#9e937a');return;}
     x.high=amt;x.by=P.id;x.byN=P.ch.name;if(a.t<4)a.t=4;fx(inst,{k:'msg',m:`${P.ch.name}님 입찰 ${amt}골드 · ${x.it.name}`,c:'#ffd35a'});aucState(inst);},
   aucpass(P){const inst=P.inst;if(!inst||!inst.raid||!inst.raid.auc)return;const a=inst.raid.auc;(a.pass=a.pass||{})[a.cur+':'+P.id]=1;const ps=instPlayers(inst).filter(q=>inst.raid.elig.includes(q.ch.id));const x=a.items[a.cur];if(ps.every(q=>a.pass[a.cur+':'+q.id]||x.by===q.id)&&a.t>1.5){a.t=1.5;aucState(inst);}}
@@ -1107,7 +1107,7 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
   const ch={v:1,id:String(o.id||SH.rid()).slice(0,24),name:String(o.name).slice(0,12)||'모험가',cls:o.cls,lvl:clamp(o.lvl|0,1,SH.LVL_CAP),xp:Math.max(0,o.xp|0),pts:Math.max(0,o.pts|0),
     str:o.str|0||C.base.str,dex:o.dex|0||C.base.dex,vit:o.vit|0||C.base.vit,ene:o.ene|0||C.base.ene,gold:Math.max(0,o.gold|0),pots:{hp:clamp((o.pots&&o.pots.hp)|0,0,9),mp:clamp((o.pots&&o.pots.mp)|0,0,9)},
     eq:{weapon:o.eq.weapon||null,armor:o.eq.armor||null,ring:o.eq.ring||null},bag:new Array(20).fill(null),cps:Array.isArray(o.cps)&&o.cps.length?o.cps.filter(n=>Number.isInteger(n)&&n>=1&&n<=100):[1],best:o.best|0,kills:o.kills|0,created:o.created||Date.now()};
-  for(let i=0;i<20;i++)ch.bag[i]=o.bag[i]||null;if(!ch.cps.includes(1))ch.cps.unshift(1);
+  for(let i=0;i<SH.BAG_N;i++)ch.bag[i]=o.bag[i]||null;if(!ch.cps.includes(1))ch.cps.unshift(1);
   const cs=C.skills,def=SH.defaultSkills(o.cls);let sk={};if(o.sk&&typeof o.sk==='object')for(const s of cs){const r=clamp(o.sk[s]|0,0,SH.MAX_RANK);if(r>0&&SKILLS[s].lvl<=ch.lvl)sk[s]=r;}
   for(const s in def.sk)if(!sk[s])sk[s]=1;const spent=Object.values(sk).reduce((a,b)=>a+b,0)-2,total=SH.skillPointsTotal(ch.lvl);
   if(spent>total){sk=def.sk;ch.spts=total;}else ch.spts=total-spent;ch.sk=sk;
@@ -1163,7 +1163,7 @@ function giveR(P,r){const ch=P.ch,got=[];if(r.gold){ch.gold+=r.gold;got.push(`${
 const MAT_N={iron:'철 조각',dust:'마력 가루',ess:'핏빛 정수',myth:'신화의 파편'};
 
 // ================= 대장간 =================
-function refItem(P,d){if(d.w==='eq'){if(!['weapon','armor','ring'].includes(d.s))return null;return P.ch.eq[d.s]||null;}const i=d.i|0;if(i<0||i>=20)return null;return P.ch.bag[i]||null;}
+function refItem(P,d){if(d.w==='eq'){if(!['weapon','armor','ring'].includes(d.s))return null;return P.ch.eq[d.s]||null;}const i=d.i|0;if(i<0||i>=SH.BAG_N)return null;return P.ch.bag[i]||null;}
 function findItemById(P,id){for(const s2 of['weapon','armor','ring'])if(P.ch.eq[s2]&&P.ch.eq[s2].id===id)return P.ch.eq[s2];return P.ch.bag.find(x=>x&&x.id===id)||null;}
 function pay(P,c){const ch=P.ch,m=ch.mats;if((c.gold|0)>ch.gold){msg(P,'골드가 부족합니다','#ff6a5a');return false;}for(const k of['iron','dust','ess','myth'])if((c[k]|0)>(m[k]|0)){msg(P,`${MAT_N[k]}이(가) 부족합니다`,'#ff6a5a');return false;}
   ch.gold-=c.gold|0;for(const k of['iron','dust','ess','myth'])m[k]=(m[k]|0)-(c[k]|0);markDirty(P);return true;}
@@ -1187,12 +1187,13 @@ const BS={
   comb(P,d){const g=d.g;if(!SH.gemOk(g))return;const t=+g[1];if(t>=5||(P.ch.gems[g]|0)<3){msg(P,'같은 보석 3개가 필요합니다','#ff6a5a');return;}if(!pay(P,{gold:SH.combineCost(t)}))return;
     P.ch.gems[g]-=3;if(!P.ch.gems[g])delete P.ch.gems[g];const ng=g[0]+(t+1);P.ch.gems[ng]=(P.ch.gems[ng]|0)+1;msg(P,`합성 성공: ${SH.gemName(ng)}`,SH.GEM_COL[g[0]]);markDirty(P);send(P,{t:'bsr',op:'comb'});},
   salv(P,d){const i=d.i|0;if(!P.ch.bag[i])return;const nm=P.ch.bag[i].name;const y=salvageItem(P,i);const parts=[`철 조각 ${y.iron}`];if(y.dust)parts.push(`마력 가루 ${y.dust}`);if(y.ess)parts.push(`핏빛 정수 ${y.ess}`);for(const g of y.gems)parts.push(SH.gemName(g));msg(P,`${nm} 분해 · ${parts.join(', ')}`,'#d2c7ab');send(P,{t:'bsr',op:'salv'});},
-  salvAll(P,d){const mx=clamp(d.max|0,0,2);let n=0;const tot={iron:0,dust:0,ess:0,g:0};for(let i=0;i<20;i++){const it=P.ch.bag[i];if(!it||it.rar>mx||(it.so||[]).some(Boolean))continue;const y=salvageItem(P,i);n++;tot.iron+=y.iron;tot.dust+=y.dust;tot.ess+=y.ess;tot.g+=y.gems.length;}
+  salvAll(P,d){const mx=clamp(d.max|0,0,2);let n=0;const tot={iron:0,dust:0,ess:0,g:0};for(let i=0;i<SH.BAG_N;i++){const it=P.ch.bag[i];if(!it||it.rar>mx||(it.so||[]).some(Boolean))continue;const y=salvageItem(P,i);n++;tot.iron+=y.iron;tot.dust+=y.dust;tot.ess+=y.ess;tot.g+=y.gems.length;}
     if(!n){msg(P,'분해할 아이템이 없습니다','#9e937a');return;}msg(P,`${n}개 분해 · 철 조각 ${tot.iron}${tot.dust?`, 마력 가루 ${tot.dust}`:''}${tot.g?`, 보석 ${tot.g}`:''}`,'#d2c7ab');send(P,{t:'bsr',op:'salv'});}
 };
 function msUntilReset(){const n=Date.now()+9*3600e3;return 86400e3-(n%86400e3);}
 function inYard(P){return P.inst===hub&&hub.map.dummies.some(d=>Math.hypot(P.x-d.x,P.y-d.y)<130);}
 const H={
+  bsort(P){const b=P.ch.bag;while(b.length<SH.BAG_N)b.push(null);const SO={weapon:0,armor:1,ring:2};const its=b.filter(Boolean).sort((a,c)=>(SO[a.slot]??3)-(SO[c.slot]??3)||(c.rar|0)-(a.rar|0)||(c.L|0)-(a.L|0)||String(a.name).localeCompare(String(c.name)));for(let i=0;i<SH.BAG_N;i++)b[i]=its[i]||null;markDirty(P);},
   mv(P,d){const inst=P.inst;if(!inst||P.downed)return;if(inst.type==='dungeon'&&(inst.paused||inst.trans&&inst.trans.t<0.3))return;
     const x=+d.x,y=+d.y;if(!isFinite(x)||!isFinite(y))return;if(Math.hypot(x-P.x,y-P.y)>90||SH.blocked(inst.map,x,y,3)){P.bad=(P.bad||0)+1;if(P.bad>=3){P.bad=0;send(P,{t:'tp',x:P.x,y:P.y});}return;}P.bad=0;P.x=x;P.y=y;P.face=d.f<0?-1:1;P.moving=!!d.m;},
   atk(P,d){const inst=P.inst;if(!inst||P.downed||inst.paused)return;if(inst.type!=='dungeon'&&!inYard(P))return;if(inst.arena&&(inst.arena.cd>0||inst.arena.over))return;withFoes(inst,P,()=>basicAttack(inst,P,+d.a||0));},

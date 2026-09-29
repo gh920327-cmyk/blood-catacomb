@@ -287,9 +287,13 @@ function tbitmap(str,size,color,font){font=font||'kr';
   const [c,x]=mk(w,h);x.font=fontStr(size,font);x.textBaseline='middle';x.fillStyle='#fff';x.fillText(str,3,Math.round(h/2)+1);
   const id=x.getImageData(0,0,w,h),a=id.data,n=w*h,mask=new Uint8Array(n),al=new Uint8Array(n);for(let i=0;i<n;i++){al[i]=a[i*4+3];mask[i]=al[i]>110?1:0;}const smooth=font!=='px'&&SC>2;const rad=SC>=4?2:1;
   const [cr,cg,cb]=rgb(color);
+  /* 밝은 바탕(일지·말풍선)에 쓰는 어두운 글자는 검은 테두리 없이 부드럽게 — 번져 보이던 문제 */
+  if(cr*0.3+cg*0.59+cb*0.11<100){for(let i=0;i<n;i++){const p=i*4;a[p]=cr;a[p+1]=cg;a[p+2]=cb;a[p+3]=Math.min(255,al[i]*1.25);}x.putImageData(id,0,0);TXT.set(key,c);return c;}
   for(let i=0;i<n;i++){const p=i*4;if(mask[i]||(smooth&&al[i]>50)){a[p]=cr;a[p+1]=cg;a[p+2]=cb;a[p+3]=mask[i]?255:al[i]*2;}else{const X=i%w,Y=(i/w)|0;let o=0;for(let dy=-rad;dy<=rad&&!o;dy++)for(let dx=-rad;dx<=rad;dx++){const xx=X+dx,yy=Y+dy;if(xx>=0&&yy>=0&&xx<w&&yy<h&&mask[yy*w+xx]){o=1;break;}}if(o){a[p]=8;a[p+1]=5;a[p+2]=10;a[p+3]=255;}else a[p+3]=0;}}
   x.putImageData(id,0,0);TXT.set(key,c);return c;}
 function txt(str,x,y,size,color,align,font){size=size||12;color=color||'#e6dcc3';const b=tbitmap(String(str),size,color,font);let dx=x*SC;if(align==='center')dx-=b.width/2;else if(align==='right')dx-=b.width;ctx.drawImage(b,Math.round(dx),Math.round(y*SC-b.height/2));return b.width/SC;}
+/* 공백 기준 줄바꿈(한 단어가 너무 길면 글자 단위로 자름) */
+function wrapTxt(str,size,maxW){const out=[];let cur='';for(const w of String(str).split(' ')){const t=cur?cur+' '+w:w;if(tw(t,size)<=maxW){cur=t;continue;}if(cur)out.push(cur);cur=w;while(tw(cur,size)>maxW&&cur.length>1){let k=cur.length-1;while(k>1&&tw(cur.slice(0,k),size)>maxW)k--;out.push(cur.slice(0,k));cur=cur.slice(k);}}if(cur)out.push(cur);return out.length?out:[''];}
 function tw(str,size){return tbitmap(String(str),size||12,'#ffffff').width/SC;}
 function bigTxt(str,x,y,size,color,scale,font){const b=tbitmap(str,size,color,font);ctx.drawImage(b,Math.round(x*SC-b.width*scale/2),Math.round(y*SC-b.height*scale/2),b.width*scale,b.height*scale);}
 if(document.fonts){Promise.all([document.fonts.load('800 13px "Nanum Gothic"','가나'),document.fonts.load('16px Silkscreen','0'),document.fonts.load('800 20px "Nanum Myeongjo"','종지기 그레고르')]).then(()=>TXT.clear()).catch(()=>{});document.fonts.addEventListener&&document.fonts.addEventListener('loadingdone',()=>TXT.clear());}
@@ -656,7 +660,7 @@ function handle(d){switch(d.t){
   case 'clash':case 'half':case 'beats':onRaid2Msg(d);break;
   case 'bseq':G.bseq={seq:d.seq,step:d.step,t0:time};break;
   case 'rvote':G.rvote=d.st?Object.assign(d.st,{t0:time}):null;if(d.st&&d.st.yes.length===1&&!d.st.no.length)sfx('shout');break;
-  case 'mvp':G.mvp=Object.assign(d,{t0:time});sfx('legend');break;
+  case 'mvp':G.mvp=Object.assign(d,{t0:time});G.mvpHide=false;sfx('legend');break;
   case 'auc':G.auc=d.st;G.aucT=time;if(d.st&&!G.aucSeen){G.aucSeen=1;}if(d.st){const x=d.st.items[d.st.cur];if(x&&x.it.rar===4&&G.aucMyth!==x.it.id){G.aucMyth=x.it.id;sfx('legend');}}break;
   case 'trd':G.trd=d;break;
   case 'ping':onPing(d);break;
@@ -779,7 +783,12 @@ function setGoal(x,y){let gx=x,gy=y;if(SH.blocked(G.map,gx,gy,me.r)){const t=nea
 
 // ================= 입력 =================
 const MOVEK={KeyW:[0,-1],KeyA:[-1,0],KeyS:[0,1],KeyD:[1,0],ArrowUp:[0,-1],ArrowLeft:[-1,0],ArrowDown:[0,1],ArrowRight:[1,0]};
-const chatBox=document.getElementById('chatBox');
+const chatBox=document.getElementById('chatBox');const numBox=document.getElementById('numBox');let numCb=null;
+/* 숫자 직접 입력 칸: 논리 좌표(x,y,w)에 띄우고 Enter로 확정 */
+function askNumber(x,y,w,init,cb){const r=cv.getBoundingClientRect();const s=r.width/W;numBox.style.left=(r.left+x*s)+'px';numBox.style.top=(r.top+y*s)+'px';numBox.style.width=(w*s)+'px';numBox.value=init?String(init):'';numBox.style.display='block';numCb=cb;setTimeout(()=>{numBox.focus();numBox.select();},0);}
+function closeNum(ok){if(numBox.style.display!=='block')return;const v=parseInt(String(numBox.value).replace(/[^0-9]/g,''),10);numBox.style.display='none';const cb=numCb;numCb=null;cv.focus();if(ok&&cb&&!isNaN(v))cb(v);}
+numBox.addEventListener('input',()=>{const d=numBox.value.replace(/[^0-9]/g,'');if(d!==numBox.value)numBox.value=d;});
+numBox.addEventListener('blur',()=>closeNum(true));
 function setMouse(e){mouse.shift=!!e.shiftKey;const r=cv.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*W;mouse.y=(e.clientY-r.top)/r.height*H;}
 function uiHit(){for(let i=uiRects.length-1;i>=0;i--){const r=uiRects[i];if(mouse.x>=r.x&&mouse.x<r.x+r.w&&mouse.y>=r.y&&mouse.y<r.y+r.h&&(r.click||r.right||r.block))return r;}return null;}
 function dropUnderMouse(){for(let i=dropLabels.length-1;i>=0;i--){const l=dropLabels[i];if(mouse.x>=l.x&&mouse.x<=l.x+l.w&&mouse.y>=l.y&&mouse.y<=l.y+l.h)return l.d;}for(const d of G.drops.values()){if(d.kind==='item'&&d.t>=0.45&&Math.abs(d.x-mouse.wx)<8&&mouse.wy>d.y-14&&mouse.wy<d.y+3)return d;}return null;}
@@ -813,6 +822,7 @@ window.addEventListener('keydown',e=>{if(showMeter&&(e.code==='ArrowLeft'||e.cod
 window.addEventListener('keyup',e=>{keys.delete(e.code);if(e.code===kbCode('meter'))showMeter=false;});
 window.addEventListener('keydown',e=>{
   if(scene!=='game')return;
+  if(document.activeElement===numBox){if(e.key==='Enter'){closeNum(true);e.preventDefault();}else if(e.key==='Escape'){numCb=null;closeNum(false);e.preventDefault();}return;}
   if(document.activeElement===chatBox){if(e.key==='Enter'){const m=chatBox.value.trim();if(m)net({t:'chat',m});chatBox.value='';chatBox.style.display='none';cv.focus();e.preventDefault();}else if(e.key==='Escape'){chatBox.value='';chatBox.style.display='none';cv.focus();e.preventDefault();}return;}
   const c=e.code;initAudio();
   if(G.rebind){rebindKey(c);e.preventDefault();return;}
@@ -1272,14 +1282,17 @@ function itemSlot(x,y,s,it,click,right,where){const hov=mouse.x>=x&&mouse.x<x+s&
 function drawInv(){const ch=G.ch;if(!ch)return;const x=294,y=38,w=180,h=194;panel(x,y,w,h,'인벤토리');
   const F=G.fac;const selR=G.bs;
   [['weapon','무기'],['armor','갑옷'],['ring','반지']].forEach(([s,l],i)=>{const sx=x+w/2-51+i*38,sy=y+22;itemSlot(sx,sy,26,ch.eq[s],()=>{if(F==='forge'){G.bs={w:'eq',s};G.bsArm=null;sfx('pick');return;}net({t:'uneq',s});sfx('equip');},null,'eq');if(F==='forge'&&selR&&selR.w==='eq'&&selR.s===s)selBox(sx,sy,26);txt(l,sx+13,sy+33,11,'#9e937a','center');});
-  const gx=x+w/2-64,gy=y+64;for(let i=0;i<20;i++){const c=i%5,r=(i/5)|0;
+  const gx=x+w/2-64,gy=y+64;const pg=G.invPg|0,off=pg*20;
+  for(let p2=0;p2<2;p2++){const cnt=ch.bag.slice(p2*20,p2*20+20).filter(Boolean).length;button(x+5,gy+p2*30,18,26,String(p2+1),()=>{G.invPg=p2;},{size:10,main:pg===p2,tip:[[`가방 ${p2+1}쪽`,'#ffd35a',12],[`${cnt} / 20칸 사용 중`,'#9e937a',11]]});}
+  button(x+w-23,gy,18,40,'정렬',()=>{net({t:'bsort'});G.bs=null;sfx('pick');},{size:9,tip:[['가방 정렬','#ffd35a',12],['무기 → 갑옷 → 반지 순, 같은 부위는 등급·레벨 높은 순','#e6dcc3',11]]});
+  for(let q=0;q<20;q++){const i=off+q;const c=q%5,r=(q/5)|0;
     const click=()=>{if(G.trade){tradeToggle(ch.bag[i]);return;}if(F==='forge'){G.bs={w:'bag',i};G.bsArm=null;sfx('pick');return;}if(F==='vault'){net({t:'stput',bi:i});return;}if(mouse.shift){net(showShop?{t:'sell',bi:i}:{t:'drop',bi:i});return;}net({t:'eq',bi:i});sfx('equip');};
     const right=()=>{if(G.trade){tradeToggle(ch.bag[i]);return;}if(F==='forge'){G.bs={w:'bag',i};G.bsArm=null;return;}if(F==='vault'){net({t:'stput',bi:i});return;}net(showShop?{t:'sell',bi:i}:{t:'drop',bi:i});};
     itemSlot(gx+c*26,gy+r*26,24,ch.bag[i],click,right,'bag');if(F==='forge'&&selR&&selR.w==='bag'&&selR.i===i)selBox(gx+c*26,gy+r*26,24);if(G.trade&&ch.bag[i]&&G.trade.me.items.some(t=>t.id===ch.bag[i].id))selBox(gx+c*26,gy+r*26,24);}
   pimg(GOLD,x+10,y+h-15);txt(String(ch.gold),x+21,y+h-12,12,'#ffd35a');txt(G.trade?'클릭: 거래창에 올리기·내리기':F==='forge'?'클릭: 대장간에 올리기':F==='vault'?'클릭: 창고에 넣기':showShop?'우클릭·Shift+클릭: 판매':'우클릭·Shift+클릭: 버리기',x+w-8,y+h-12,10,'#9e937a','right');}
 // ---- 플레이어 간 거래 ----
 function tradeToggle(it){const T=G.trade;if(!T||!it)return;const ids=T.me.items.map(x=>x.id);const k=ids.indexOf(it.id);if(k>=0)ids.splice(k,1);else{if(ids.length>=6){msg('거래창에는 6개까지 올릴 수 있어요','#ff6a5a');return;}ids.push(it.id);}net({t:'tset',ids});sfx('pick');}
-function tradeGold(v){const T=G.trade;if(!T)return;const g=v==='all'?G.ch.gold:v===0?0:Math.min(G.ch.gold,T.me.gold+v);net({t:'tset',gold:g});}
+function tradeGold(v,set){const T=G.trade;if(!T)return;const g=v==='all'?G.ch.gold:set?Math.max(0,Math.min(G.ch.gold,v|0)):v===0?0:Math.min(G.ch.gold,T.me.gold+v);net({t:'tset',gold:g});}
 function drawTradeReq(){const rq=G.treq;if(!rq)return;if(time-rq.t>30){net({t:'tans',from:rq.from,ok:false});G.treq=null;return;}const w=200,h=40,x=240-w/2,y=G.invite?74:30;panel(x,y,w,h);
   txt(`${rq.name}님이 거래를 신청했습니다`,x+w/2,y+10,12,'#ffd35a','center');button(x+30,y+20,64,15,'수락 (Y)',()=>{net({t:'tans',from:rq.from,ok:true});G.treq=null;},{main:true});button(x+106,y+20,64,15,'거절 (N)',()=>{net({t:'tans',from:rq.from,ok:false});G.treq=null;});}
 function drawTrade(){const T=G.trade;if(!T||!G.ch)return;const x=6,y=38,w=284,h=194;panel(x,y,w,h,`거래 · ${T.name}`);
@@ -1289,7 +1302,7 @@ function drawTrade(){const T=G.trade;if(!T||!G.ch)return;const x=6,y=38,w=284,h=
     const st=S.ok?['거래 확정','#7fd05a']:S.lock?['확인함','#ffd35a']:['올리는 중…','#9e937a'];pr(ox+10,y+116,108,14,S.ok?'rgba(60,110,40,0.6)':S.lock?'rgba(110,90,30,0.6)':'rgba(10,7,14,0.6)');txt(st[0],ox+64,y+123,11,st[1],'center');};
   side(T.me,x+8,'내가 줄 것',true);side(T.them,x+148,`${T.name}님이 줄 것`,false);pr(x+w/2,y+20,1,118,PAL.m);
   // 골드 조절
-  const gy=y+140;txt('골드',x+14,gy+6,11,'#9e937a');[['+1천',1000],['+1만',10000],['+10만',100000],['전부','all'],['0',0]].forEach(([l,v],i)=>button(x+44+i*44,gy,40,13,l,()=>tradeGold(v),{size:10,dis:T.me.lock&&false}));
+  const gy=y+140;txt('골드',x+14,gy+6,11,'#9e937a');button(x+40,gy,62,13,'직접 입력',()=>askNumber(x+40,gy-2,110,T.me.gold||'',v=>tradeGold(v,true)),{size:10,main:true,tip:[['보낼 골드를 숫자로 입력하고 Enter','#e6dcc3',11],[`보유 ${G.ch.gold.toLocaleString()} 골드까지`,'#9e937a',11]]});[['+1천',1000],['+1만',10000],['+10만',100000],['전부','all'],['0',0]].forEach(([l,v],i)=>button(x+106+i*34,gy,31,13,l,()=>tradeGold(v),{size:10}));
   const both=T.me.lock&&T.them.lock;
   if(!T.me.lock)button(x+14,y+h-24,120,16,'확인 (내용 잠그기)',()=>net({t:'tlock'}),{main:true,size:11,tip:[['양쪽 모두 확인하면 거래 확정 버튼이 열려요','#e6dcc3',11],['내용을 바꾸면 확인이 풀려요','#9e937a',11]]});
   else if(!T.me.ok)button(x+14,y+h-24,120,16,both?'거래 확정':'상대 확인 기다리는 중',()=>{if(both)net({t:'tok'});},{main:both,size:11,dis:!both});
@@ -1470,7 +1483,7 @@ function drawNpc(n,icx,icy){const fr=npcFrames();const bx=Math.round(n.x)-icx,by
   if(!fr)return;const k=n.act>0?3:n.walk?1+((n.animT*6)|0)%2:0;const f=fr[n.d.row][k];wx.drawImage(n.face<0?f.l:f.r,bx-18,by-33+(k===0&&((n.animT*1.5)|0)%2?0:0));}
 function drawNpcUI(icx,icy){for(const n of NPCS){const px=Math.round(n.x)-icx,py=Math.round(n.y)-icy;if(px<-60||px>W+60||py<-60||py>H+60)continue;
   if(Math.hypot(me.x-n.x,me.y-n.y)<90)txt(n.d.n,px,py-33,10,'#c9bfa8','center');
-  if(n.say){const bw=Math.min(180,tw(n.say,11)+10),bx=px-bw/2,by=py-50;pr(bx,by,bw,12,PAL.k);pr(bx+1,by+1,bw-2,10,'#efe6d2');pr(px-1,by+12,3,2,'#efe6d2');txt(n.say,px,by+6,11,'#1b1622','center');}}}
+  if(n.say){const L=wrapTxt(n.say,12,170);const bw=Math.max(...L.map(l=>tw(l,12)))+12,bh=L.length*13+4,bx=Math.round(px-bw/2),by=py-38-bh;pr(bx,by,bw,bh,PAL.k);pr(bx+1,by+1,bw-2,bh-2,'#f4ecda');pr(px-1,by+bh,3,2,'#f4ecda');L.forEach((l,k)=>txt(l,px,by+8+k*13,12,'#1b1622','center'));}}}
 
 // ---- 소품·건물 그리기 ----
 function drawProps(icx,icy,ents){for(const p of G.map.props||[]){const sx=Math.round(p.x)-icx,sy=Math.round(p.y)-icy;const r=propSz(p.t);const hw=r?r[0]:40,hh=r?r[1]:40;if(sx<-hw||sx>W+hw||sy<-20||sy>H+hh)continue;
@@ -1806,9 +1819,9 @@ function drawEyes(icx,icy){if(G.kind!=='dungeon')return;for(const m of G.monster
 const LORE_IMG=outlineC(pcan(12,9,q=>{for(let j=1;j<8;j++)for(let i=1;i<11;i++)q(i,j,(j===1||j===7)?'#b89a6a':'#e8d8b0');for(let i=3;i<9;i++){q(i,3,'#6a5a4a');q(i,5,'#6a5a4a');}q(2,1,'#8a6a4a');q(9,7,'#8a6a4a');}));
 function drawLoreObj(icx,icy,ents){const e=G.ev;if(!e||!e.lore||G.kind!=='dungeon')return;const l=e.lore,sx=Math.round(l.x)-icx,sy=Math.round(l.y)-icy;const read=G.ch&&(G.ch.lore||[]).includes(l.i);
   ents.push({y:l.y-6,f:()=>{wx.drawImage(LORE_IMG,sx-6,sy-6);if(!read&&R()<0.08)part(l.x+rf(-4,4),l.y-4,0,0,'y',0.6,{z:rf(0,4),vz:10,glow:true});}});}
-function drawLoreView(){const V=G.loreView;if(!V)return;const pg=SH.LORE[V.i];if(!pg)return;const x=100,y=40,w=280,h=150;pr(x,y,w,h,'#2a2014');pr(x+2,y+2,w-4,h-4,'#e8d8b0');pr(x+5,y+5,w-10,h-10,'#f2e6c8');
-  txt(`알드릭의 일지 · ${pg[0]}`,x+w/2,y+18,13,'#5a2a14','center');pr(x+30,y+28,w-60,1,'#b89a6a');for(let k=1;k<pg.length;k++)txt(pg[k],x+w/2,y+42+(k-1)*22,11,'#2a1e14','center');
-  txt(`${V.i+1} / ${SH.LORE.length}  ·  지하 ${SH.loreFloor(V.i)}층${V.first?'  ·  새로 기록됨':''}`,x+w/2,y+h-22,10,'#8a6a4a','center');uiRects.push({x,y,w,h,block:true});button(x+w/2-30,y+h-16,60,12,'닫기',()=>{G.loreView=null;},{size:10});}
+function drawLoreView(){const V=G.loreView;if(!V)return;const pg=SH.LORE[V.i];if(!pg)return;const x=80,y=34,w=320,h=166;pr(x,y,w,h,'#2a2014');pr(x+2,y+2,w-4,h-4,'#e8d8b0');pr(x+5,y+5,w-10,h-10,'#f2e6c8');
+  txt(`알드릭의 일지 · ${pg[0]}`,x+w/2,y+18,14,'#4a1e0c','center');pr(x+30,y+29,w-60,1,'#b89a6a');{let yy=y+44;for(let k=1;k<pg.length;k++){for(const l of wrapTxt(pg[k],13,w-36)){txt(l,x+w/2,yy,13,'#1e140c','center');yy+=15;}yy+=7;}}
+  txt(`${V.i+1} / ${SH.LORE.length}  ·  지하 ${SH.loreFloor(V.i)}층${V.first?'  ·  새로 기록됨':''}`,x+w/2,y+h-24,11,'#6a4a2a','center');uiRects.push({x,y,w,h,block:true});button(x+w/2-30,y+h-16,60,12,'닫기',()=>{G.loreView=null;},{size:10});}
 function drawLoreTab(x,y,w,h){const read=new Set((G.ch&&G.ch.lore)||[]);txt(`읽은 일지 ${read.size}/${SH.LORE.length}  ·  테마마다 3번째 층(3·8·13…98층)에 떨어져 있어요`,x+w/2,y+38,10,'#9e937a','center');
   SH.LORE.forEach((pg,i)=>{const c=i%4,r=(i/4)|0,bx=x+10+c*86,by=y+48+r*32;const ok=read.has(i);pr(bx,by,82,28,ok?'#3a2e1a':'#1c1622');txt(ok?pg[0]:'???',bx+41,by+10,10,ok?'#f2e6c8':'#4a4452','center');txt(`${SH.loreFloor(i)}층`,bx+41,by+21,9,'#6b6275','center');
     if(ok)uiRects.push({x:bx,y:by,w:82,h:28,click:()=>{G.loreView={i,first:false};}});});}
@@ -1954,17 +1967,20 @@ function drawRaidUI(){const rs=G.raid;if(!rs||!inDungeon()||!G.map||!G.map.raid)
   if(meDowned()){const p=G.players.get(myId);txt(rs.deaths<0?'연습 모드 · 8초 뒤 다시 일어납니다':`8초 뒤 부활 · 남은 데스 카운트 ${Math.max(0,rs.deaths)}`,240,138,12,'#ffd35a','center');}
   if(rs.fail){pr(0,0,W,H,'rgba(40,4,8,0.35)');bigTxt('공략 실패',240,96,16,'#e0473a',2);txt('잠시 뒤 마을로 돌아갑니다',240,118,12,'#e6dcc3','center');}
   else if(rs.done&&!G.auc&&!G.mvp&&time-(G.raidDoneT||0)<6){bigTxt(`${def.n} 클리어!`,240,96,16,'#ffd35a',2);}
-  if(!rs.done&&!rs.fail&&!G.rvote){const armed=G.giveArm&&time-G.giveArm<3;button(x+w+3,y,armed?52:30,13,armed?'정말 포기?':'포기',()=>{if(armed){G.giveArm=0;net({t:'rgiveup',a:'start'});}else G.giveArm=time;},{size:9,main:armed,tip:()=>[['레이드 포기','#ffb03a',12],['파티원 과반수가 찬성하면 실패로 끝나요 (보상 없음)','#e6dcc3',11],['오늘 보상 기회는 그대로 남아요','#9e937a',11]]});}}
+  /* 레이드 종료 후: 나가기 · 전투 결과 켜기/끄기 */
+  if(rs.done||rs.fail){let bx=x+w+3;if(G.mvp){const on=!G.mvpHide;button(bx,y,56,13,on?'결과 숨기기':'전투 결과',()=>{G.mvpHide=on;if(!on)G.mvp.pin=1;},{size:9,main:!on});bx+=59;}
+    button(bx,y,56,13,'마을로 나가기',()=>net({t:'town'}),{size:9,main:true,tip:()=>[['지금 바로 마을로 돌아가요','#e6dcc3',11]].concat(G.auc?[['진행 중인 경매는 입찰할 수 없게 돼요','#ffb03a',11]]:[])});}
+  if(!rs.done&&!rs.fail&&!G.rvote){const armed=G.giveArm&&time-G.giveArm<3;button(x+w+3,y,armed?52:30,13,armed?'정말 포기?':'포기',()=>{if(armed){G.giveArm=0;net({t:'rgiveup',a:'start'});}else G.giveArm=time;},{size:9,main:armed,tip:()=>[['레이드 포기','#ffb03a',12],['파티원 과반수가 찬성하면 실패로 끝나요 (보상 없음)','#e6dcc3',11]]});}}
 function drawRaidVote(){const v=G.rvote;if(!v||!inDungeon())return;const left=Math.max(0,v.t-(time-v.t0));const x=150,y=150,w=180,h=54;panel(x,y,w,h,null);txt(`${v.by}님이 레이드 포기를 제안했어요`,x+w/2,y+11,11,'#ffb03a','center');
   const need=Math.floor(v.n/2)+1;txt(`찬성 ${v.yes.length} · 반대 ${v.no.length} · 필요 ${need}명 · ${Math.ceil(left)}초`,x+w/2,y+24,10,'#e6dcc3','center');const mine=v.yes.includes(myId)?'yes':v.no.includes(myId)?'no':null;
   button(x+14,y+34,70,14,mine==='yes'?'찬성함':'찬성',()=>net({t:'rgiveup',a:'yes'}),{size:10,main:mine==='yes'});button(x+w-84,y+34,70,14,mine==='no'?'반대함':'반대',()=>net({t:'rgiveup',a:'no'}),{size:10,main:mine==='no'});}
-function drawMvp(){const M=G.mvp;if(!M||!inDungeon())return;if(time-M.t0>40){G.mvp=null;return;}const rows=M.rows.slice().sort((a,b)=>b.score-a.score);const x=8,y=26,w=290,h=40+rows.length*40+14;panel(x,y,w,h,'전투 결과');
-  txt(`${M.title} · 보스 ${fmtMS(M.boss)} · 전체 ${fmtMS(M.time)}`,x+w/2,y+21,10,'#9e937a','center');button(x+w-18,y+4,12,11,'×',()=>{G.mvp=null;},{size:10});
+function drawMvp(){const M=G.mvp;if(!M||!inDungeon()||G.mvpHide)return;if(!M.pin&&time-M.t0>40){G.mvpHide=true;return;}const rows=M.rows.slice().sort((a,b)=>b.score-a.score);const x=8,y=26,w=290,h=40+rows.length*40+14;panel(x,y,w,h,'전투 결과');
+  txt(`${M.title} · 보스 ${fmtMS(M.boss)} · 전체 ${fmtMS(M.time)}`,x+w/2,y+21,10,'#9e937a','center');button(x+w-18,y+4,12,11,'×',()=>{G.mvpHide=true;},{size:10});uiRects.push({x,y,w,h:40+rows.length*40+14,block:true});
   const cols=[['dmg','딜'],['heal','힐'],['shield','보호막'],['mit','감소'],['taken','받은 피해'],['ctr','카운터'],['gim','기믹'],['deaths','사망']];const best={};for(const [k] of cols)best[k]=k==='deaths'?null:Math.max(...rows.map(r=>r[k]));
   rows.forEach((r,i)=>{const by=y+30+i*40;const isM=r.id===M.mvp;pr(x+6,by,w-12,37,isM?'rgba(90,64,16,0.7)':'rgba(10,7,14,0.55)');if(isM){pr(x+6,by,w-12,1,PAL.y);pr(x+6,by+36,w-12,1,PAL.y);}
     txt(r.name,x+12,by+8,12,CLASS_COL[r.cls]||'#e6dcc3');txt(CLASSES[r.cls].n,x+12+tw(r.name,12)+5,by+8,9,'#6b6275');if(isM){const b2=((time*4)|0)%2;txt('★ MVP',x+w-12,by+8,12,b2?'#ffd35a':'#fff6d0','right');}else txt(`점수 ${r.score}`,x+w-12,by+8,9,'#9e937a','right');
     cols.forEach(([k,l],j)=>{const cx=x+12+(j%4)*70,cy=by+19+((j/4)|0)*10;const v=r[k];const top=best[k]!=null&&v>0&&v===best[k];const s=v>=10000?(v/1000).toFixed(1)+'k':String(v);txt(`${l} ${s}`,cx,cy,9,top?'#ffd35a':k==='deaths'&&v>0?'#ff8a7a':'#d2c7ab');});});
-  txt('노란 글씨: 항목 1등  ·  × 로 닫기',x+w/2,y+h-7,9,'#6b6275','center');}
+  txt('노란 글씨: 항목 1등  ·  × 로 닫기 (위쪽 [전투 결과] 버튼으로 다시 열기)',x+w/2,y+h-7,9,'#6b6275','center');}
 // ---- 경매 ----
 function drawAuction(){const a=G.auc;if(!a||!inDungeon())return;const x=300,y=40,w=172,h=168;panel(x,y,w,h,'전리품 경매');const x0=a.items[a.cur];const elig=G.ch&&a.elig.includes(G.ch.id);
   a.items.forEach((q,i)=>{const bx=x+8+i*32,by=y+20;itemSlot(bx,by,26,q.it,null,null,'auc');if(q.done){pr(bx,by,26,26,'rgba(5,4,8,0.6)');txt(q.winN?q.winN.slice(0,4):'-',bx+13,by+31,8,'#9e937a','center','px');}if(i===a.cur)pr(bx,by+27,26,2,PAL.y);});
@@ -1975,7 +1991,7 @@ function drawAuction(){const a=G.auc;if(!a||!inDungeon())return;const x=300,y=40
   const mn=x0.high?Math.max(x0.high+10,Math.round(x0.high*1.1)):Math.max(20,Math.round(it.value*0.5));const big=Math.round(mn*1.5);
   if(elig){const me2=x0.byN===G.ch.name;button(x+8,y+104,76,14,`입찰 ${mn}`,()=>net({t:'bid',amt:mn}),{size:10,main:true,dis:me2||G.ch.gold<mn});button(x+88,y+104,76,14,`크게 ${big}`,()=>net({t:'bid',amt:big}),{size:10,dis:me2||G.ch.gold<big});
     button(x+8,y+122,156,13,'패스 (관심 없음)',()=>net({t:'aucpass'}),{size:10});txt(`내 골드 ${G.ch.gold}`,x+w/2,y+144,10,'#9e937a','center');}
-  else txt('오늘 보상을 이미 받아 구경만 할 수 있어요',x+w/2,y+112,10,'#9e937a','center');
+  else txt('보상 대상이 아니라 구경만 할 수 있어요',x+w/2,y+112,10,'#9e937a','center');
   txt('낙찰금은 나머지 파티원에게 나눠 줍니다',x+w/2,y+h-10,9,'#6b6275','center');}
 // ---- 레이드 석판 (마을) ----
 function raidToday(){return new Date(Date.now()+9*3600e3).toISOString().slice(0,10);}
@@ -2000,7 +2016,7 @@ function artDraw(img,sx,sy,sw,sh,dx,dy,dw,dh){ctx.imageSmoothingEnabled=true;ctx
 function bossSprDraw(types,cx,by,sc){const n=types.length;types.forEach((t,k)=>{const i=RB_ORDER.indexOf(t);const f=RSPR&&RSPR[i]&&RSPR[i][((time*3)|0)%4];if(!f)return;const s=f.r;const x=cx+(k-(n-1)/2)*s.w*sc*0.7;ctx.drawImage(s.c,Math.round((x-s.w*sc/2)*SC),Math.round((by-s.h*sc)*SC),s.w*sc*SC,s.h*sc*SC);});}
 function raidSelIdx(){const ch=G.ch;if(G.rsel==null){let k=0;SH.RAIDS.forEach((r,i)=>{if(ch&&ch.lvl>=r.lvl)k=i;});G.rsel=k;}return G.rsel;}
 function drawRaidPanel(){const ch=G.ch;if(!ch)return;const pt=G.party;const lead=!pt||pt.leader===myId;const n=pt?pt.members.length:1;
-  const i=raidSelIdx(),r=SH.RAIDS[i],c=BCARD[r.id]||{ep:'',q:'',spr:[]};const lvOk=ch.lvl>=r.lvl,got=(ch.raidD||{})[r.id]===raidToday();
+  const i=raidSelIdx(),r=SH.RAIDS[i],c=BCARD[r.id]||{ep:'',q:'',spr:[]};const lvOk=ch.lvl>=r.lvl,got=false;/* 보상 횟수 제한 없음 */
   const y0=36,bh=198,t=Math.min(1,(time-(G.facT||0))/0.25);
   pr(0,0,W,H,`rgba(0,0,0,${0.55*t})`);uiRects.push({x:0,y:0,w:W,h:H,block:true});
   ctx.save();ctx.beginPath();ctx.rect(0,y0*SC,W*SC,bh*SC);ctx.clip();
@@ -2019,7 +2035,7 @@ function drawRaidPanel(){const ch=G.ch;if(!ch)return;const pt=G.party;const lead
   txt(`1~4인 · 약 10분 · 데스 카운트 3 · 지금 파티 ${n}명`,tx,y0+143,17,'#c9c1b2');
   const dis=!lvOk||!lead;
   [['normal','노말'],['hard','하드'],['practice','연습']].forEach(([m,l],k)=>button(tx+k*54,y0+154,50,18,l,()=>{net({t:'raidenter',id:r.id,mode:m});closeFac();},{size:13,main:m==='normal',dis,tip:()=>[[`${r.n} · ${l}`,'#ffd35a',12],[m==='hard'?'보스 체력·피해 증가, 기믹 판정이 엄격함 · 신화 8%':m==='practice'?'데스 카운트 무제한 · 보상과 경매 없음':'기본 난이도 · 신화 5%','#e6dcc3',11],!lvOk?[`레벨 ${r.lvl} 이상 필요`,'#e0574a',11]:!lead?['파티장만 열 수 있어요','#e0574a',11]:['파티원 모두 레벨 조건을 채워야 해요','#9e937a',11]]}));
-  txt(!lvOk?`레벨 ${r.lvl}부터 입장`:!lead?'파티장만 열 수 있어요':got?'오늘 보상 받음':'오늘 보상 받을 수 있음',tx+166,y0+163,16,!lvOk||!lead?'#e0574a':got?'#9e937a':'#7fd05a');
+  txt(!lvOk?`레벨 ${r.lvl}부터 입장`:!lead?'파티장만 열 수 있어요':got?'':'클리어할 때마다 보상',tx+166,y0+163,16,!lvOk||!lead?'#e0574a':got?'#9e937a':'#7fd05a');
   txt('클리어하면 전리품 경매 (전설 1개 확정, 낮은 확률로 신화)',tx,y0+186,15,'#8a7f99');
   button(W-44,y0+8,36,15,'닫기',closeFac,{size:12});}
 function raidSelKey(c){if(G.fac!=='raid')return false;const n=SH.RAIDS.length;if(c==='ArrowLeft'||c==='ArrowRight'){G.rsel=(raidSelIdx()+(c==='ArrowLeft'?-1:1)+n)%n;G.facT=time;return true;}return false;}

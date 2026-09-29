@@ -249,7 +249,7 @@ const CLASS_ORDER=['warrior','guardian','archer','mage','priest','knight'];
 const UNLOCK=[1,1,3,5,8,11,14,18,22,26,30,35,38,42,46];const ULT_LVL=20;
 // 궁극기 위력: 20레벨 55% → 50레벨 100%
 function ultPow(lvl){return Math.min(1,0.55+0.45*Math.max(0,(lvl|0)-20)/30);}
-const MAX_RANK=10,BAR_SIZE=6;
+const MAX_RANK=10,BAR_SIZE=6,BAG_N=40;/* 인벤토리 40칸(20칸 × 2쪽) */
 // lvl: 해금 레벨, pas: 패시브, per: 등급당 효과 설명
 const SKILLS={
   // 전사
@@ -568,7 +568,7 @@ function canEquip(it,cls){if(!it)return false;if(it.slot!=='weapon')return true;
 // ---------- 캐릭터 ----------
 function xpFor(l){return Math.floor(35*Math.pow(l,1.55));}
 function newChar(name,cls){const C=CLASSES[cls];return{v:1,id:rid(),name,cls,lvl:1,xp:0,pts:0,str:C.base.str,dex:C.base.dex,vit:C.base.vit,ene:C.base.ene,gold:20,pots:{hp:3,mp:2},
-  eq:{weapon:starterWeapon(C.fam),armor:starterArmor(cls),ring:null},bag:new Array(20).fill(null),cps:[1],best:0,kills:0,created:Date.now(),...defaultSkills(cls),spts:0,mats:{iron:0,dust:0,ess:0},gems:{}};}
+  eq:{weapon:starterWeapon(C.fam),armor:starterArmor(cls),ring:null},bag:new Array(BAG_N).fill(null),cps:[1],best:0,kills:0,created:Date.now(),...defaultSkills(cls),spts:0,mats:{iron:0,dust:0,ess:0},gems:{}};}
 function calcStats(ch){
   const C=CLASSES[ch.cls],g={};
   for(const s of['weapon','armor','ring']){const it=ch.eq[s];if(!it||!canEquip(it,ch.cls))continue;const st=itemStats(it);for(const k in st)g[k]=(g[k]||0)+st[k];}
@@ -615,6 +615,6 @@ function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o
 
 const SH={ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
-  THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
+  THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
 })(typeof self!=='undefined'?self:this);
