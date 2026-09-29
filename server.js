@@ -418,13 +418,14 @@ function synMods(inst,P){const b=(inst&&inst.synM&&inst.synM[P.ch.cls])||{dmg:1,
 function bOn(P,k){return P.buffs[k+'T']>0?P.buffs[k]:0;}
 let CUR_CASTER=null;
 function buff(P,k,v,t){const b=P.buffs;if(CUR_CASTER&&(k==='red'||k==='wred'||k==='tred'))b[k+'S']=CUR_CASTER.id;if(b[k+'T']>0&&b[k]>v){b[k+'T']=Math.max(b[k+'T'],t);return;}b[k]=v;b[k+'T']=Math.max(b[k+'T']||0,t);}
-function atkMul(P){return 1+bOn(P,'as');}
+function atkMul(P){return 1+bOn(P,'as')+(P.S.bloodboil&&P.hp<P.S.maxHp*0.5?0.02*P.S.bloodboil:0);}
 function rollDmg(P,mult){const S=P.S;const bonus=1+bOn(P,'dmg')+bOn(P,'sdmg')+bOn(P,'bdmg');let d=S.dmgBase*rf(0.8,1.2)*S.dmgMul*mult*bonus*synMods(P.inst,P).dmg;const crit=R()*100<S.crit;if(crit)d*=S.critMul;return{d:Math.max(1,Math.round(d)),crit};}
 function hitMonster(inst,m,P,mult,o){if(m.dead)return;o=o||{};if(m.pvp){pvpHit(inst,m,P,mult,o);return;}
   const pos=(m.boss||m.ctrable)?bossSide(m,P):0;
   if(m.cwEnd&&inst.time<m.cwEnd&&(o.ctr||inst._ctr)&&!m.hidden){if(pos===1)counterHit(inst,m,P);else if(!P._ctrWarn||inst.time-P._ctrWarn>0.8){P._ctrWarn=inst.time;fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-28),s:'헤드에서 쳐야 해요!',c:'#ffb03a'});}}
-  if(inst._um)mult*=inst._um;if(m.grog>inst.time)mult*=1.3;if(m.lmarkT>inst.time)mult*=1.25;if(pos===-1)mult*=1.1;if(m.hidden)return;if(m.invul>0){if(!o.dotHit&&R()<0.3)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-(m.boss?34:18)),s:'무적',c:'#9e937a'});return;}if(m.vuln>0)mult*=2;if(o.exec&&m.hp<m.maxHp*0.3)mult*=2;if(m.boss&&mythOn(P,'wrath'))mult*=1.2;if(m.boss&&P.S.bossDmg)mult*=1+P.S.bossDmg;if(inst.raid&&RAIDX[inst.raid.id].dmgMod)mult*=RAIDX[inst.raid.id].dmgMod(inst,m,P);if(m.brk>inst.time)mult*=1.15;const r=rollDmg(P,mult);let v=r.d;if(m.shV>0&&m.shT>0){const ab=Math.min(m.shV,v);m.shV-=ab;v-=ab;if(v<=0){if(R()<0.4)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-20),s:'보호막',c:'#8fd0ff'});return;}}const real=Math.min(v,m.hp);m.hp-=v;m.flash=0.09;if(!m.alert)alertPack(inst,m);
-  addMeter(inst,P,'dmg',real);{const src=o.src||inst._src||'etc';anAdd(P,src,v,r.crit,o.dotHit);if(inst.raid){const A=inst.raid.an||(inst.raid.an={});const a=A[P.id]||(A[P.id]={});a[src]=(a[src]||0)+v;if(inst.raid.gm)gmHit(inst,m,P,real);}}const el=o.el||inst._el||baseEl(P);fx(inst,{k:'dmg',x:r1(m.x),y:r1(m.y-(m.boss?32:17)),v,c:o.dotHit?2:r.crit?1:0,e:SH.EL_LIST.indexOf(el),p:P.id,id:m.id,sk:inst._sk?1:0});
+  if(inst._um)mult*=inst._um;if(m.grog>inst.time)mult*=1.3;if(m.lmarkT>inst.time)mult*=1.25;if(pos===-1)mult*=1.1;if(m.hidden)return;if(m.invul>0){if(!o.dotHit&&R()<0.3)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-(m.boss?34:18)),s:'무적',c:'#9e937a'});return;}if(m.vuln>0)mult*=2;if(o.exec&&m.hp<m.maxHp*0.3)mult*=2;if(m.boss&&mythOn(P,'wrath'))mult*=1.2;if(m.boss&&P.S.bossDmg)mult*=1+P.S.bossDmg;/* 전직 효과 */if(m.starT>inst.time)mult*=1.1;if(m.curseT>inst.time)mult*=1.15;if(P.S.adv==='berserker'){const lost=1-P.hp/Math.max(1,P.S.maxHp);mult*=1+Math.min(0.4,lost*0.6);}if(P.combo&&inst._sk&&P.comboT>inst.time)mult*=1+0.06*P.combo;if(o.dotHit&&P.S.dotMul)mult*=P.S.dotMul;if(inst.raid&&RAIDX[inst.raid.id].dmgMod)mult*=RAIDX[inst.raid.id].dmgMod(inst,m,P);if(m.brk>inst.time)mult*=1.15;const r=rollDmg(P,mult);if(o.fcrit&&!r.crit){r.crit=true;r.d=Math.round(r.d*P.S.critMul);}let v=r.d;if(m.shV>0&&m.shT>0){const ab=Math.min(m.shV,v);m.shV-=ab;v-=ab;if(v<=0){if(R()<0.4)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-20),s:'보호막',c:'#8fd0ff'});return;}}const real=Math.min(v,m.hp);m.hp-=v;m.flash=0.09;if(!m.alert)alertPack(inst,m);
+  addMeter(inst,P,'dmg',real);{const src=o.src||inst._src||'etc';anAdd(P,src,v,r.crit,o.dotHit);if(P.S.exoHeal&&real>0&&P.ch){let lo=null;for(const q of livingPlayers(inst))if(!lo||q.hp/q.S.maxHp<lo.hp/lo.S.maxHp)lo=q;if(lo&&lo.hp<lo.S.maxHp)healPlayer(inst,lo,real*P.S.exoHeal,P);}
+  if(inst.raid){const A=inst.raid.an||(inst.raid.an={});const a=A[P.id]||(A[P.id]={});a[src]=(a[src]||0)+v;if(inst.raid.gm)gmHit(inst,m,P,real);}}const el=o.el||inst._el||baseEl(P);fx(inst,{k:'dmg',x:r1(m.x),y:r1(m.y-(m.boss?32:17)),v,c:o.dotHit?2:r.crit?1:0,e:SH.EL_LIST.indexOf(el),p:P.id,id:m.id,sk:inst._sk?1:0});
   if(o.slow)m.slow=Math.max(m.slow,o.slow);if(o.stun)m.stun=Math.max(m.stun,m.boss?o.stun*0.25:o.stun);
   if(o.dot){m.dots=m.dots||[];m.dots.push({pid:P.id,src:o.src||inst._src||null,per:o.dot.mult/(o.dot.dur*2),n:Math.round(o.dot.dur*2),t:0.5,c:o.dot.c||'r'});}
   if(m.type==='goblin'&&R()<0.3)addDrop(inst,{kind:'gold',owner:P.id,amt:Math.max(1,Math.round(ri(2,5)*inst.floor*BAL.gold))},m.x,m.y);
@@ -561,7 +562,85 @@ function doTrade(P,T){const pick=Q=>Q.trade.ids.map(id=>Q.ch.bag.findIndex(it=>i
   const pg=P.trade.gold,tg=T.trade.gold;P.ch.gold+=tg-pg;T.ch.gold+=pg-tg;
   P.trade=null;T.trade=null;send(P,{t:'trade',st:null,done:1});send(T,{t:'trade',st:null,done:1});markDirty(P);markDirty(T);
   msg(P,`${T.ch.name}님과 거래를 마쳤습니다`,'#7fd05a');msg(T,`${P.ch.name}님과 거래를 마쳤습니다`,'#7fd05a');}
+/* 전직 스킬 보조 */
+function nearMon(inst,x,y,r){let T=null,bd=r;for(const m of inst.monsters){if(m.dead||m.hidden||m.dummy&&false)continue;const d=Math.hypot(m.x-x,m.y-y)-m.r;if(d<bd){bd=d;T=m;}}return T;}
+function trapCap(inst,P){const cap=P.S.adv==='trapper'?5:3;const mine=inst.zones.filter(z=>z.trap&&z.pid===P.id);while(mine.length>=cap){inst.zones.splice(inst.zones.indexOf(mine.shift()),1);}}
 const SK={
+  // ================= 전직 스킬 =================
+  // 광전사
+  bfrenzy(inst,P,a,tx,ty,k){const low=P.hp<P.S.maxHp*0.5?1.4:1;for(let i=0;i<3;i++)later(inst,i*0.13,()=>{if(!alive(inst,P))return;fx(inst,{k:'swing',id:P.id,a:r1(a+(i-1)*0.35),d:0.18});fx(inst,{k:'cleave',x:r1(P.x),y:r1(P.y),a:r1(a+(i-1)*0.3),s:1});cone(inst,P,a,40,0.9,1.2*k*low,{kb:2});});},
+  bloodroar(inst,P,a,tx,ty,k){fx(inst,{k:'burst',x:r1(P.x),y:r1(P.y),r:60,cs:['#ff4a3a','#b3282b','#ffd35a']});fx(inst,{k:'sfx',n:'shout'});fx(inst,{k:'shake',v:3});aoe(inst,P,P.x,P.y,56,1.6*k,{kb:6});buff(P,'lsb',0.12,8);},
+  rampage(inst,P,a,tx,ty,k){for(let i=0;i<3;i++)later(inst,i*0.22,()=>{if(!alive(inst,P))return;const ox=P.x,oy=P.y;dashHit(inst,P,a,52,1.4*k,{kb:5});fx(inst,{k:'dash',x1:r1(ox),y1:r1(oy),x2:r1(P.x),y2:r1(P.y)});fx(inst,{k:'boom',x:r1(P.x),y:r1(P.y),r:20,cs:['e','r','o']});send(P,{t:'tp',x:P.x,y:P.y});});},
+  // 검성
+  flurry(inst,P,a,tx,ty,k){for(let i=0;i<5;i++)later(inst,i*0.07,()=>{if(!alive(inst,P))return;const aa=a+rf(-0.15,0.15);fx(inst,{k:'kslash',x1:r1(P.x+Math.cos(aa)*44),y1:r1(P.y-8+Math.sin(aa)*44),x2:r1(P.x),y2:r1(P.y-8)});cone(inst,P,a,46,0.35,0.55*k,{});});},
+  iaido(inst,P,a,tx,ty,k){const st=P.comboT>inst.time?(P.combo|0):0;P.comboEat=1;P.rootT=Math.max(P.rootT,0.4);fx(inst,{k:'tele',x:r1(P.x+Math.cos(a)*50),y:r1(P.y+Math.sin(a)*50),r:12,d:0.4,c:'c'});
+    later(inst,0.4,()=>{if(!alive(inst,P))return;fx(inst,{k:'lspear',x:r1(P.x),y:r1(P.y-6),a:r1(a),len:120});fx(inst,{k:'shake',v:4+st});lineHit(inst,P,P.x,P.y,a,120,12,3.2*k*(1+0.2*st),{kb:8});if(st>=3)fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-30),s:`발도 · ${st}연격!`,c:'#bfe3ff'});});},
+  parry(inst,P,a,tx,ty,k){P.dodgeT=Math.max(P.dodgeT,1.2);fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:22,c:'c',c2:'w'});fx(inst,{k:'sfx',n:'shield'});later(inst,1.2,()=>{if(!alive(inst,P))return;fx(inst,{k:'whirl',id:P.id});fx(inst,{k:'burst',x:r1(P.x),y:r1(P.y),r:46,cs:['#ffffff','#bfe3ff','#8fd0ff']});aoe(inst,P,P.x,P.y,44,2.2*k,{kb:8});});},
+  // 철벽
+  aegislink(inst,P,a,tx,ty,k){fx(inst,{k:'shieldfx',x:r1(P.x),y:r1(P.y)});fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:90,c:'c',c2:'y'});for(const q of partyNear(inst,P,130)){q.shield=Math.max(q.shield,Math.round(q.S.maxHp*0.18*k));q.shieldT=6;q.shieldBy=P.id;fx(inst,{k:'shieldfx',x:r1(q.x),y:r1(q.y)});}},
+  bigtaunt(inst,P){fx(inst,{k:'taunt',x:r1(P.x),y:r1(P.y)});fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:150,c:'e',c2:'y'});buff(P,'tred',0.3,6);for(const m of inst.monsters)if(!m.dead&&Math.hypot(m.x-P.x,m.y-P.y)<160){m.taunt={pid:P.id,t:6};m.tgt=P;if(!m.alert)alertPack(inst,m);}},
+  guardleap(inst,P,a,tx,ty,k){let T=null,bd=220;for(const q of partyNear(inst,P,240)){if(q===P)continue;const d=Math.hypot(q.x-tx,q.y-ty);if(d<bd){bd=d;T=q;}}const gx=T?T.x:tx,gy=T?T.y:ty;const [cx,cy]=clampTarget(P,gx,gy,200);const aa=Math.atan2(cy-P.y,cx-P.x);const ox=P.x,oy=P.y;dashTo(inst,P,aa,Math.max(0,Math.hypot(cx-P.x,cy-P.y)-10));
+    fx(inst,{k:'leap',x1:r1(ox),y1:r1(oy),x2:r1(P.x),y2:r1(P.y)});send(P,{t:'tp',x:P.x,y:P.y});later(inst,0.2,()=>{if(!alive(inst,P))return;fx(inst,{k:'quake',x:r1(P.x),y:r1(P.y),r:40});aoe(inst,P,P.x,P.y,40,1.5*k,{kb:8});if(T&&!T.downed){buff(T,'red',0.4,4);fx(inst,{k:'shieldfx',x:r1(T.x),y:r1(T.y)});}});},
+  // 심판자
+  hammerthrow(inst,P,a,tx,ty,k){fx(inst,{k:'shot',id:P.id,a:r1(a)});spawnPProj(inst,P,'holy',a,240,2.2*k,{pierce:true,r:5,life:1.4});},
+  verdict(inst,P,a,tx,ty,k){let T=null,bd=60;for(const m of inst.monsters){if(m.dead||m.hidden)continue;const d=Math.hypot(m.x-P.x,m.y-P.y);if(d<bd+m.r&&angDiff(Math.atan2(m.y-P.y,m.x-P.x),a)<0.9){bd=d;T=m;}}if(!T)return false;fx(inst,{k:'hammer',x:r1(T.x),y:r1(T.y),d:0.25,big:0});later(inst,0.25,()=>{if(T.dead||!alive(inst,P))return;fx(inst,{k:'execute',x:r1(T.x),y:r1(T.y)});hitMonster(inst,T,P,4*k*(T.boss?1.3:1),{kb:10,stun:0.6});});},
+  holyground(inst,P,a,tx,ty,k){fx(inst,{k:'lrune',x:r1(P.x),y:r1(P.y),r:50});addZone(inst,P,{x:P.x,y:P.y,r:50,t:5,iv:0.5,dmg:0.6*k,dr:0.15,vis:5});},
+  // 저격수
+  aimshot(inst,P,a,tx,ty,k){P.rootT=Math.max(P.rootT,0.8);fx(inst,{k:'teleline',x1:r1(P.x),y1:r1(P.y-6),x2:r1(P.x+Math.cos(a)*300),y2:r1(P.y-6+Math.sin(a)*300),w:4,d:0.8});later(inst,0.8,()=>{if(!alive(inst,P))return;fx(inst,{k:'shot',id:P.id,a:r1(a)});fx(inst,{k:'shake',v:3});spawnPProj(inst,P,'pierce',a,560,6*k,{pierce:true,life:0.8});});},
+  weakmark(inst,P,a,tx,ty,k){const T=nearMon(inst,tx,ty,70);if(!T)return false;T.lmarkT=inst.time+8;fx(inst,{k:'lmarkm',ids:[T.id],d:8});fx(inst,{k:'strike',x:r1(T.x),y:r1(T.y)});hitMonster(inst,T,P,1.5*k,{});},
+  headshot(inst,P,a,tx,ty,k){const T=nearMon(inst,P.x,P.y,230);if(!T)return false;const aa=Math.atan2(T.y-P.y,T.x-P.x);fx(inst,{k:'shot',id:P.id,a:r1(aa)});fx(inst,{k:'laser',x1:r1(P.x),y1:r1(P.y-8),x2:r1(T.x),y2:r1(T.y-8)});hitMonster(inst,T,P,3*k,{fcrit:1});fx(inst,{k:'spark',x:r1(T.x),y:r1(T.y-12),c:'y'});},
+  // 덫 사냥꾼
+  bombtrap(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,200);trapCap(inst,P);addZone(inst,P,{x:tx,y:ty,r:12,t:30,trap:true,dmg:3*k*(P.S.trapMul||1),br:40,vis:8});fx(inst,{k:'sfx',n:'equip'});},
+  nettrap(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,200);trapCap(inst,P);addZone(inst,P,{x:tx,y:ty,r:12,t:30,trap:true,dmg:1.5*k*(P.S.trapMul||1),stun:3,slow:3,vis:8});fx(inst,{k:'sfx',n:'equip'});},
+  hawk(inst,P,a,tx,ty,k){fx(inst,{k:'lorbit',id:P.id,d:8});addZone(inst,P,{x:P.x,y:P.y,r:70,t:8,iv:0.5,dmg:0.8*k,follow:true,vis:0});fx(inst,{k:'sfx',n:'bow'});},
+  // 원소술사
+  infernoball(inst,P,a,tx,ty,k){fx(inst,{k:'shot',id:P.id,a:r1(a)});spawnPProj(inst,P,'fire',a,200,3.8*P.S.spell*k,{r:5,life:1.4,boom:50});const sp=P.S.spell;later(inst,0.5,()=>{if(!alive(inst,P))return;});fx(inst,{k:'sfx',n:'fire'});
+    const [fx2,fy2]=clampTarget(P,tx,ty,200);later(inst,Math.hypot(fx2-P.x,fy2-P.y)/200,()=>{if(!alive(inst,P))return;addZone(inst,P,{x:fx2,y:fy2,r:40,t:3,iv:0.5,dmg:0.5*sp*k,vis:2});});},
+  glacialspike(inst,P,a,tx,ty,k){fx(inst,{k:'shot',id:P.id,a:r1(a)});spawnPProj(inst,P,'frostorb',a,300,2.6*P.S.spell*k,{pierce:true,slow:2,life:1});},
+  elemstorm(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,220);fx(inst,{k:'tele',x:r1(tx),y:r1(ty),r:60,d:4,c:'o'});const sp=P.S.spell;for(let i=0;i<10;i++)later(inst,0.2+i*0.4,()=>{if(!P.inst||P.inst!==inst)return;const x=tx+rf(-40,40),y=ty+rf(-26,26);fx(inst,i%2?{k:'strike',x:r1(x),y:r1(y)}:{k:'boom',x:r1(x),y:r1(y),r:26});aoe(inst,P,x,y,30,1.1*sp*k,{});});},
+  // 점성술사
+  starmark(inst,P,a,tx,ty,k){const ms=inst.monsters.filter(m=>!m.dead&&!m.hidden&&Math.hypot(m.x-tx,m.y-ty)<90).sort((p,q)=>Math.hypot(p.x-tx,p.y-ty)-Math.hypot(q.x-tx,q.y-ty)).slice(0,3);if(!ms.length)return false;
+    for(const m of ms){m.starT=inst.time+10;m.starBy=P.id;fx(inst,{k:'burst',x:r1(m.x),y:r1(m.y-10),r:18,cs:['#ffffff','#e6d8ff','#c9a0e8']});hitMonster(inst,m,P,1.2*P.S.spell*k,{});}fx(inst,{k:'mmark',ids:ms.map(m=>m.id),d:10,sym:'star'});},
+  constellation(inst,P,a,tx,ty,k){const ms=inst.monsters.filter(m=>!m.dead&&m.starT>inst.time&&Math.hypot(m.x-P.x,m.y-P.y)<260);if(!ms.length){msg(P,'별 표식이 새겨진 적이 없어요','#9e937a');return false;}const sp=P.S.spell;
+    const pts=[[P.x,P.y-8]].concat(ms.map(m=>[m.x,m.y-8]));for(let i=0;i<pts.length-1;i++){fx(inst,{k:'laser',x1:r1(pts[i][0]),y1:r1(pts[i][1]),x2:r1(pts[i+1][0]),y2:r1(pts[i+1][1])});const [x1,y1]=pts[i],[x2,y2]=pts[i+1];const aa=Math.atan2(y2-y1,x2-x1);lineHit(inst,P,x1,y1+8,aa,Math.hypot(x2-x1,y2-y1),10,1.5*sp*k,{});}
+    later(inst,0.3,()=>{for(const m of ms){if(m.dead)continue;m.starT=0;fx(inst,{k:'burst',x:r1(m.x),y:r1(m.y),r:34,cs:['#ffffff','#c9a0e8','#8fd0ff']});hitMonster(inst,m,P,3*sp*k,{kb:4});}fx(inst,{k:'shake',v:3+ms.length});fx(inst,{k:'mmark',ids:[],d:0,sym:'star'});});},
+  starshower(inst,P,a,tx,ty,k){const sp=P.S.spell;for(let i=0;i<10;i++)later(inst,0.2+i*0.5,()=>{if(!alive(inst,P))return;const mk=inst.monsters.filter(m=>!m.dead&&m.starT>inst.time&&Math.hypot(m.x-P.x,m.y-P.y)<260);let x,y;if(mk.length){const m=pick(mk);x=m.x;y=m.y;}else{x=P.x+rf(-90,90);y=P.y+rf(-60,60);}
+      fx(inst,{k:'meteor',x:r1(x),y:r1(y),d:0.3});later(inst,0.3,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'burst',x:r1(x),y:r1(y),r:26,cs:['#ffffff','#fff2b0','#c9a0e8']});aoe(inst,P,x,y,28,1.5*sp*k,{});});});},
+  // 대사제
+  greatheal(inst,P,a,tx,ty,k){fx(inst,{k:'healburst',x:r1(P.x),y:r1(P.y)});fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:110,c:'y',c2:'w'});for(const q of partyNear(inst,P,130))healPlayer(inst,q,P.S.healPow*2.2*k,P);},
+  lightaegis(inst,P,a,tx,ty,k){fx(inst,{k:'shieldfx',x:r1(P.x),y:r1(P.y)});fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:110,c:'y',c2:'c'});for(const q of partyNear(inst,P,130)){q.shield=Math.max(q.shield,Math.round(P.S.healPow*1.5*k*(P.S.shieldMul||1)));q.shieldT=6;q.shieldBy=P.id;}},
+  resurrect(inst,P,a,tx,ty,k){const ds=instPlayers(inst).filter(q=>q.downed&&q!==P&&Math.hypot(q.x-P.x,q.y-P.y)<160);if(!ds.length){msg(P,'근처에 쓰러진 동료가 없어요','#9e937a');return false;}
+    for(const q of ds){q.downed=false;q.rev=0;q.hp=Math.round(q.S.maxHp*0.5);q.dodgeT=Math.max(q.dodgeT,1.5);fx(inst,{k:'revive',id:q.id});fx(inst,{k:'lpillar',x:r1(q.x),y:r1(q.y),r:30});}fx(inst,{k:'sfx',n:'holy'});},
+  // 퇴마사
+  curse(inst,P,a,tx,ty,k){const T=nearMon(inst,tx,ty,80);if(!T)return false;T.curseT=inst.time+10;fx(inst,{k:'mmark',ids:[T.id],d:10,sym:'curse'});fx(inst,{k:'burst',x:r1(T.x),y:r1(T.y-10),r:20,cs:['#9a7ad8','#3a1e4a','#c9a0e8']});hitMonster(inst,T,P,0.5*P.S.spell*k,{dot:{mult:3*P.S.spell*k,dur:10,c:'p'}});},
+  exorcise(inst,P,a,tx,ty,k){[tx,ty]=clampTarget(P,tx,ty,200);fx(inst,{k:'smite',x:r1(tx),y:r1(ty)});fx(inst,{k:'burst',x:r1(tx),y:r1(ty),r:34,cs:['#ffffff','#fff2b0','#9a7ad8']});for(const m of inst.monsters)if(!m.dead&&Math.hypot(m.x-tx,m.y-ty)<34+m.r)hitMonster(inst,m,P,2.8*P.S.spell*k*(m.curseT>inst.time?1.5:1),{});},
+  soulchain(inst,P,a,tx,ty,k){const ms=inst.monsters.filter(m=>!m.dead&&!m.hidden&&Math.hypot(m.x-P.x,m.y-P.y)<120).slice(0,5);if(!ms.length)return false;const sp=P.S.spell;
+    for(let i=0;i<10;i++)later(inst,i*0.5,()=>{if(!alive(inst,P))return;const live=ms.filter(m=>!m.dead);if(!live.length)return;fx(inst,{k:'chain',pts:[[r1(P.x),r1(P.y-8)]].concat(live.map(m=>[r1(m.x),r1(m.y-8)]))});for(const m of live)hitMonster(inst,m,P,0.5*sp*k,{});for(const q of partyNear(inst,P,140))healPlayer(inst,q,P.S.healPow*0.12*k*live.length/3,P);});},
+  // 새벽 기사단장
+  dawnbanner(inst,P,a,tx,ty,k){fx(inst,{k:'lpillar',x:r1(P.x),y:r1(P.y),r:46});addZone(inst,P,{x:P.x,y:P.y,r:70,t:10,iv:1,heal:P.S.maxHp*0.02*k,dmgb:0.2,vis:5});addHoly(P,10);},
+  charge2(inst,P){fx(inst,{k:'warcry',id:P.id});fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:110,c:'y',c2:'w'});for(const q of partyNear(inst,P,150))buff(q,'as',0.25,6);addHoly(P,10);},
+  radiantslash(inst,P,a,tx,ty,k){fx(inst,{k:'lcut',x:r1(P.x),y:r1(P.y),a:r1(a),r:56});cone(inst,P,a,56,1.1,2.8*k,{kb:5});addHoly(P,12);},
+  // 태양검
+  solarflare(inst,P,a,tx,ty,k){const h=P.holy|0;P.holy=0;const r=46+h*0.4;fx(inst,{k:'burst',x:r1(P.x),y:r1(P.y),r:Math.round(r),cs:['#ffffff','#ffd35a','#ff8a3a']});fx(inst,{k:'shake',v:3+h/20});aoe(inst,P,P.x,P.y,r,(2+h*0.04)*k*1.2,{kb:8});},
+  sunpierce(inst,P,a,tx,ty,k){P.rootT=Math.max(P.rootT,0.3);fx(inst,{k:'tele',x:r1(P.x),y:r1(P.y),r:14,d:0.3,c:'y'});later(inst,0.3,()=>{if(!alive(inst,P))return;const ox=P.x,oy=P.y;dashHit(inst,P,a,110,4.5*k,{kb:8});fx(inst,{k:'kslash',x1:r1(ox),y1:r1(oy-8),x2:r1(P.x),y2:r1(P.y-8)});send(P,{t:'tp',x:P.x,y:P.y});addHoly(P,20);});},
+  corona(inst,P,a,tx,ty,k){fx(inst,{k:'lorbit',id:P.id,d:6});addZone(inst,P,{x:P.x,y:P.y,r:46,t:6,iv:0.5,dmg:0.9*k,follow:true,vis:0});for(let i=0;i<12;i++)later(inst,i*0.5,()=>{if(alive(inst,P))addHoly(P,3);});},
+  // ---------- 전직 궁극기 ----------
+  redmoon(inst,P){fx(inst,{k:'redsky',d:10});fx(inst,{k:'burst',x:r1(P.x),y:r1(P.y),r:90,cs:['#ff4a3a','#b3282b','#1b0a0a']});fx(inst,{k:'shake',v:8});buff(P,'sdmg',0.5,10);buff(P,'dmg',0.5,10);buff(P,'as',0.4,10);P.undyT=inst.time+4;fx(inst,{k:'god',id:P.id,d:10});},
+  thousandcuts(inst,P){P.dodgeT=Math.max(P.dodgeT,3);fx(inst,{k:'lstorm',x:r1(P.x),y:r1(P.y),r:70});addZone(inst,P,{x:P.x,y:P.y,r:62,t:3,iv:0.12,dmg:0.7,follow:true,vis:7});fx(inst,{k:'shake',v:5});},
+  fortress(inst,P){fx(inst,{k:'dome',x:r1(P.x),y:r1(P.y),r:100,d:10});addZone(inst,P,{x:P.x,y:P.y,r:100,t:10,iv:0.25,vis:11,dr:0.5,follow:true});for(const m of inst.monsters)if(!m.dead&&Math.hypot(m.x-P.x,m.y-P.y)<220){m.taunt={pid:P.id,t:10};m.tgt=P;}fx(inst,{k:'taunt',x:r1(P.x),y:r1(P.y)});},
+  finaljudge(inst,P,a,tx,ty){[tx,ty]=clampTarget(P,tx,ty,160);for(let i=0;i<5;i++){const last=i===4;later(inst,0.2+i*0.42,()=>{if(!P.inst||P.inst!==inst)return;const near=inst.monsters.filter(m=>!m.dead&&Math.hypot(m.x-tx,m.y-ty)<120);const T=near.length?pick(near):null;const x=T?T.x:tx+rf(-30,30),y=T?T.y:ty+rf(-20,20);
+      fx(inst,{k:'hammer',x:r1(x),y:r1(y),d:0.3,big:last?1:0});later(inst,0.3,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'quake',x:r1(x),y:r1(y),r:50});fx(inst,{k:'shake',v:last?9:5});aoe(inst,P,x,y,50,4.5,{kb:8,stun:last?2:0});});});}},
+  deadeye(inst,P){P.rootT=Math.max(P.rootT,2);fx(inst,{k:'aim',id:P.id,d:2});const ms=inst.monsters.filter(m=>!m.dead&&!m.hidden&&Math.hypot(m.x-P.x,m.y-P.y)<260).sort((p,q)=>(q.boss?1:0)-(p.boss?1:0)).slice(0,6);for(const m of ms)fx(inst,{k:'tele',x:r1(m.x),y:r1(m.y),r:14,d:2,c:'y'});
+    ms.forEach((m,i)=>later(inst,2+i*0.12,()=>{if(m.dead||!alive(inst,P))return;fx(inst,{k:'laser',x1:r1(P.x),y1:r1(P.y-8),x2:r1(m.x),y2:r1(m.y-8)});fx(inst,{k:'shake',v:4});hitMonster(inst,m,P,8,{fcrit:1,kb:6});}));if(ms.length&&ms.length<6){const b=ms[0];for(let j=ms.length;j<6;j++)later(inst,2+j*0.12,()=>{if(b.dead||!alive(inst,P))return;fx(inst,{k:'laser',x1:r1(P.x),y1:r1(P.y-8),x2:r1(b.x),y2:r1(b.y-8)});hitMonster(inst,b,P,4,{fcrit:1});});}},
+  killzone(inst,P,a,tx,ty){[tx,ty]=clampTarget(P,tx,ty,200);fx(inst,{k:'tele',x:r1(tx),y:r1(ty),r:80,d:3,c:'z'});const pts=[];for(let i=0;i<8;i++){const t=i/8*Math.PI*2;pts.push([tx+Math.cos(t)*50,ty+Math.sin(t)*32]);}for(const [x,y] of pts)fx(inst,{k:'boom',x:r1(x),y:r1(y),r:8,cs:['z','Z','w']});
+    later(inst,3,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'shake',v:9});for(const [x,y] of pts){fx(inst,{k:'boom',x:r1(x),y:r1(y),r:40});aoe(inst,P,x,y,40,4*(P.S.trapMul||1)/1.4,{kb:6});}});},
+  cataclysm(inst,P){const sp=P.S.spell;const cs=[['#ffffff','#ffd35a','#ff4a3a'],['#ffffff','#bfe3ff','#3a6fb8'],['#ffffff','#fff2b0','#c9a0e8']];for(let i=0;i<3;i++)later(inst,0.3+i*0.7,()=>{if(!alive(inst,P))return;fx(inst,{k:'burst',x:r1(P.x),y:r1(P.y),r:150,cs:cs[i]});fx(inst,{k:'shake',v:8});aoe(inst,P,P.x,P.y,150,7*sp,{kb:10,slow:i===1?3:0});});},
+  supernova(inst,P){const sp=P.S.spell;fx(inst,{k:'tele',x:r1(P.x),y:r1(P.y),r:140,d:1,c:'w'});later(inst,1,()=>{if(!alive(inst,P))return;fx(inst,{k:'burst',x:r1(P.x),y:r1(P.y),r:160,cs:['#ffffff','#e6d8ff','#8fd0ff']});fx(inst,{k:'flash'});fx(inst,{k:'shake',v:12});
+      const nm=inst.monsters.filter(m=>!m.dead&&m.starT>inst.time).length;for(const m of inst.monsters)if(!m.dead&&Math.hypot(m.x-P.x,m.y-P.y)<150+m.r){hitMonster(inst,m,P,12*sp*(1+0.3*nm)/(1+0.3*Math.min(nm,1)),{kb:12});m.starT=0;}});},
+  sanctum(inst,P){fx(inst,{k:'lpillar',x:r1(P.x),y:r1(P.y),r:110});addZone(inst,P,{x:P.x,y:P.y,r:110,t:10,iv:1,heal:P.S.maxHp*0.08,dr:0.3,vis:5});fx(inst,{k:'sfx',n:'holy'});},
+  purgatory(inst,P){fx(inst,{k:'redsky',d:6});addZone(inst,P,{x:P.x,y:P.y,r:110,t:6,iv:0.5,dmg:1.5*P.S.spell,heal:P.S.healPow*0.25,vis:14});fx(inst,{k:'shake',v:6});},
+  dawnlegion(inst,P){fx(inst,{k:'lorbit',id:P.id,d:8});fx(inst,{k:'burst',x:r1(P.x),y:r1(P.y),r:90,cs:['#ffffff','#ffe9a8','#ffd35a']});for(const q of partyNear(inst,P,160))buff(q,'dmg',0.25,8);addZone(inst,P,{x:P.x,y:P.y,r:70,t:8,iv:0.4,dmg:2.4,follow:true,vis:0});addHoly(P,30);},
+  eclipsebreak(inst,P,a,tx,ty){[tx,ty]=clampTarget(P,tx,ty,180);fx(inst,{k:'tele',x:r1(tx),y:r1(ty),r:110,d:1.5,c:'o'});fx(inst,{k:'bigmeteor',x:r1(tx),y:r1(ty),d:1.5});later(inst,1.5,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'burst',x:r1(tx),y:r1(ty),r:130,cs:['#ffffff','#ffd35a','#ff4a3a']});fx(inst,{k:'flash'});fx(inst,{k:'shake',v:14});aoe(inst,P,tx,ty,120,15,{kb:14});P.holy=100;});},
   // ----- 빛의 기사 -----
   lslash(inst,P,a,tx,ty,k){fx(inst,{k:'swing',id:P.id,a:r1(a),d:0.22});fx(inst,{k:'lcut',x:r1(P.x),y:r1(P.y),a:r1(a),r:50});cone(inst,P,a,50,0.95,1.9*k,{kb:4});addHoly(P,8);},
   flashdash(inst,P,a,tx,ty,k){const[ox,oy]=dashHit(inst,P,a,110,2.1*k,{kb:5});fx(inst,{k:'lwave',x1:r1(ox),y1:r1(oy-6),x2:r1(P.x),y2:r1(P.y-6),dash:1});addHoly(P,10);},
@@ -710,12 +789,12 @@ const SK={
       fx(inst,{k:'dpillar',x:r1(x),y:r1(y),d:0.3});later(inst,0.3,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:26,c:1});fx(inst,{k:'shake',v:3});aoe(inst,P,x,y,26,3*P.S.spell,{kb:3});});});},
 };
 function reviveNear(inst,P,r){for(const q of instPlayers(inst)){if(!q.downed||Math.hypot(q.x-P.x,q.y-P.y)>r)continue;q.downed=false;q.rev=0;q.hp=Math.round(q.S.maxHp*0.6);addMeter(inst,P,'heal',q.hp);fx(inst,{k:'revive',id:q.id});fx(inst,{k:'msg',m:`천사가 ${q.ch.name}님을 일으켰습니다`,c:'#ffe9a8'});}}
-const ULT_OK=new Set(['ragnarok','wargod','aegisdome','judgehammer','skyrain','dragonarrow','apocalypse','absolutezero','angel','divinejudge','dawnblade','heavendance'].concat((process.env.ULT_OK||'').split(',').filter(Boolean)));;/* 사용자 승인된 궁극기 */function ultOk(id){return ULT_OK.has(id)||!!process.env.BC_DEBUG;}
+const ULT_OK=new Set(['ragnarok','wargod','aegisdome','judgehammer','skyrain','dragonarrow','apocalypse','absolutezero','angel','divinejudge','dawnblade','heavendance','redmoon','thousandcuts','fortress','finaljudge','deadeye','killzone','cataclysm','supernova','sanctum','purgatory','dawnlegion','eclipsebreak'].concat((process.env.ULT_OK||'').split(',').filter(Boolean)));;/* 사용자 승인된 궁극기 */function ultOk(id){return ULT_OK.has(id)||!!process.env.BC_DEBUG;}
 function castSkill(inst,P,i,tx,ty){const sid=i===SH.BAR_SIZE?P.ch.rmb:(P.ch.bar&&P.ch.bar[i]);if(!sid)return;const sk=SKILLS[sid];if(!sk||sk.pas||!SK[sid])return;const rank=(P.ch.sk&&P.ch.sk[sid])|0;if(rank<1)return;
   if((P.scd[sid]||0)>0.1)return;if(P.mp<sk.mp){msg(P,'마나가 부족합니다','#7aa2ff');return;}
   P.mp-=sk.mp;P.scd[sid]=sk.cd*(1-(P.S.cdr||0))*(bOn(P,'clock')?0.5:1);const s3=P.S.set3||[];let kk=SH.skillMul(rank)*(P.S.rad||1);if(s3.includes('twins')&&P.lastSk&&P.lastSk!==sid)kk*=1.4;P.lastSk=sid;
   if(s3.includes('clock')){P.clockN=(P.clockN|0)+1;if(P.clockN>=10){P.clockN=0;buff(P,'clock',1,6);fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-30),s:'태엽 폭주!',c:'#ffd35a'});fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:36,c:'y',c2:'o'});}}const a=Math.atan2(ty-P.y,tx-P.x);P.face=Math.cos(a)<0?-1:1;
-  inst._el=SKILL_EL[sid]||null;inst._ctr=sk.ctr?1:null;inst._sk=1;inst._src=sid;CUR_CASTER=P;let ok;try{ok=withFoes(inst,P,()=>SK[sid](inst,P,a,tx,ty,kk,rank));}finally{inst._el=null;inst._ctr=null;inst._sk=null;inst._src=null;CUR_CASTER=null;}if(ok===false){P.mp+=sk.mp;P.scd[sid]=0;send(P,{t:'cdr',sid});}}
+  inst._el=SKILL_EL[sid]||null;inst._ctr=sk.ctr?1:null;inst._sk=1;inst._src=sid;CUR_CASTER=P;let ok;try{ok=withFoes(inst,P,()=>SK[sid](inst,P,a,tx,ty,kk,rank));}finally{inst._el=null;inst._ctr=null;inst._sk=null;inst._src=null;CUR_CASTER=null;}if(ok!==false&&P.S.adv==='blademaster'){if(P.comboEat){P.comboEat=0;P.combo=0;}else{P.combo=Math.min(5,(P.comboT>inst.time?P.combo|0:0)+(sid==='parry'?2:1));}P.comboT=inst.time+3.5;send(P,{t:'combo',n:P.combo,t2:3.5});}if(ok===false){P.mp+=sk.mp;P.scd[sid]=0;send(P,{t:'cdr',sid});}}
 
 // ================= 인스턴스 업데이트 =================
 function updatePlayers(inst,dt){
@@ -757,8 +836,9 @@ function updateZones(inst,dt){for(let i=inst.zones.length-1;i>=0;i--){const z=in
   if(z.follow){z.x=P.x;z.y=P.y;}
   if(z.vx){const nx=z.x+z.vx*dt,ny=z.y+z.vy*dt;if(SH.blocked(inst.map,nx,ny,4)){z.vx=0;z.vy=0;}else{z.x=nx;z.y=ny;}}
   if(z.pull)for(const m of inst.monsters){if(m.dead||m.boss||m.dummy||m.d.stat)continue;const dx=z.x-m.x,dy=z.y-m.y,d=Math.hypot(dx,dy);if(d<4||d>z.r+34)continue;SH.moveEnt(inst.map,m,dx/d*z.pull*dt,dy/d*z.pull*dt);}
+  if(z.dmgb){for(const q of livingPlayers(inst))if(Math.hypot(q.x-z.x,q.y-z.y)<z.r)buff(q,'dmg',z.dmgb,0.6);}
   if(z.dr){CUR_CASTER=P;for(const q of livingPlayers(inst))if(Math.hypot(q.x-z.x,q.y-z.y)<z.r)buff(q,'tred',z.dr,0.35);CUR_CASTER=null;}
-  if(z.trap){const hit=inst.monsters.find(m=>!m.dead&&foe(inst,P,m)&&Math.hypot(m.x-z.x,m.y-z.y)<z.r+m.r);if(hit){fx(inst,{k:'boom',x:r1(z.x),y:r1(z.y),r:30});fx(inst,{k:'shake',v:2});aoe(inst,P,z.x,z.y,30,z.dmg,{slow:z.slow,kb:3,src:z.src});inst.zones.splice(i,1);}continue;}
+  if(z.trap){const hit=inst.monsters.find(m=>!m.dead&&foe(inst,P,m)&&Math.hypot(m.x-z.x,m.y-z.y)<z.r+m.r);if(hit){fx(inst,{k:'boom',x:r1(z.x),y:r1(z.y),r:30});fx(inst,{k:'shake',v:2});aoe(inst,P,z.x,z.y,z.br||30,z.dmg,{slow:z.slow,stun:z.stun,kb:3,src:z.src});if(z.br)fx(inst,{k:'boom',x:r1(z.x),y:r1(z.y),r:z.br});inst.zones.splice(i,1);}continue;}
   z.tick-=dt;if(z.tick>0)continue;z.tick=z.iv;
   if(z.dmg)aoe(inst,P,z.x,z.y,z.r,z.dmg,{slow:z.slow,ctr:z.ctr,src:z.src});
   if(z.heal)for(const q of livingPlayers(inst))if(Math.hypot(q.x-z.x,q.y-z.y)<z.r)healPlayer(inst,q,z.heal,P);
@@ -1245,7 +1325,8 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
     str:o.str|0||C.base.str,dex:o.dex|0||C.base.dex,vit:o.vit|0||C.base.vit,ene:o.ene|0||C.base.ene,gold:Math.max(0,o.gold|0),pots:{hp:clamp((o.pots&&o.pots.hp)|0,0,9),mp:clamp((o.pots&&o.pots.mp)|0,0,9)},
     eq:{weapon:o.eq.weapon||null,armor:o.eq.armor||null,ring:o.eq.ring||null},bag:new Array(20).fill(null),cps:Array.isArray(o.cps)&&o.cps.length?o.cps.filter(n=>Number.isInteger(n)&&n>=1&&n<=100):[1],best:o.best|0,kills:o.kills|0,created:o.created||Date.now()};
   for(let i=0;i<SH.BAG_N;i++)ch.bag[i]=o.bag[i]||null;if(!ch.cps.includes(1))ch.cps.unshift(1);
-  const cs=C.skills,def=SH.defaultSkills(o.cls);let sk={};if(o.sk&&typeof o.sk==='object')for(const s of cs){const r=clamp(o.sk[s]|0,0,SH.MAX_RANK);if(r>0&&SKILLS[s].lvl<=ch.lvl)sk[s]=r;}
+  ch.adv=(typeof o.adv==='string'&&SH.ADV[o.adv]&&SH.ADV[o.adv].cls===o.cls&&ch.lvl>=SH.ADV_LVL)?o.adv:null;/* 전직 */
+  const cs=C.skills.concat(ch.adv?SH.ADV[ch.adv].sk:[]),def=SH.defaultSkills(o.cls);let sk={};if(o.sk&&typeof o.sk==='object')for(const s of cs){const r=clamp(o.sk[s]|0,0,SH.MAX_RANK);if(r>0&&SKILLS[s].lvl<=ch.lvl)sk[s]=r;}
   for(const s in def.sk)if(!sk[s])sk[s]=1;const spent=Object.values(sk).reduce((a,b)=>a+b,0)-2,total=SH.skillPointsTotal(ch.lvl);
   if(spent>total){sk=def.sk;ch.spts=total;}else ch.spts=total-spent;ch.sk=sk;
   ch.bar=new Array(SH.BAR_SIZE).fill(null);const src=Array.isArray(o.bar)?o.bar:def.bar;const used=new Set();for(let i=0;i<SH.BAR_SIZE;i++){const s=src[i];if(s&&sk[s]&&!SKILLS[s].pas&&!used.has(s)){ch.bar[i]=s;used.add(s);}}
@@ -1268,7 +1349,7 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
   ch.raidD={};if(o.raidD&&typeof o.raidD==='object')for(const r of SH.RAIDS)if(typeof o.raidD[r.id]==='string')ch.raidD[r.id]=o.raidD[r.id].slice(0,10);
   ch.moonH=Math.max(0,o.moonH|0);ch.rclr={};if(o.rclr&&typeof o.rclr==='object')for(const r of SH.RAIDS){const v=Math.max(0,o.rclr[r.id]|0);if(v)ch.rclr[r.id]=v;}
   if((o.lvl|0)>SH.LVL_CAP){const C0=CLASSES[ch.cls];ch.str=C0.base.str;ch.dex=C0.base.dex;ch.vit=C0.base.vit;ch.ene=C0.base.ene;ch.pts=3*(SH.LVL_CAP-1);ch.xp=0;ch.tal={};ch.sk=SH.defaultSkills(ch.cls).sk;ch.spts=SH.skillPointsTotal(SH.LVL_CAP)-(Object.values(ch.sk).reduce((a,b)=>a+b,0)-2);ch.bar=SH.defaultSkills(ch.cls).bar.slice();while(ch.bar.length<SH.BAR_SIZE)ch.bar.push(null);ch._capped=1;}
-  ch.ult=typeof o.ult==='string'&&(C.ults||[]).includes(o.ult)&&ch.lvl>=SH.ULT_LVL?o.ult:null;
+  ch.ult=typeof o.ult==='string'&&SH.ultsOf(ch).includes(o.ult)&&ch.lvl>=SH.ULT_LVL?o.ult:null;
   ch.cos={cape:!(o.cos&&o.cos.cape===0)?1:0,glow:!(o.cos&&o.cos.glow===0)?1:0};
   return ch;}
 function okItem(it){return !!(it&&typeof it==='object'&&['weapon','armor','ring'].includes(it.slot)&&Number.isInteger(it.rar)&&it.rar>=0&&it.rar<=4&&(it.rar<4||SH.MYTH[it.myth])&&(!it.set||SH.SETS[it.set])&&it.base&&typeof it.base==='object'&&Array.isArray(it.aff)&&typeof it.name==='string');}
@@ -1377,7 +1458,11 @@ const H={
     const cost=3*P.ch.lvl;if(P.ch.gold<cost){msg(P,`골드가 부족합니다 (${cost}골드)`,'#ff6a5a');return;}P.ch.gold-=cost;
     if(r-1<=0){delete P.ch.sk[sid];P.ch.bar=P.ch.bar.map(x=>x===sid?null:x);if(P.ch.rmb===sid)P.ch.rmb=null;}else P.ch.sk[sid]=r-1;
     P.ch.spts=(P.ch.spts|0)+1;recalc(P);markDirty(P);msg(P,`${sk.n} ${r} → ${r-1} · 스킬 포인트 1 돌려받음 (-${cost}골드)`,'#ffd35a');},
-  learn(P,d){const sid=d.sid;const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.ult)return;if(P.ch.lvl<sk.lvl){msg(P,`레벨 ${sk.lvl}에 해금됩니다`,'#ff6a5a');return;}if((P.ch.spts|0)<=0){msg(P,'스킬 포인트가 없습니다','#ff6a5a');return;}
+  advsel(P,d){if(P.inst!==hub||!near(P,hub.map.merc,60)){msg(P,'용병 대장 한스 곁에서 전직할 수 있어요','#9e937a');return;}const A=SH.ADV[d.id];if(!A||A.cls!==P.ch.cls)return;if(P.ch.lvl<SH.ADV_LVL){msg(P,`${SH.ADV_LVL}레벨부터 전직할 수 있어요`,'#ff6a5a');return;}if(P.ch.adv===d.id)return;
+    if(P.ch.adv){const cost=SH.advChangeCost(P.ch.lvl);if(P.ch.gold<cost){msg(P,`갈래를 바꾸려면 ${cost.toLocaleString()}골드가 필요해요`,'#ff6a5a');return;}P.ch.gold-=cost;const old=SH.ADV[P.ch.adv];let back=0;for(const s of old.sk){back+=P.ch.sk[s]|0;delete P.ch.sk[s];}P.ch.spts=(P.ch.spts|0)+back;P.ch.bar=P.ch.bar.map(x=>old.sk.includes(x)?null:x);if(old.sk.includes(P.ch.rmb))P.ch.rmb=null;if(P.ch.ult===old.ult)P.ch.ult=null;}
+    P.ch.adv=d.id;recalc(P);markDirty(P);if(P.inst)bcastRoster(P.inst);fx(P.inst,{k:'burst',x:r1(P.x),y:r1(P.y),r:70,cs:['#ffffff',A.col,'#ffd35a']});fx(P.inst,{k:'sfx',n:'ult'});msg(P,`${A.n}(으)로 전직했습니다! 스킬 창(K)의 [전직] 탭에서 새 스킬을 배우세요`,'#ffd35a');
+    for(const q of players.values())if(q.ch&&q!==P)msg(q,`${P.ch.name}님이 ${A.n}(으)로 전직했습니다`,'#c9a0e8');},
+  learn(P,d){const sid=d.sid;const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.ult)return;if(sk.adv&&sk.adv!==P.ch.adv){msg(P,`${SH.ADV[sk.adv].n}으로 전직해야 배울 수 있어요`,'#ff6a5a');return;}if(P.ch.lvl<sk.lvl){msg(P,`레벨 ${sk.lvl}에 해금됩니다`,'#ff6a5a');return;}if((P.ch.spts|0)<=0){msg(P,'스킬 포인트가 없습니다','#ff6a5a');return;}
     const r=P.ch.sk[sid]|0;if(r>=SH.MAX_RANK)return;P.ch.sk[sid]=r+1;P.ch.spts--;if(r===0&&!sk.pas&&!P.ch.bar.includes(sid)){const e=P.ch.bar.indexOf(null);if(e>=0)P.ch.bar[e]=sid;}recalc(P);send(P,{t:'fxp',k:'learn'});},
   rmb(P,d){const sid=d.sid||null;if(sid){const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.pas||!(P.ch.sk[sid]>0))return;}P.ch.rmb=sid;markDirty(P);},
   bar(P,d){const i=d.i|0;if(i<0||i>=SH.BAR_SIZE)return;const sid=d.sid||null;if(sid){const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.pas||!(P.ch.sk[sid]>0))return;const j=P.ch.bar.indexOf(sid);if(j>=0)P.ch.bar[j]=P.ch.bar[i];}P.ch.bar[i]=sid;markDirty(P);},
@@ -1461,7 +1546,7 @@ const H={
     const id=P.ch.ult;if(!id||P.ch.lvl<SH.ULT_LVL||!SK[id]||!ultOk(id))return;if(P.gmLock>inst.time)return;P.actT=inst.time;const sk=SKILLS[id];const now=Date.now();if(now<(P.ucdEnd||0)-150){send(P,{t:'ucd',left:Math.round((P.ucdEnd-now)/100)/10});return;}
     const cd=sk.cd*(1-Math.min(0.3,P.S.cdr||0));P.ucdEnd=now+cd*1000;send(P,{t:'ucd',left:cd});const tx=+d.x||P.x,ty=+d.y||P.y;const a=Math.atan2(ty-P.y,tx-P.x);P.face=Math.cos(a)<0?-1:1;
     fx(inst,{k:'ult',id:P.id,n:sk.n,s:id});fx(inst,{k:'sfx',n:'ult'});inst._el=SKILL_EL[id]||null;inst._um=SH.ultPow(P.ch.lvl);inst._src=id;try{withFoes(inst,P,()=>SK[id](inst,P,a,tx,ty,1,1));}finally{inst._el=null;inst._um=null;inst._src=null;}},
-  ultsel(P,d){const C=CLASSES[P.ch.cls];if(!(C.ults||[]).includes(d.id)||!ultOk(d.id))return;if(P.ch.lvl<SH.ULT_LVL){msg(P,`궁극기는 ${SH.ULT_LVL}레벨에 배웁니다`,'#ff6a5a');return;}
+  ultsel(P,d){if(!SH.ultsOf(P.ch).includes(d.id)||!ultOk(d.id))return;if(P.ch.lvl<SH.ULT_LVL){msg(P,`궁극기는 ${SH.ULT_LVL}레벨에 배웁니다`,'#ff6a5a');return;}
     if(P.ch.ult&&P.ch.ult!==d.id&&P.inst!==hub){msg(P,'궁극기는 마을에서만 바꿀 수 있어요','#ff6a5a');return;}if(P.ch.ult===d.id)return;P.ch.ult=d.id;markDirty(P);msg(P,`궁극기: ${SKILLS[d.id].n}`,'#ffd35a');},
   ctr(P,d){const inst=P.inst;if(!inst||P.downed||inst.paused)return;if(inst.type!=='dungeon'&&!inYard(P))return;if(inst.arena&&(inst.arena.cd>0||inst.arena.over))return;const now=Date.now();if(now-(P.ctrT||0)<SH.CTR_CD*1000-150)return;P.ctrT=now;
     const tx=+d.x||P.x,ty=+d.y||P.y;const a=Math.atan2(ty-P.y,tx-P.x);P.face=Math.cos(a)<0?-1:1;const cls=P.ch.cls;inst._ctr=1;

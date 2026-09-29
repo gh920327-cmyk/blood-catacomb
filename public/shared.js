@@ -351,6 +351,68 @@ const SKILLS={
   radiantspear:{n:'광휘의 창',mp:20,cd:8,desc:'빛의 창을 던져 경로의 모든 적에게 320% 피해'},
   excalibur:{n:'성검 해방',mp:30,cd:30,desc:'8초간 피해 +20%, 기본 공격마다 빛의 파동이 뻗어 나간다 (100%)'},
   dawnoath:{n:'새벽의 맹세',pas:1,desc:'보스 피해와 치명타 확률 증가',per:'등급당 보스 피해 +2%, 치명타 +1%'},
+  // ----- 전직 스킬 (30레벨 이후) -----
+  bfrenzy:{n:'광란의 연타',mp:12,cd:3,desc:'전방을 세 번 연달아 벤다(각 120%). 체력 50% 이하면 피해 +40%'},
+  bloodroar:{n:'피의 포효',mp:18,cd:12,desc:'주변 적에게 160% 피해, 8초간 생명력 흡수 +12%'},
+  rampage:{n:'폭주 돌격',mp:22,cd:9,desc:'커서 방향으로 세 번 연달아 돌진한다(각 140%)'},
+  bloodboil:{pas:1,n:'끓는 피',desc:'체력이 낮을 때 더 빨라진다',per:'등급당 치명타 +1%, 체력 50% 이하일 때 공격 속도 +2%'},
+  flurry:{n:'질풍 연격',mp:10,cd:2.5,desc:'전방으로 다섯 번 빠르게 찌른다(각 55%). 연격 +1'},
+  iaido:{n:'발도',mp:20,cd:8,desc:'0.4초 숨을 고른 뒤 전방 일직선을 벤다(320%). 연격 스택당 +20%, 스택 소모'},
+  parry:{n:'흘려내기',mp:14,cd:10,desc:'1.2초간 모든 공격을 흘려낸다(무적). 끝나면 주변에 반격(220%). 연격 +2'},
+  swordheart:{pas:1,n:'검심',desc:'치명타 강화',per:'등급당 치명타 +1%, 치명타 피해 +4%'},
+  aegislink:{n:'수호의 결계',mp:20,cd:14,desc:'주변 파티원 모두에게 최대 체력 18% 보호막 (6초)'},
+  bigtaunt:{n:'대도발',mp:14,cd:10,desc:'넓은 범위의 적을 도발하고 6초간 받는 피해 -30%'},
+  guardleap:{ctr:1,n:'수호 도약',mp:16,cd:9,desc:'커서 방향 파티원(없으면 지점)으로 도약해 150% 피해, 그 파티원은 4초간 받는 피해 -40%'},
+  ironwill:{pas:1,n:'강철 의지',desc:'더 단단해진다',per:'등급당 방어력 +4%, 최대 체력 +2%'},
+  hammerthrow:{n:'망치 투척',mp:12,cd:4,desc:'관통하는 빛의 망치를 던진다(220%)'},
+  verdict:{ctr:1,n:'판결',mp:18,cd:7,desc:'앞의 적 하나에 400% 피해. 보스에게는 +30%'},
+  holyground:{n:'신성 대지',mp:22,cd:14,desc:'발밑에 5초간 신성 대지(초당 120%), 안의 파티원 받는 피해 -15%'},
+  righteous:{pas:1,n:'정의',desc:'피해와 방어 강화',per:'등급당 피해 +3%, 방어력 +2%'},
+  aimshot:{n:'조준 사격',mp:16,cd:6,desc:'0.8초 조준 후 모든 것을 꿰뚫는 탄환(600%)'},
+  weakmark:{n:'약점 표식',mp:10,cd:12,desc:'커서 근처 적 하나에 8초간 약점 표식(받는 피해 +25%)과 150% 피해'},
+  headshot:{n:'헤드샷',mp:14,cd:8,desc:'가장 가까운 적의 급소를 쏜다. 반드시 치명타(300%)'},
+  steadyaim:{pas:1,n:'안정된 조준',desc:'보스 저격 강화',per:'등급당 치명타 +1.5%, 보스 피해 +2%'},
+  bombtrap:{n:'폭발 덫',mp:10,cd:3,desc:'커서 위치에 폭발 덫 설치(밟으면 300% 광역 폭발)'},
+  nettrap:{n:'올가미 덫',mp:12,cd:6,desc:'커서 위치에 올가미 설치(밟은 적 150% 피해, 3초 기절 · 보스는 둔화)'},
+  hawk:{n:'사냥매',mp:20,cd:14,desc:'8초간 사냥매가 곁을 돌며 주변 적을 쪼는다(0.5초마다 80%)'},
+  huntcraft:{pas:1,n:'사냥 기술',desc:'덫과 지속 피해 강화',per:'등급당 지속 피해 +5%, 이동 속도 +1%'},
+  infernoball:{n:'업화구',mp:20,cd:5,desc:'거대한 화염구(폭발 380%)가 3초간 불바다를 남긴다(초당 100%)'},
+  glacialspike:{n:'빙창',mp:14,cd:3,desc:'관통하는 얼음창(260%), 맞은 적 2초 둔화'},
+  elemstorm:{n:'원소 폭풍',mp:30,cd:12,desc:'커서 지역에 4초간 불과 번개가 번갈아 떨어진다(0.4초마다 110%)'},
+  elemmastery:{pas:1,n:'원소 통달',desc:'주문 강화',per:'등급당 주문 피해 +3%'},
+  starmark:{n:'별 새기기',mp:12,cd:4,desc:'커서 근처 적 최대 3명에게 별 표식(10초)을 새기고 120% 피해'},
+  constellation:{n:'별자리 잇기',mp:24,cd:8,desc:'별 표식이 새겨진 적들을 별빛으로 잇는다. 표식마다 300% 폭발, 잇는 선 위의 적 150% · 표식 소모'},
+  starshower:{n:'별똥비',mp:28,cd:12,desc:'5초간 별 표식된 적과 주변에 별똥이 떨어진다(0.5초마다 150%)'},
+  celestial:{pas:1,n:'천체의 조화',desc:'주문과 재사용 강화',per:'등급당 주문 피해 +2%, 재사용 -1%'},
+  greatheal:{n:'대치유',mp:30,cd:10,desc:'주변 파티원 모두를 크게 치유한다(치유력 220%)'},
+  lightaegis:{n:'빛의 가호',mp:24,cd:14,desc:'주변 파티원 모두에게 치유력 150% 보호막 (6초)'},
+  resurrect:{n:'부활의 기도',mp:40,cd:45,desc:'주변의 쓰러진 파티원을 모두 즉시 일으킨다(체력 50%)'},
+  blessedhands:{pas:1,n:'축복받은 손',desc:'치유 강화',per:'등급당 치유량 +4%'},
+  curse:{n:'저주',mp:12,cd:6,desc:'커서 근처 적 하나에 10초 저주(받는 피해 +15%, 지속 300%)'},
+  exorcise:{n:'퇴마 일격',mp:16,cd:4,desc:'커서 지점에 빛이 터진다(280%). 저주받은 적에게 1.5배'},
+  soulchain:{n:'영혼 사슬',mp:26,cd:12,desc:'주변 적 최대 5명을 사슬로 묶어 5초간 초당 100% · 준 피해의 20%로 파티 치유'},
+  banisher:{pas:1,n:'퇴마의 인',desc:'피해와 흡혈 강화',per:'등급당 피해 +3%, 생명력 흡수 +0.5%'},
+  dawnbanner:{n:'새벽의 깃발',mp:24,cd:16,desc:'10초간 깃발을 꽂는다. 주변 파티원 피해 +20%, 초당 체력 2% 회복'},
+  charge2:{n:'돌격 명령',mp:18,cd:18,desc:'파티 전원 6초간 공격 속도 +25%, 이동 속도 +20%'},
+  radiantslash:{n:'광휘 베기',mp:14,cd:4,desc:'전방 넓은 부채꼴을 빛으로 벤다(280%), 신성력 +12'},
+  command:{pas:1,n:'지휘',desc:'오라 강화',per:'등급당 기사단 오라 효과 +1%'},
+  solarflare:{n:'태양 폭발',mp:10,cd:6,desc:'신성력을 모두 태워 주변을 폭발시킨다(200% + 신성력 1당 4%)'},
+  sunpierce:{ctr:1,n:'일섬',mp:18,cd:7,desc:'0.3초 모은 뒤 빛처럼 돌진하며 벤다(450%), 신성력 +20'},
+  corona:{n:'코로나',mp:22,cd:14,desc:'6초간 몸 주위에 태양 오라(0.5초마다 90%), 신성력이 계속 찬다'},
+  suncore:{pas:1,n:'태양핵',desc:'신성과 치명 강화',per:'등급당 치명타 피해 +5%, 신성력 획득 +3%'},
+  // 전직 궁극기 (전직하면 세 번째 선택지로)
+  redmoon:{ult:1,n:'핏빛 광란',mp:0,cd:100,desc:'10초간 피해 +50%, 공격 속도 +40%, 처음 4초는 체력이 1 아래로 떨어지지 않는다'},
+  thousandcuts:{ult:1,n:'천검',mp:0,cd:100,desc:'3초간 주변에 칼날이 휘몰아친다(0.12초마다 70%). 그동안 무적'},
+  fortress:{ult:1,n:'불굴의 요새',mp:0,cd:110,desc:'10초간 주변 파티원 받는 피해 -50%, 넓은 범위의 적을 모두 도발'},
+  finaljudge:{ult:1,n:'최후의 심판',mp:0,cd:100,desc:'빛의 망치 다섯 개가 연달아 떨어진다(각 450%). 마지막 망치는 2초 기절'},
+  deadeye:{ult:1,n:'데드아이',mp:0,cd:90,desc:'2초간 조준한 뒤 주변 적 최대 6명을 한 발씩 꿰뚫는다(각 800%, 반드시 치명타)'},
+  killzone:{ult:1,n:'사냥터',mp:0,cd:90,desc:'커서 지역에 덫 8개를 한꺼번에 깔고 3초 뒤 모두 터뜨린다(각 400%)'},
+  cataclysm:{ult:1,n:'대재앙',mp:0,cd:110,desc:'주변에 화염·얼음·번개 폭발이 세 번 일어난다(각 700%)'},
+  supernova:{ult:1,n:'초신성',mp:0,cd:100,desc:'주변을 별빛으로 폭발시킨다(1200%). 별 표식된 적은 표식 하나당 +30%'},
+  sanctum:{ult:1,n:'성역 강림',mp:0,cd:120,desc:'10초간 넓은 성역. 안의 파티원 초당 최대 체력 8% 회복, 받는 피해 -30%'},
+  purgatory:{ult:1,n:'연옥',mp:0,cd:100,desc:'6초간 넓은 연옥불(0.5초마다 150%), 준 피해의 10%로 파티 치유'},
+  dawnlegion:{ult:1,n:'새벽 군단',mp:0,cd:110,desc:'8초간 빛의 기사 환영 넷이 곁에서 싸운다(0.4초마다 각 60%), 파티 피해 +25%'},
+  eclipsebreak:{ult:1,n:'일식 파괴',mp:0,cd:100,desc:'1.5초 뒤 거대한 태양이 떨어진다(1500%). 신성력 100이 된다'},
   // ----- 20레벨 궁극기 (V) -----
   ragnarok:{ult:1,n:'라그나로크',mp:0,cd:100,desc:'하늘로 도약해 불꽃 대검을 내려찍는다(1300%). 땅이 세 번 갈라지며 폭발(각 750%)하고 불길이 남는다'},
   wargod:{ult:1,n:'전쟁신 강림',mp:0,cd:110,desc:'12초간 거대해진다. 피해 +30%, 모든 공격이 충격파를 일으키고 속박·둔화 면역'},
@@ -366,6 +428,56 @@ const SKILLS={
   heavendance:{ult:1,n:'천상의 검무',mp:0,cd:100,desc:'3초간 빛이 되어 주변 적 사이를 12번 오가며 벤다(각 250%). 마지막에 빛이 폭발한다(500%). 그동안 무적'}
 };
 for(const c in CLASSES){CLASSES[c].skills.forEach((s,i)=>{SKILLS[s].lvl=UNLOCK[i];SKILLS[s].cls=c;});(CLASSES[c].ults||[]).forEach(s=>{SKILLS[s].lvl=ULT_LVL;SKILLS[s].cls=c;});}
+// ================= 전직 (30레벨 · 직업마다 두 갈래) =================
+const ADV_LVL=30;
+const ADV={
+  berserker:{cls:'warrior',n:'광전사',sk:['bfrenzy','bloodroar','rampage','bloodboil'],ult:'redmoon',col:'#e0473a',
+    idn:'피의 광기',idd:'잃은 체력 1%당 피해 +0.6% (최대 +40%) · 생명력 흡수 +3%',
+    info:{role:'근거리 광란 딜러',diff:2,bars:[3,5,1],rec:'체력이 바닥일 때 가장 세지는 짜릿함을 즐긴다면',pros:['체력이 낮을수록 강해지는 폭딜','흡혈로 버티는 근성'],cons:['체력 관리를 못 하면 순식간에 쓰러짐','파티 지원 능력이 거의 없음'],party:'보스에게 붙어 최대 피해를 넣는 돌격대장'}},
+  blademaster:{cls:'warrior',n:'검성',sk:['flurry','iaido','parry','swordheart'],ult:'thousandcuts',col:'#bfe3ff',
+    idn:'검의 흐름',idd:'치명타 +8% · 치명타 피해 +25% · 스킬을 연달아 쓰면 연격 스택(최대 5, 스택당 스킬 피해 +6%)',
+    info:{role:'근거리 연계 딜러',diff:4,bars:[3,5,1],rec:'스킬을 끊김 없이 이어 붙이는 손맛을 좋아한다면',pros:['연격 스택을 쌓으면 폭발적인 마무리','흘려내기로 강공격을 받아냄'],cons:['스킬 순서를 익혀야 제 성능','스택이 끊기면 피해가 뚝 떨어짐'],party:'카운터와 마무리 일격으로 보스 페이즈를 끊는 칼잡이'}},
+  bulwark:{cls:'guardian',n:'철벽',sk:['aegislink','bigtaunt','guardleap','ironwill'],ult:'fortress',col:'#8fd0ff',
+    idn:'움직이는 성벽',idd:'받는 피해 -10% · 최대 체력 +15%',
+    info:{role:'순수 탱커',diff:2,bars:[5,2,4],rec:'파티원이 한 명도 쓰러지지 않게 지키는 게 뿌듯하다면',pros:['최고의 생존력','파티원에게 보호막과 피해 감소'],cons:['딜이 가장 낮음','혼자 사냥은 느림'],party:'보스의 시선을 붙잡고 위험한 동료에게 날아가 지켜 주는 방패'}},
+  judicator:{cls:'guardian',n:'심판자',sk:['hammerthrow','verdict','holyground','righteous'],ult:'finaljudge',col:'#ffd35a',
+    idn:'정의의 무게',idd:'피해 +20% · 방어력 +10%',
+    info:{role:'딜 탱커',diff:3,bars:[4,4,2],rec:'맞으면서도 시원하게 때리는 탱커를 원한다면',pros:['탱커치고 높은 피해','신성 대지로 파티 피해 감소'],cons:['철벽보다 파티 보호가 약함','마나 소모가 큼'],party:'앞에서 버티며 딜까지 보태는 해결사'}},
+  sniper:{cls:'archer',n:'저격수',sk:['aimshot','weakmark','headshot','steadyaim'],ult:'deadeye',col:'#ffe9a8',
+    idn:'매의 눈',idd:'치명타 피해 +30% · 보스 피해 +8%',
+    info:{role:'원거리 단일 딜러',diff:3,bars:[1,5,1],rec:'한 방에 크게 꽂히는 숫자를 보는 게 좋다면',pros:['보스 상대 최고의 한 방','약점 표식으로 파티 딜 상승'],cons:['조준 중엔 움직일 수 없음','잡몹 무리에 약함'],party:'보스에게 약점 표식을 새기고 큰 한 방을 꽂는 저격수'}},
+  trapper:{cls:'archer',n:'덫 사냥꾼',sk:['bombtrap','nettrap','hawk','huntcraft'],ult:'killzone',col:'#7fd05a',
+    idn:'사냥터의 주인',idd:'덫 피해 +40% · 동시에 설치할 수 있는 덫 +2 · 지속 피해 +15%',
+    info:{role:'원거리 광역 제어',diff:4,bars:[2,4,3],rec:'미리 깔아 두고 적이 걸려드는 걸 지켜보는 게 즐겁다면',pros:['덫과 매로 광역 제어','올가미로 적을 묶음'],cons:['설치 위치를 읽어야 함','즉발 피해가 낮음'],party:'길목에 덫을 깔아 잡몹을 묶고 쫄 기믹을 정리하는 사냥꾼'}},
+  elementalist:{cls:'mage',n:'원소술사',sk:['infernoball','glacialspike','elemstorm','elemmastery'],ult:'cataclysm',col:'#ff8a3a',
+    idn:'원소의 격류',idd:'주문 피해 +15% · 스킬 재사용 -8%',
+    info:{role:'원거리 광역 폭딜',diff:3,bars:[1,5,1],rec:'화면을 불과 얼음으로 뒤덮는 광역 폭발을 좋아한다면',pros:['최고의 광역 피해','얼음창으로 적을 늦춤'],cons:['체력이 매우 낮음','마나가 금방 바닥남'],party:'몰려오는 적을 한꺼번에 태워 없애는 포대'}},
+  astrologer:{cls:'mage',n:'점성술사',sk:['starmark','constellation','starshower','celestial'],ult:'supernova',col:'#c9a0e8',
+    idn:'별을 읽는 자',idd:'별 표식이 새겨진 적은 받는 피해 +10% · 주문 피해 +8%',
+    info:{role:'원거리 연계 딜러',diff:5,bars:[1,5,2],rec:'표식을 새기고 한 번에 이어 터뜨리는 연계를 즐긴다면',pros:['표식을 모을수록 폭발적','별 표식으로 파티 딜 상승'],cons:['표식 → 잇기 순서를 지켜야 함','준비 시간이 필요'],party:'"달 없는 밤"에 남은 별빛으로 적을 엮어 터뜨리는 술사'}},
+  hierophant:{cls:'priest',n:'대사제',sk:['greatheal','lightaegis','resurrect','blessedhands'],ult:'sanctum',col:'#fff2b0',
+    idn:'성스러운 손',idd:'치유량 +20% · 보호막량 +20%',
+    info:{role:'순수 힐러',diff:3,bars:[3,1,5],rec:'파티 전원의 체력바를 지키는 데서 보람을 느낀다면',pros:['강력한 파티 치유와 보호막','쓰러진 동료 즉시 부활'],cons:['혼자서는 적을 잡기 느림','마나 관리가 중요'],party:'전멸 직전의 파티를 일으켜 세우는 마지막 희망'}},
+  exorcist:{cls:'priest',n:'퇴마사',sk:['curse','exorcise','soulchain','banisher'],ult:'purgatory',col:'#9a7ad8',
+    idn:'흑월 퇴치',idd:'보스(흑월의 존재) 피해 +15% · 준 피해의 4%만큼 체력이 가장 낮은 파티원 치유',
+    info:{role:'딜러 겸 보조 힐러',diff:4,bars:[2,4,3],rec:'딜을 하면서 파티도 챙기는 하이브리드를 원한다면',pros:['때리면서 파티를 치유','저주로 파티 딜 상승'],cons:['대사제보다 치유가 약함','저주를 유지해야 제 성능'],party:'저주를 걸고 딜한 만큼 동료를 살리는 퇴마사'}},
+  dawncommander:{cls:'knight',n:'새벽 기사단장',sk:['dawnbanner','charge2','radiantslash','command'],ult:'dawnlegion',col:'#ffe9a8',
+    idn:'기사단의 오라',idd:'주변 파티원 피해 +8% · 받는 피해 -8% (본인 포함)',
+    info:{role:'지원형 근접 딜러',diff:3,bars:[4,3,4],rec:'앞장서서 파티 전체를 강하게 만드는 리더가 되고 싶다면',pros:['파티 전체 버프','깃발로 회복과 공격력'],cons:['혼자일 땐 태양검보다 약함','깃발 위치를 잘 잡아야 함'],party:'깃발을 꽂고 기사단을 이끄는 지휘관'}},
+  sunblade:{cls:'knight',n:'태양검',sk:['solarflare','sunpierce','corona','suncore'],ult:'eclipsebreak',col:'#ffb03a',
+    idn:'작열하는 신성',idd:'신성력 획득 +30% · 태양 폭발 피해 +20%',
+    info:{role:'폭발형 근접 딜러',diff:5,bars:[3,5,1],rec:'신성력을 모았다가 한 번에 쏟아내는 폭발을 원한다면',pros:['게임 최고 수준의 순간 폭딜','코로나로 지속 광역'],cons:['신성력 관리가 까다로움','모으는 동안 약함'],party:'신성력을 모았다가 보스 약점 타이밍에 모두 쏟아내는 태양'}}};
+const ADV_OF={};for(const k in ADV){const c=ADV[k].cls;(ADV_OF[c]=ADV_OF[c]||[]).push(k);}
+const CLASS_INFO={warrior:{diff:2,bars:[4,4,1],rec:'앞에서 시원하게 베고 싶다면',pros:['강한 근접 피해','흡혈로 오래 버팀'],cons:['원거리 기믹에 약함'],party:'보스 옆에 붙어 딜하는 근접 딜러'},
+  guardian:{diff:2,bars:[5,2,3],rec:'파티를 지키는 든든한 방패가 되고 싶다면',pros:['최고의 생존력','적이 먼저 노림'],cons:['피해가 낮음'],party:'보스의 공격을 받아내는 탱커'},
+  archer:{diff:3,bars:[2,4,1],rec:'멀리서 안전하게 화살을 퍼붓고 싶다면',pros:['긴 사거리','빠른 공격'],cons:['체력이 낮아 위치 선정이 중요'],party:'안전한 거리에서 꾸준히 딜하는 궁수'},
+  mage:{diff:3,bars:[1,5,1],rec:'화려한 광역 마법을 좋아한다면',pros:['광역 피해 최강','다양한 제어기'],cons:['체력과 방어가 가장 낮음'],party:'적 무리를 쓸어버리는 포대'},
+  priest:{diff:3,bars:[3,2,5],rec:'동료를 살리고 지키는 게 즐겁다면',pros:['파티 치유와 보호막','부활이 두 배 빠름'],cons:['혼자 사냥이 느림'],party:'파티의 생명줄'},
+  knight:{diff:4,bars:[3,5,2],rec:'신성력을 모아 한 번에 쏟아내는 기사를 원한다면',pros:['최강의 근접 폭딜','빛의 이동기'],cons:['신성력 관리가 필요'],party:'새벽의 맹세를 받은 숨은 기사'}};
+function advOf(ch){return ch&&ch.adv&&ADV[ch.adv]&&ADV[ch.adv].cls===ch.cls?ADV[ch.adv]:null;}
+function ultsOf(ch){const C=CLASSES[ch.cls];const a=advOf(ch);return (C.ults||[]).concat(a?[a.ult]:[]);}
+function advChangeCost(lvl){return 20000+lvl*1000;}
+for(const a in ADV){const A=ADV[a];A.sk.forEach((s,i)=>{SKILLS[s].lvl=[30,30,34,38][i]||30;SKILLS[s].cls=A.cls;SKILLS[s].adv=a;});SKILLS[A.ult].lvl=ADV_LVL;SKILLS[A.ult].cls=A.cls;SKILLS[A.ult].adv=a;}
 function skillMul(rank){return 1+0.12*Math.max(0,rank-1);}
 function defaultSkills(cls){const s=CLASSES[cls].skills;return{sk:{[s[0]]:1,[s[1]]:1},bar:[s[0],s[1],null,null,null,null]};}
 function skillPointsTotal(lvl){return Math.max(0,lvl-1);}
@@ -607,6 +719,21 @@ function calcStats(ch){
   S.holyGain=1+(T.holy||0)/100;S.rad=ch.cls==='knight'?1+str*0.012:1;if(r('holyblade')){S.critMul+=0.06*r('holyblade');S.holyGain+=0.05*r('holyblade');}if(r('dawnward')){S.dmgMul*=1+0.03*r('dawnward');S.dr=(S.dr||0)+0.01*r('dawnward');}if(r('dawnoath')){S.bossDmg=(S.bossDmg||0)+0.02*r('dawnoath');S.crit=Math.min(75,S.crit+r('dawnoath'));}
   if(r('instinct')){S.crit=Math.min(75,S.crit+r('instinct'));S.bossDmg=0.02*r('instinct');}if(r('resonance')){S.spell*=1+0.03*r('resonance');S.cdr=Math.min(0.45,S.cdr+0.01*r('resonance'));}if(r('saint')){S.healPow=Math.round(S.healPow*(1+0.04*r('saint')));S.dr=(S.dr||0)+0.01*r('saint');}
   S.regen=1+(T.regen||0)/100;if(T.mpRegen)S.mpRegen*=1+T.mpRegen/100;
+  /* 전직: 갈래 고유 효과 + 전직 패시브 */
+  const AD=advOf(ch);S.adv=AD?ch.adv:null;
+  if(AD){const k=ch.adv;
+    if(k==='berserker'){S.ls+=3;S.bloodboil=r('bloodboil');if(r('bloodboil'))S.crit=Math.min(75,S.crit+r('bloodboil'));}
+    if(k==='blademaster'){S.crit=Math.min(75,S.crit+8+r('swordheart'));S.critMul+=0.25+0.04*r('swordheart');}
+    if(k==='bulwark'){S.dr=(S.dr||0)+0.10;S.maxHp=Math.round(S.maxHp*(1.15+0.02*r('ironwill')));S.armor=Math.round(S.armor*(1+0.04*r('ironwill')));}
+    if(k==='judicator'){S.dmgMul*=1.2+0.03*r('righteous');S.armor=Math.round(S.armor*(1.1+0.02*r('righteous')));}
+    if(k==='sniper'){S.critMul+=0.3;S.bossDmg=(S.bossDmg||0)+0.08+0.02*r('steadyaim');S.crit=Math.min(75,S.crit+1.5*r('steadyaim'));}
+    if(k==='trapper'){S.trapMul=1.4;S.dotMul=1.15+0.05*r('huntcraft');S.ms*=1+0.01*r('huntcraft');}
+    if(k==='elementalist'){S.spell*=1.15*(1+0.03*r('elemmastery'));S.cdr=Math.min(0.45,(S.cdr||0)+0.08);}
+    if(k==='astrologer'){S.spell*=1.08*(1+0.02*r('celestial'));S.cdr=Math.min(0.45,(S.cdr||0)+0.01*r('celestial'));}
+    if(k==='hierophant'){S.healPow=Math.round(S.healPow*1.2*(1+0.04*r('blessedhands')));S.shieldMul=1.2;}
+    if(k==='exorcist'){S.bossDmg=(S.bossDmg||0)+0.15;S.dmgMul*=1+0.03*r('banisher');S.ls+=0.5*r('banisher');S.exoHeal=0.04;}
+    if(k==='dawncommander'){S.aura=0.08+0.01*r('command');}
+    if(k==='sunblade'){S.holyGain*=1.3*(1+0.03*r('suncore'));S.critMul+=0.05*r('suncore');}}
   S.dmgMul*=classDk(ch.cls,ch.lvl);
   S.set3=[];for(const id in SETS){const n=setCount(ch,id);if(n<2)continue;const b=SETS[id].b2;if(b.hpPct)S.maxHp=Math.round(S.maxHp*(1+b.hpPct/100));if(b.armorPct)S.armor=Math.round(S.armor*(1+b.armorPct/100));if(b.crit)S.crit=Math.min(75,S.crit+b.crit);if(b.as)S.atkRate*=1+b.as/100;if(b.bossDmg)S.bossDmg=(S.bossDmg||0)+b.bossDmg/100;if(n>=3)S.set3.push(id);}
   S.myth=[];for(const s2 of['weapon','armor','ring']){const it=ch.eq[s2];if(it&&it.rar===4&&it.myth&&MYTH[it.myth]&&canEquip(it,ch.cls))S.myth.push(it.myth);}
@@ -631,7 +758,7 @@ function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
 const SH={ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
-  CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,lvCost,itemLvUp,canEquip,
+  CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,ADV,ADV_OF,ADV_LVL,CLASS_INFO,advOf,ultsOf,advChangeCost,lvCost,itemLvUp,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
 })(typeof self!=='undefined'?self:this);
