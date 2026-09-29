@@ -77,7 +77,7 @@ function sendMap(P){const inst=P.inst;
   if(inst.type==='hub')send(P,{t:'map',kind:'hub',x:P.x,y:P.y,drops:visibleDrops(inst,P)});
   else send(P,{t:'map',kind:'dungeon',seed:inst.seed,floor:inst.floor,stairs:inst.stairsOpen,x:P.x,y:P.y,drops:visibleDrops(inst,P),paused:inst.paused,ev:evPub(inst),arena:inst.arena?1:0,raid:inst.raid?{id:inst.raid.id,mode:inst.raid.mode,tf:RAID_TF[inst.raid.id]||1,door:!!inst.raid.doorOpen,st:raidPub(inst)}:0});}
 function resetCombat(P){P.burn=0;P.rootT=0;P.slowT=0;P.slowV=0;P.downed=false;P.rev=0;P.shield=0;P.shieldT=0;P.dodgeT=0;P.buffs={};P.scd={};P.atkCd=0;}
-function leaveInst(P){const inst=P.inst;if(!inst)return;inst.players.delete(P.id);P.inst=null;
+function leaveInst(P){if(P.trade)cancelTrade(P,'상대가 마을을 떠나 거래가 취소되었습니다');const inst=P.inst;if(!inst)return;inst.players.delete(P.id);P.inst=null;
   if(inst.type==='dungeon'){inst.flows.delete(P.id);
     if(inst.players.size===0){dungeons.delete(inst.id);if(inst.party&&inst.party.inst===inst){inst.party.inst=null;sendParty(inst.party);}}
     else bcastRoster(inst);}
@@ -523,6 +523,23 @@ function alive(inst,P){return P&&P.inst===inst&&!P.downed;}
 function addHoly(P,n){if(!P||P.ch.cls!=='knight')return;P.holy=Math.min(100,(P.holy||0)+n*(P.S.holyGain||1)*(bOn(P,'dawn')?2:1));}
 function lineHit(inst,P,x,y,a,len,w,mult,o){const ca=Math.cos(a),sa=Math.sin(a);let n=0;for(const m of inst.monsters){if(m.dead)continue;const dx=m.x-x,dy=m.y-y,t=dx*ca+dy*sa;if(t<-m.r||t>len+m.r)continue;if(Math.abs(-dx*sa+dy*ca)<w+m.r){hitMonster(inst,m,P,mult,o);n++;}}return n;}
 function dashHit(inst,P,a,dist,mult,o){const[ox,oy]=dashTo(inst,P,a,dist);const vx=P.x-ox,vy=P.y-oy,L2=vx*vx+vy*vy||1;for(const m of inst.monsters){if(m.dead)continue;const t=clamp(((m.x-ox)*vx+(m.y-oy)*vy)/L2,0,1);if(Math.hypot(ox+vx*t-m.x,oy+vy*t-m.y)<14+m.r)hitMonster(inst,m,P,mult,o);}return[ox,oy];}
+// ---------- 플레이어 간 거래 (아이템 최대 6개 + 골드) ----------
+const TRADE_MAX=6;
+function tradeOther(P){return P.trade?players.get(P.trade.with):null;}
+function tradeView(P){const T=tradeOther(P);if(!P.trade||!T||!T.trade)return null;const side=Q=>({items:Q.trade.ids.map(id=>Q.ch.bag.find(it=>it&&it.id===id)).filter(Boolean),gold:Q.trade.gold,lock:Q.trade.lock,ok:Q.trade.ok});return{name:T.ch.name,me:side(P),them:side(T)};}
+function tradeSync(P){const T=tradeOther(P);send(P,{t:'trade',st:tradeView(P)});if(T)send(T,{t:'trade',st:tradeView(T)});}
+function cancelTrade(P,why){const T=tradeOther(P);P.trade=null;send(P,{t:'trade',st:null});if(T&&T.trade&&T.trade.with===P.id){T.trade=null;send(T,{t:'trade',st:null});if(why)msg(T,why,'#9e937a');}}
+function tradeUnlock(P){const T=tradeOther(P);for(const Q of[P,T])if(Q&&Q.trade){Q.trade.lock=false;Q.trade.ok=false;}}
+function doTrade(P,T){const pick=Q=>Q.trade.ids.map(id=>Q.ch.bag.findIndex(it=>it&&it.id===id));const pi=pick(P),ti=pick(T);
+  if(pi.includes(-1)||ti.includes(-1)){tradeUnlock(P);tradeSync(P);msg(P,'올린 아이템이 바뀌어 다시 확인해야 해요','#ff6a5a');msg(T,'올린 아이템이 바뀌어 다시 확인해야 해요','#ff6a5a');return;}
+  if(P.trade.gold>P.ch.gold||T.trade.gold>T.ch.gold){tradeUnlock(P);tradeSync(P);msg(P,'골드가 부족해 거래할 수 없어요','#ff6a5a');msg(T,'골드가 부족해 거래할 수 없어요','#ff6a5a');return;}
+  const free=Q=>Q.ch.bag.filter(x=>!x).length;if(free(P)+pi.length<ti.length){msg(P,'인벤토리 공간이 부족해요','#ff6a5a');msg(T,`${P.ch.name}님의 인벤토리 공간이 부족해요`,'#ff6a5a');tradeUnlock(P);tradeSync(P);return;}
+  if(free(T)+ti.length<pi.length){msg(T,'인벤토리 공간이 부족해요','#ff6a5a');msg(P,`${T.ch.name}님의 인벤토리 공간이 부족해요`,'#ff6a5a');tradeUnlock(P);tradeSync(P);return;}
+  const pItems=pi.map(i=>P.ch.bag[i]),tItems=ti.map(i=>T.ch.bag[i]);for(const i of pi)P.ch.bag[i]=null;for(const i of ti)T.ch.bag[i]=null;
+  const put=(Q,its)=>{for(const it of its){const k=Q.ch.bag.findIndex(x=>!x);Q.ch.bag[k]=it;}};put(P,tItems);put(T,pItems);
+  const pg=P.trade.gold,tg=T.trade.gold;P.ch.gold+=tg-pg;T.ch.gold+=pg-tg;
+  P.trade=null;T.trade=null;send(P,{t:'trade',st:null,done:1});send(T,{t:'trade',st:null,done:1});markDirty(P);markDirty(T);
+  msg(P,`${T.ch.name}님과 거래를 마쳤습니다`,'#7fd05a');msg(T,`${P.ch.name}님과 거래를 마쳤습니다`,'#7fd05a');}
 const SK={
   // ----- 빛의 기사 -----
   lslash(inst,P,a,tx,ty,k){fx(inst,{k:'swing',id:P.id,a:r1(a),d:0.22});fx(inst,{k:'lcut',x:r1(P.x),y:r1(P.y),a:r1(a),r:50});cone(inst,P,a,50,0.95,1.9*k,{kb:4});addHoly(P,8);},
@@ -1246,6 +1263,18 @@ const H={
     const st=traderStock(inst,P),i=st.findIndex(x=>x.id===d.id);if(i<0)return;const it=st[i];if(P.ch.gold<it.price){msg(P,'골드가 부족합니다','#ff6a5a');return;}const cp=Object.assign({},it);delete cp.price;if(!addBag(P,cp)){msg(P,'가방이 가득 찼습니다','#ff6a5a');return;}P.ch.gold-=it.price;st.splice(i,1);markDirty(P);msg(P,`${it.name} 구입`,'#ffd35a');send(P,{t:'fxp',k:'gold'});H.trader(P);},
   ping(P,d){const inst=P.inst;if(!inst)return;const now=Date.now();if(now-(P.pingT||0)<700)return;P.pingT=now;const x=+d.x,y=+d.y;if(!isFinite(x)||!isFinite(y))return;const k=clamp(d.k|0,0,2);
     const o={t:'ping',x:r1(x),y:r1(y),k,id:P.id,name:P.ch.name};const tg=P.party?partyList(P.party).filter(q=>q.inst===inst):[P];for(const q of tg)send(q,o);},
+  treq(P,d){const T=players.get(d.id);if(!T||T===P||!T.ch)return;if(P.inst!==hub||T.inst!==hub){msg(P,'마을에서만 거래할 수 있습니다','#ff6a5a');return;}
+    if(P.trade||T.trade){msg(P,T.trade?`${T.ch.name}님은 다른 사람과 거래 중입니다`:'이미 거래 중입니다','#ff6a5a');return;}
+    T.treq={from:P.id,t:Date.now()};send(T,{t:'treq',from:P.id,name:P.ch.name});msg(P,`${T.ch.name}님에게 거래를 신청했습니다`,'#9e937a');},
+  tans(P,d){const rq=P.treq;P.treq=null;if(!rq||rq.from!==d.from)return;const F=players.get(rq.from);if(!F||!F.ch){msg(P,'거래 신청이 만료되었습니다','#ff6a5a');return;}
+    if(!d.ok){msg(F,`${P.ch.name}님이 거래를 거절했습니다`,'#9e937a');return;}if(Date.now()-rq.t>35000){msg(P,'거래 신청이 만료되었습니다','#ff6a5a');return;}
+    if(P.inst!==hub||F.inst!==hub||P.trade||F.trade){msg(P,'지금은 거래할 수 없습니다','#ff6a5a');return;}
+    P.trade={with:F.id,ids:[],gold:0,lock:false,ok:false};F.trade={with:P.id,ids:[],gold:0,lock:false,ok:false};tradeSync(P);},
+  tset(P,d){if(!P.trade)return;const T=tradeOther(P);if(!T||!T.trade){cancelTrade(P);return;}const ids=Array.isArray(d.ids)?[...new Set(d.ids.map(String))].filter(id=>P.ch.bag.some(it=>it&&it.id===id)).slice(0,TRADE_MAX):P.trade.ids;
+    const gold=d.gold==null?P.trade.gold:clamp(Math.floor(+d.gold||0),0,P.ch.gold);P.trade.ids=ids;P.trade.gold=gold;tradeUnlock(P);tradeSync(P);},
+  tlock(P){if(!P.trade)return;const T=tradeOther(P);if(!T||!T.trade){cancelTrade(P);return;}P.trade.lock=true;tradeSync(P);},
+  tok(P){if(!P.trade)return;const T=tradeOther(P);if(!T||!T.trade){cancelTrade(P);return;}if(!P.trade.lock||!T.trade.lock)return;P.trade.ok=true;if(T.trade.ok)doTrade(P,T);else tradeSync(P);},
+  tcancel(P){if(P.trade)cancelTrade(P,`${P.ch.name}님이 거래를 취소했습니다`);},
   duel(P,d){const T=players.get(d.id);if(!T||T===P||!T.ch)return;if(P.inst!==hub||T.inst!==hub){msg(P,'마을에서만 결투를 신청할 수 있습니다','#ff6a5a');return;}
     const [A,B]=duelTeams(P,T);if(A.some(q=>B.includes(q))){msg(P,'같은 파티끼리는 결투할 수 없습니다','#ff6a5a');return;}
     T.duelInv={from:P.id,t:Date.now(),n:A.length};send(T,{t:'duelInv',from:P.id,name:P.ch.name,n:A.length});msg(P,`${T.ch.name}님에게 ${A.length}:${A.length} 결투를 신청했습니다`,'#9e937a');},

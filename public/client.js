@@ -641,6 +641,8 @@ function handle(d){switch(d.t){
   case 'msg':msg(d.m,d.c||'#e6dcc3');break;
   case 'chat':{G.chatLog.push({name:d.name,m:d.m,t:time});if(G.chatLog.length>40)G.chatLog.shift();G.bubbles.set(d.id,{m:d.m,t:time});sfx('chat');break;}
   case 'invite':G.invite={from:d.from,name:d.name,t:time};sfx('chat');break;
+  case 'treq':G.treq={from:d.from,name:d.name,t:time};sfx('chat');break;
+  case 'trade':{const was=G.trade;G.trade=d.st;if(d.st){showInv=true;showChar=false;showSkills=false;G.ctxMenu=null;closeFac();if(!was)sfx('pick');}if(d.done)sfx('gold');break;}
   case 'stairs':G.stairsOpen=true;SH.openStairs(G.map);drawMini();break;
   case 'stairsAsk':G.stairsAsk={floor:d.floor};sfx('stairs');break;
   case 'trans':G.stairsAsk=null;msg(`${d.by}님이 계단에 도착 · ${d.t0}초 후 다음 층으로`,'#ffd35a');sfx('stairs');break;
@@ -824,6 +826,7 @@ window.addEventListener('keydown',e=>{
   if(G.bintro&&c==='Escape'){G.bintro.t0=time-3.2;return;}
   if(raidSelKey(c)){e.preventDefault();return;}
   if(c==='Escape'&&G.loreView){G.loreView=null;return;}
+  if(c==='Escape'&&G.trade){net({t:'tcancel'});return;}
   if(c==='Escape'){
     if(G.opts){G.opts=false;return;}if(G.emoWheel){G.emoWheel=false;return;}if(G.chronD!=null&&G.chron){G.chronD=null;return;}if(G.talent||G.rec||G.chron){G.talent=false;G.rec=false;G.chron=false;return;}if(G.fishS){G.fishS=null;return;}
     if(G.ctxMenu){G.ctxMenu=null;return;}if(G.result){G.result=null;return;}
@@ -842,6 +845,7 @@ window.addEventListener('keydown',e=>{
   if(act==='talent'){G.talent=!G.talent;if(G.talent){G.rec=false;showSkills=false;showChar=false;showInv=false;closeFac();}return;}
   if(act==='rec'){G.rec=!G.rec;if(G.rec){G.talent=false;G.chron=false;showSkills=false;showChar=false;showInv=false;closeFac();}return;}
   if(act==='chron'){openChron(!G.chron);return;}
+  if(G.treq&&!G.invite&&(c==='KeyY'||c==='KeyN')){net({t:'tans',from:G.treq.from,ok:c==='KeyY'});G.treq=null;return;}
   if(G.invite&&(c==='KeyY'||c==='KeyN')){net({t:'ians',from:G.invite.from,ok:c==='KeyY'});G.invite=null;return;}
   if(inDungeon()&&G.paused)return;
   if(act&&act.startsWith('sk')){const i=+act.slice(2);if(i>=0&&i<SH.BAR_SIZE){G.sel=i;castSkill(i,mouse.wx,mouse.wy);}}
@@ -1269,10 +1273,29 @@ function drawInv(){const ch=G.ch;if(!ch)return;const x=294,y=38,w=180,h=194;pane
   const F=G.fac;const selR=G.bs;
   [['weapon','무기'],['armor','갑옷'],['ring','반지']].forEach(([s,l],i)=>{const sx=x+w/2-51+i*38,sy=y+22;itemSlot(sx,sy,26,ch.eq[s],()=>{if(F==='forge'){G.bs={w:'eq',s};G.bsArm=null;sfx('pick');return;}net({t:'uneq',s});sfx('equip');},null,'eq');if(F==='forge'&&selR&&selR.w==='eq'&&selR.s===s)selBox(sx,sy,26);txt(l,sx+13,sy+33,11,'#9e937a','center');});
   const gx=x+w/2-64,gy=y+64;for(let i=0;i<20;i++){const c=i%5,r=(i/5)|0;
-    const click=()=>{if(F==='forge'){G.bs={w:'bag',i};G.bsArm=null;sfx('pick');return;}if(F==='vault'){net({t:'stput',bi:i});return;}if(mouse.shift){net(showShop?{t:'sell',bi:i}:{t:'drop',bi:i});return;}net({t:'eq',bi:i});sfx('equip');};
-    const right=()=>{if(F==='forge'){G.bs={w:'bag',i};G.bsArm=null;return;}if(F==='vault'){net({t:'stput',bi:i});return;}net(showShop?{t:'sell',bi:i}:{t:'drop',bi:i});};
-    itemSlot(gx+c*26,gy+r*26,24,ch.bag[i],click,right,'bag');if(F==='forge'&&selR&&selR.w==='bag'&&selR.i===i)selBox(gx+c*26,gy+r*26,24);}
-  pimg(GOLD,x+10,y+h-15);txt(String(ch.gold),x+21,y+h-12,12,'#ffd35a');txt(F==='forge'?'클릭: 대장간에 올리기':F==='vault'?'클릭: 창고에 넣기':showShop?'우클릭·Shift+클릭: 판매':'우클릭·Shift+클릭: 버리기',x+w-8,y+h-12,10,'#9e937a','right');}
+    const click=()=>{if(G.trade){tradeToggle(ch.bag[i]);return;}if(F==='forge'){G.bs={w:'bag',i};G.bsArm=null;sfx('pick');return;}if(F==='vault'){net({t:'stput',bi:i});return;}if(mouse.shift){net(showShop?{t:'sell',bi:i}:{t:'drop',bi:i});return;}net({t:'eq',bi:i});sfx('equip');};
+    const right=()=>{if(G.trade){tradeToggle(ch.bag[i]);return;}if(F==='forge'){G.bs={w:'bag',i};G.bsArm=null;return;}if(F==='vault'){net({t:'stput',bi:i});return;}net(showShop?{t:'sell',bi:i}:{t:'drop',bi:i});};
+    itemSlot(gx+c*26,gy+r*26,24,ch.bag[i],click,right,'bag');if(F==='forge'&&selR&&selR.w==='bag'&&selR.i===i)selBox(gx+c*26,gy+r*26,24);if(G.trade&&ch.bag[i]&&G.trade.me.items.some(t=>t.id===ch.bag[i].id))selBox(gx+c*26,gy+r*26,24);}
+  pimg(GOLD,x+10,y+h-15);txt(String(ch.gold),x+21,y+h-12,12,'#ffd35a');txt(G.trade?'클릭: 거래창에 올리기·내리기':F==='forge'?'클릭: 대장간에 올리기':F==='vault'?'클릭: 창고에 넣기':showShop?'우클릭·Shift+클릭: 판매':'우클릭·Shift+클릭: 버리기',x+w-8,y+h-12,10,'#9e937a','right');}
+// ---- 플레이어 간 거래 ----
+function tradeToggle(it){const T=G.trade;if(!T||!it)return;const ids=T.me.items.map(x=>x.id);const k=ids.indexOf(it.id);if(k>=0)ids.splice(k,1);else{if(ids.length>=6){msg('거래창에는 6개까지 올릴 수 있어요','#ff6a5a');return;}ids.push(it.id);}net({t:'tset',ids});sfx('pick');}
+function tradeGold(v){const T=G.trade;if(!T)return;const g=v==='all'?G.ch.gold:v===0?0:Math.min(G.ch.gold,T.me.gold+v);net({t:'tset',gold:g});}
+function drawTradeReq(){const rq=G.treq;if(!rq)return;if(time-rq.t>30){net({t:'tans',from:rq.from,ok:false});G.treq=null;return;}const w=200,h=40,x=240-w/2,y=G.invite?74:30;panel(x,y,w,h);
+  txt(`${rq.name}님이 거래를 신청했습니다`,x+w/2,y+10,12,'#ffd35a','center');button(x+30,y+20,64,15,'수락 (Y)',()=>{net({t:'tans',from:rq.from,ok:true});G.treq=null;},{main:true});button(x+106,y+20,64,15,'거절 (N)',()=>{net({t:'tans',from:rq.from,ok:false});G.treq=null;});}
+function drawTrade(){const T=G.trade;if(!T||!G.ch)return;const x=6,y=38,w=284,h=194;panel(x,y,w,h,`거래 · ${T.name}`);
+  const side=(S,ox,title,mine)=>{txt(title,ox+64,y+24,12,mine?'#ffd35a':'#8fd0ff','center');
+    for(let i=0;i<6;i++){const c=i%3,r=(i/3)|0,sx=ox+14+c*34,sy=y+32+r*34;const it=S.items[i];itemSlot(sx,sy,28,it||null,mine&&it?()=>tradeToggle(it):null,mine&&it?()=>tradeToggle(it):null,'trade');}
+    pimg(GOLD,ox+14,y+104);txt(S.gold.toLocaleString(),ox+26,y+107,13,'#ffd35a');
+    const st=S.ok?['거래 확정','#7fd05a']:S.lock?['확인함','#ffd35a']:['올리는 중…','#9e937a'];pr(ox+10,y+116,108,14,S.ok?'rgba(60,110,40,0.6)':S.lock?'rgba(110,90,30,0.6)':'rgba(10,7,14,0.6)');txt(st[0],ox+64,y+123,11,st[1],'center');};
+  side(T.me,x+8,'내가 줄 것',true);side(T.them,x+148,`${T.name}님이 줄 것`,false);pr(x+w/2,y+20,1,118,PAL.m);
+  // 골드 조절
+  const gy=y+140;txt('골드',x+14,gy+6,11,'#9e937a');[['+1천',1000],['+1만',10000],['+10만',100000],['전부','all'],['0',0]].forEach(([l,v],i)=>button(x+44+i*44,gy,40,13,l,()=>tradeGold(v),{size:10,dis:T.me.lock&&false}));
+  const both=T.me.lock&&T.them.lock;
+  if(!T.me.lock)button(x+14,y+h-24,120,16,'확인 (내용 잠그기)',()=>net({t:'tlock'}),{main:true,size:11,tip:[['양쪽 모두 확인하면 거래 확정 버튼이 열려요','#e6dcc3',11],['내용을 바꾸면 확인이 풀려요','#9e937a',11]]});
+  else if(!T.me.ok)button(x+14,y+h-24,120,16,both?'거래 확정':'상대 확인 기다리는 중',()=>{if(both)net({t:'tok'});},{main:both,size:11,dis:!both});
+  else txt('상대의 확정을 기다리는 중…',x+74,y+h-16,11,'#7fd05a','center');
+  button(x+w-84,y+h-24,70,16,'취소 (Esc)',()=>net({t:'tcancel'}),{size:11});
+  txt('인벤토리에서 아이템을 클릭해 올리세요',x+w/2,y+h-34,10,'#6b6275','center');}
 function selBox(x,y,s){const c=(time*4|0)%2?'#ffd35a':'#ff8a1f';pr(x-1,y-1,s+2,1,c);pr(x-1,y+s,s+2,1,c);pr(x-1,y-1,1,s+2,c);pr(x+s,y-1,1,s+2,c);}
 function drawShop(){const x=6,y=38,w=172,h=194;panel(x,y,w,h,'상인');const price=SH.potPrice(G.ch?G.ch.lvl:1);
   pimg(POT_HP,x+8,y+18);txt('체력 물약',x+26,y+24,11,'#ff7a6a');txt(`${price}골드`,x+26,y+33,10,'#ffd35a');button(x+w-50,y+20,42,14,'구입',()=>net({t:'buy',k:'hp'}),{size:11});
@@ -1313,7 +1336,7 @@ function drawMeterTable(title,rows,x,y,w,sub){const h=46+Math.max(1,rows.length)
     cols.forEach(([k,l,c],i)=>{const bx=cx0+i*cw+4,bw=cw-8;pr(bx,ry+12,bw,3,PAL.k);pr(bx,ry+12,Math.round(bw*r[k]/max[k]),3,c);txt(r[k]>=100000?Math.round(r[k]/1000)+'k':r[k].toLocaleString(),bx+bw/2,ry+6,w<300?11:12,'#f2eadb','center');});});
   if(!rows.length)txt('아직 기록이 없습니다',x+w/2,y+52,12,'#6b6275','center');return h;}
 function drawCtxMenu(){const c=G.ctxMenu;const p=G.players.get(c.id);if(!p){G.ctxMenu=null;return;}const pt=G.party;const inMy=pt&&pt.members.some(m=>m.id===c.id);
-  const items=[];if(!inMy)items.push(['파티 초대',()=>net({t:'inv',id:c.id})]);if(inMy&&pt.leader===myId&&G.kind==='hub')items.push(['파티에서 추방',()=>net({t:'kick',id:c.id})]);items.push(...duelMenuItems(c));items.push(['닫기',()=>{}]);
+  const items=[];if(!inMy)items.push(['파티 초대',()=>net({t:'inv',id:c.id})]);if(inMy&&pt.leader===myId&&G.kind==='hub')items.push(['파티에서 추방',()=>net({t:'kick',id:c.id})]);if(G.kind==='hub'&&!G.trade)items.push(['거래 신청',()=>net({t:'treq',id:c.id})]);items.push(...duelMenuItems(c));items.push(['닫기',()=>{}]);
   const w=80,h=16+items.length*16;let x=Math.min(c.x,W-w-2),y=Math.min(c.y,H-h-2);panel(x,y,w,h);txt(p.name||'',x+w/2,y+8,11,'#ffd35a','center');
   items.forEach(([l,f],i)=>button(x+4,y+14+i*16,w-8,14,l,()=>{f();G.ctxMenu=null;},{size:11}));}
 function drawInvite(){const iv=G.invite;if(!iv)return;if(time-iv.t>30){net({t:'ians',from:iv.from,ok:false});G.invite=null;return;}const w=200,h=40,x=240-w/2,y=30;panel(x,y,w,h);
@@ -1357,7 +1380,7 @@ function render(){
     const n=Math.floor(time*3)%4;txt('.'.repeat(n),240,106,14,'#ffd35a','center');}return;}
   const [icx,icy]=renderWorld();drawUltScreen();
   drawWorldUI(icx,icy);drawPartyArrows(icx,icy);drawHUD();drawTut();drawChat();
-  if(G.talent)drawTalents();else if(G.chron)drawChron();else if(G.rec)drawRecords();else if(showSkills)drawSkills();else if(showChar)drawChar();else if(showShop)drawShop();else if(G.fac)drawFacPanel();
+  if(G.trade)drawTrade();if(G.talent)drawTalents();else if(G.chron)drawChron();else if(G.rec)drawRecords();else if(showSkills)drawSkills();else if(showChar)drawChar();else if(showShop)drawShop();else if(G.fac)drawFacPanel();
   if(showInv&&!showSkills&&!G.talent&&!G.rec)drawInv();
   if(G.portalMenu)drawPortalMenu();
   if(G.stairsAsk)drawStairsAsk();
@@ -1376,7 +1399,7 @@ function render(){
   if(showMeter)drawTabMeter();
   if(G.result){const r=G.result;const rows=r.rows.slice().sort((a,b)=>b.dmg-a.dmg);const m=Math.floor(r.time/60),s=r.time%60;drawMeterTable(r.title,rows,80,46,320,`지하 ${r.floor}층 · 전투 시간 ${m}분 ${String(s).padStart(2,'0')}초 · 클릭해서 닫기`);}
   if(G.ctxMenu)drawCtxMenu();
-  drawInvite();drawDuelInv();
+  drawInvite();drawDuelInv();drawTradeReq();
   if(G.escMenu&&G.kind==='hub')drawEsc();
   if(G.paused&&inDungeon())drawPause();
   if(G.opts)drawOpts();
