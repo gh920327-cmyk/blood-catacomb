@@ -798,7 +798,7 @@ cv.addEventListener('pointerdown',e=>{e.preventDefault();setMouse(e);initAudio()
   if(G.result){G.result=null;return;}
   if(inDungeon()&&G.paused)return;
   const dd=dropUnderMouse();if(dd){me.pickTarget=dd;setGoal(dd.x,dd.y);pressMode='pick';return;}
-  const pl=inArena()?null:playerAt(mouse.wx,mouse.wy);if(pl){G.ctxMenu={id:pl.id,x:mouse.x,y:mouse.y};return;}
+  const pl=G.kind==='hub'?playerAt(mouse.wx,mouse.wy):null;if(pl){G.ctxMenu={id:pl.id,x:mouse.x,y:mouse.y};return;}
   const npc=npcAt(mouse.wx,mouse.wy);if(npc){if(nearNpc()===npc)openNpc(npc);else goFac(npc);return;}
   const eo=evAt(mouse.wx,mouse.wy);if(eo){if(Math.hypot(me.x-eo.x,me.y-eo.y)<eo.r)useEv(eo);else{me.evGoal=eo;setGoal(eo.x,eo.y+8);}return;}
   if(canFight()){input.left=true;pressMode='attack';}});
