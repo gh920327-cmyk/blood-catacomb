@@ -578,6 +578,7 @@ function ensurePlayer(id){let p=G.players.get(id);if(!p){p={id,x:0,y:0,dx:0,dy:0
 function handle(d){switch(d.t){
   case 'welcome':myId=d.id;scene='game';G.ultOk=d.ultok?new Set(d.ultok):null;break;
   case 'ucd':ultEnd=time+d.left;break;
+  case 'ctrReset':ctrCdEnd=0;break;
   case 'err':toast(d.m);break;
   case 'map':{closeFac();G.raid=null;G.rvote=null;G.mvp=null;G.auc=null;G.bseq=null;G.rings=[];G.tethers=[];G.block=null;me.inBoss=false;G.bossLive=null;G.kind=d.kind;G.paused=d.paused||null;G.trans=0;G.monsters.clear();G.deadM.clear();G.projs.clear();G.drops.clear();G.zones=[];parts=[];effects=[];texts=[];G.portalMenu=false;showShop=false;
     if(d.kind==='hub'){G.arena=null;G.arenaRes=null;G.fishS=null;G.map=SH.genHub();G.floor=0;banner={t:0,a:'던전 입구 광장',b:'동료를 모아 포탈로 들어가세요'};}
@@ -627,7 +628,7 @@ function handle(d){switch(d.t){
   case 'emo':onEmo(d);break;
   case 'stash':G.stash=d.s;if(d.save)saveStash(d.s);break;
   case 'bsr':if(d.op==='enh'){sfx(d.ok?'legend':'no');if(d.ok){for(let n=0;n<24;n++)part(me.x+rf(-8,8),me.y-6,rf(-40,40),rf(-30,10),pick(['y','o','w']),rf(.3,.7),{z:rf(4,14),vz:rf(20,60),g:-80,glow:true});}}else if(d.op==='rr'){G.pend=d.pend;sfx('cast');}else if(d.op==='salv'){sfx('hit');G.bs=G.bs&&G.bs.w==='eq'?G.bs:null;}else if(d.op==='gem'||d.op==='comb'||d.op==='sock'){sfx('rare');}else sfx('equip');break;
-  case 'gam':G.gam=d.it;msg(`${d.it.name} (${RAR[d.it.rar].n})`,RAR[d.it.rar].c);break;
+  case 'gam':G.gam=d.it;msg(`${d.it.name} (${RAR[d.it.rar].n})`,itemCol(d.it));break;
   case 'bty':G.bty={b:d.b,names:d.names,reset:d.reset,at:Date.now()};break;
   case 'dps':G.dps={v:d.v,tot:d.tot,dur:d.dur,at:time};break;
   case 'dsum':G.dsum=Object.assign({at:time},d);break;
@@ -982,9 +983,10 @@ function drawPortal(icx,icy,glow){const p=G.map.portal;const cx=Math.round(p.x)-
 function drawDrop(d,icx,icy){let x=d.x,y=d.y,z=0;if(d.t<0.45){const k=d.t/0.45;x=d.sx+(d.x-d.sx)*k;y=d.sy+(d.y-d.sy)*k;z=Math.sin(k*Math.PI)*16;}
   const sx=Math.round(x)-icx,sy=Math.round(y-z)-icy;if(sx<-20||sy<-20||sx>W+20||sy>H+20)return;
   if(d.kind==='gold')wx.drawImage(GOLD,sx-4,sy-4);else if(d.kind==='hp')wx.drawImage(POT_HP,sx-8,sy-8);else if(d.kind==='mp')wx.drawImage(POT_MP,sx-8,sy-8);else if(d.kind==='gem'){wx.drawImage(gemIcon(d.g),sx-8,sy-10);if(R()<0.05)part(d.x+rf(-3,3),d.y-3,0,0,'w',0.3,{z:rf(2,8),vz:10,glow:true});}else wx.drawImage(iconFor(d.it),sx-8,sy-13);}
+function itemCol(it){return it&&it.set?'#4ad86a':RAR[it.rar].c;}
 const RAR=[{n:'일반',c:'#e6dcc3',bg:'#241e2b'},{n:'마법',c:'#7aa2ff',bg:'#1c2440'},{n:'희귀',c:'#ffd35a',bg:'#3a3016'},{n:'전설',c:'#ff8a1f',bg:'#40220c'},{n:'신화',c:'#ff3a5a',bg:'#3a0c18'}];
 function drawBeam(d,icx,icy){if(d.kind!=='item'||d.it.rar<1||d.t<0.45)return;const hgt=[0,16,34,56][d.it.rar];const sx=Math.round(d.x)-icx,sy=Math.round(d.y)-icy;if(sx<-5||sx>W+5||sy<-5||sy>H+hgt)return;
-  const pulse=0.7+0.3*Math.sin(time*4+d.x);wx.fillStyle=RAR[d.it.rar].c;wx.globalAlpha=0.2*pulse;wx.fillRect(sx-1,sy-hgt,3,hgt);wx.globalAlpha=0.6*pulse;for(let yy=(time*20|0)%2;yy<hgt;yy+=2)wx.fillRect(sx,sy-yy,1,1);wx.globalAlpha=1;}
+  const pulse=0.7+0.3*Math.sin(time*4+d.x);wx.fillStyle=itemCol(d.it);wx.globalAlpha=0.2*pulse;wx.fillRect(sx-1,sy-hgt,3,hgt);wx.globalAlpha=0.6*pulse;for(let yy=(time*20|0)%2;yy<hgt;yy+=2)wx.fillRect(sx,sy-yy,1,1);wx.globalAlpha=1;}
 function drawProj(p,icx,icy,glow){const sx=Math.round(p.dx)-icx,sy=Math.round(p.dy-p.h)-icy;
   if(!glow){wx.fillStyle='rgba(0,0,0,0.4)';wx.fillRect(Math.round(p.dx)-icx-1,Math.round(p.dy)-icy,3,1);}
   if(p.type==='web'){if(glow)return;for(let i=-2;i<=2;i++){wpx(sx+i,sy,'w');wpx(sx,sy+i,'w');}wpx(sx-1,sy-1,'W');wpx(sx+1,sy+1,'W');wpx(sx+1,sy-1,'W');wpx(sx-1,sy+1,'W');return;}
@@ -1150,8 +1152,9 @@ function drawSkills(){const ch=G.ch;if(!ch)return;const x=40,y=14,w=400,h=228;pa
 
 function baseLine(k,v){if(k==='dmg')return`공격력 ${v}`;if(k==='armor')return`방어력 ${v}`;if(k==='as')return`${v>0?'+':''}${v}% 공격 속도`;if(k==='ms')return`${v}% 이동 속도`;if(k==='mp')return`+${v} 마나`;return'';}
 function diffLine(k,d){const lab=SH.AFF[k].f(Math.abs(d)).replace(/^\+/,d>0?'+':'-');return(d>0?'▲ ':'▼ ')+lab;}
-function itemTip(it,where,by){const cls=myCls();const L=[[SH.itemName(it),RAR[it.rar].c,14],[`${RAR[it.rar].n} ${it.slot==='weapon'?SH.FAMN[it.fam]:SH.SLOTN[it.slot]}  ·  아이템 레벨 ${it.L}`,'#9e937a',11]];
+function itemTip(it,where,by){const cls=myCls();const L=[[SH.itemName(it),itemCol(it),14],[`${it.set?'세트':RAR[it.rar].n} ${it.slot==='weapon'?SH.FAMN[it.fam]:SH.SLOTN[it.slot]}  ·  아이템 레벨 ${it.L}`,'#9e937a',11]];
   for(const k in it.base){const v=(k==='dmg'||k==='armor')?Math.round(it.base[k]*SH.enhMul(it.up|0)):it.base[k];L.push([baseLine(k,v)+(it.up&&(k==='dmg'||k==='armor')?`  (+${it.up} 강화)`:''),'#f2eadb',12]);}it.aff.forEach((a,i)=>L.push([SH.AFF[a.k].f(it.slot==='ring'&&it.up?Math.round(a.v*(1+0.05*it.up)):a.v)+(it.rk===i?'  ◆':''),'#7aa2ff',12]));
+  if(it.set&&SH.SETS[it.set]){const S0=SH.SETS[it.set];const n=G.ch?SH.setCount(G.ch,it.set):0;L.push([`${S0.n} 세트 (${n}/3)`,'#4ad86a',12]);for(const sl of['weapon','armor','ring']){const e=G.ch&&G.ch.eq[sl];const has=e&&e.set===it.set;L.push([`  ${sl==='weapon'?'무기':sl==='armor'?'갑옷':'반지'}: ${sl==='weapon'?(G.ch?S0.nm[CLASSES[G.ch.cls].fam]:'무기'):S0.nm[sl]}`,has?'#7fd05a':'#6b6275',11]);}L.push([`(2) ${S0.b2d}`,n>=2?'#7fd05a':'#9e937a',11]);L.push([`(3) ${S0.b3d}`,n>=3?'#7fd05a':'#9e937a',11]);}
   if(it.rar===4&&it.myth&&SH.MYTH[it.myth]){L.push([`★ ${SH.MYTH[it.myth].n}`,'#ff3a5a',12]);L.push([SH.MYTH[it.myth].d,'#ff9ab0',11]);}
   if(it.so&&it.so.length){for(const g of it.so){if(g){const e=SH.gemEff(g,it.slot);L.push([`◇ ${SH.gemName(g)}: ${SH.AFF[e.k].f(e.v)}`,SH.GEM_COL[g[0]],12]);}else L.push(['◇ 빈 소켓','#6b6275',11]);}}
   if(!SH.canEquip(it,cls))L.push([`${CLASSES[cls].n}은(는) 착용 불가`,'#e0574a',12]);
@@ -1293,10 +1296,10 @@ function drawWorldUI(icx,icy){
   drawEvUI(icx,icy);drawPings(icx,icy);drawEmos(icx,icy);drawAllyUI(icx,icy);drawBsay(icx,icy);
   dropLabels=[];const placed=[];
   for(const d of G.drops.values()){if(d.kind!=='item'||d.t<0.45)continue;const sx=d.x-icx,sy=d.y-icy;if(sx<-40||sx>W+40||sy<-20||sy>H+30)continue;if(Math.hypot(d.x-me.x,d.y-me.y)>210)continue;
-    const b=tbitmap(d.it.name,12,RAR[d.it.rar].c,'kr');const w=b.width/SC+2,h=9;let lxx=Math.round(sx-w/2),ly=Math.round(sy-25);
+    const b=tbitmap(d.it.name,12,itemCol(d.it),'kr');const w=b.width/SC+2,h=9;let lxx=Math.round(sx-w/2),ly=Math.round(sy-25);
     for(let t=0;t<8;t++){const hit=placed.find(p=>lxx<p.x+p.w&&lxx+w>p.x&&ly<p.y+p.h&&ly+h>p.y);if(!hit)break;ly=hit.y-h-1;}
     placed.push({x:lxx,y:ly,w,h});const hov=mouse.x>=lxx&&mouse.x<=lxx+w&&mouse.y>=ly&&mouse.y<=ly+h;
-    pr(lxx,ly,w,h,hov?'rgba(70,50,80,0.95)':'rgba(10,7,14,0.85)');if(hov){pr(lxx,ly,w,1,PAL.g);pr(lxx,ly+h-1,w,1,PAL.g);}if(d.owner==null&&d.by){pr(lxx,ly,1,h,'#c77ad8');}txt(d.it.name,lxx+1,ly+h/2,12,RAR[d.it.rar].c);dropLabels.push({d,x:lxx,y:ly,w,h});}
+    pr(lxx,ly,w,h,hov?'rgba(70,50,80,0.95)':'rgba(10,7,14,0.85)');if(hov){pr(lxx,ly,w,1,PAL.g);pr(lxx,ly+h-1,w,1,PAL.g);}if(d.owner==null&&d.by){pr(lxx,ly,1,h,'#c77ad8');}txt(d.it.name,lxx+1,ly+h/2,12,itemCol(d.it));dropLabels.push({d,x:lxx,y:ly,w,h});}
   for(const t of texts){const a=t.t>0.6?1-(t.t-0.6)/0.35:1;ctx.globalAlpha=clamp(a,0,1);const b=tbitmap(t.s,t.size,t.c,t.font);const k=t.t<0.08?1.3:1;ctx.drawImage(b,Math.round((t.x-icx)*SC-b.width*k/2),Math.round((t.y-icy)*SC-b.height*k/2),b.width*k,b.height*k);}ctx.globalAlpha=1;}
 function drawEsc(){const w=160,h=106,x=240-w/2,y=80;panel(x,y,w,h,'메뉴');button(x+16,y+22,w-32,16,'계속하기',()=>{G.escMenu=false;},{main:true});button(x+16,y+42,w-32,16,'소리: '+['켬','효과음만','끔'][soundMode],()=>{soundMode=(soundMode+1)%3;try{localStorage.setItem('bc_sound',String(soundMode));}catch(e){}applyVolume();});button(x+16,y+62,w-32,16,'설정 (볼륨·키)',()=>{G.opts=true;G.escMenu=false;});button(x+16,y+82,w-32,16,'캐릭터 선택 화면으로',quitToSelect);}
 function drawPause(){pr(0,0,W,H,'rgba(5,4,8,0.62)');bigTxt('일시정지',240,96,16,'#e6dcc3',2);txt(`${G.paused}님이 게임을 멈췄습니다`,240,120,12,'#9e937a','center');
@@ -1423,7 +1426,7 @@ function drawForge(){const ch=G.ch;if(!ch)return;const x=6,y=38,w=282,h=194;pane
   if(tab==='gem'){drawGemTab(x,y,w,h,it);return;}
   if(tab==='salv'){drawSalvTab(x,y,w,h,it);return;}
   if(!it){txt('오른쪽 인벤토리에서 아이템을 클릭하세요',x+w/2,y+80,12,'#9e937a','center');txt('장착 중인 무기·갑옷·반지도 고를 수 있어요',x+w/2,y+94,11,'#6b6275','center');return;}
-  itemSlot(x+10,y+36,24,it,null,null,'forge');txt(SH.itemName(it),x+40,y+42,13,RAR[it.rar].c);txt(`${RAR[it.rar].n} · 아이템 레벨 ${it.L}${G.bs.w==='eq'?' · 장착 중':''}`,x+40,y+53,10,'#9e937a');
+  itemSlot(x+10,y+36,24,it,null,null,'forge');txt(SH.itemName(it),x+40,y+42,13,itemCol(it));txt(`${RAR[it.rar].n} · 아이템 레벨 ${it.L}${G.bs.w==='eq'?' · 장착 중':''}`,x+40,y+53,10,'#9e937a');
   if(tab==='enh'){const up=it.up|0;let ly=y+72;
     const emax=SH.enhMax(it);if(up>=emax){txt(up>=SH.TRANS_MAX?'초월 완료 (+15) · 모든 능력치 +5%':'최대 강화 (+10)',x+w/2,ly+10,13,'#ffd35a','center');if(up<SH.TRANS_MAX)txt('초월 강화(+11~+15)는 전설·신화·세트 장비만 할 수 있어요',x+w/2,ly+26,10,'#9e937a','center');return;}
     const tr=up>=SH.ENH_MAX,rate=SH.enhRate(it);txt(`${tr?'초월 ':''}+${up}  →  +${up+1}`,x+12,ly,13,tr?'#ffd35a':'#f2eadb');txt(`성공 확률 ${rate}%${tr&&it.tp?` (장인의 기운 +${it.tp}%)`:''}`,x+w-12,ly,12,rate>=80?'#7fd05a':rate>=40?'#ffd35a':'#ff8a5a','right');ly+=13;
@@ -1447,7 +1450,7 @@ function drawForge(){const ch=G.ch;if(!ch)return;const x=6,y=38,w=282,h=194;pane
     ly+=2;txt('수치',x+12,ly,10,'#9e937a');costRow(x+40,ly,SH.rerollCost(it,false),10);ly+=12;txt('교체',x+12,ly,10,'#9e937a');costRow(x+40,ly,SH.rerollCost(it,true),10);
     if(it.rc)txt(`재련 ${it.rc}회 · 할수록 비용 증가`,x+w-12,ly,10,'#6b6275','right');}}
 function drawGemTab(x,y,w,h,it){const ch=G.ch;let ly=y+38;
-  if(it){itemSlot(x+10,ly-2,24,it,null,null,'forge');txt(SH.itemName(it),x+40,ly+3,12,RAR[it.rar].c);const so=it.so||[],mx=SH.SOCK_MAX[it.slot];
+  if(it){itemSlot(x+10,ly-2,24,it,null,null,'forge');txt(SH.itemName(it),x+40,ly+3,12,itemCol(it));const so=it.so||[],mx=SH.SOCK_MAX[it.slot];
     for(let k=0;k<mx;k++){const sx=x+40+k*22,sy=ly+9;const g=so[k];const has=k<so.length;pr(sx,sy,18,18,has?PAL.y:PAL.k);pr(sx+1,sy+1,16,16,has?'#140f1a':'#241e2b');if(g)pimg(gemIcon(g),sx+1,sy+1);else if(!has)txt('×',sx+9,sy+9,10,'#3a3144','center');
       if(g)uiRects.push({x:sx,y:sy,w:18,h:18,click:()=>net({t:'bs',op:'ungem',k,...bsRef()}),tip:()=>{const e=SH.gemEff(g,it.slot);return[[SH.gemName(g),SH.GEM_COL[g[0]],13],[affTxt(e),'#8fb8ff',12],[`클릭: 빼내기 (${SH.unsocketCost(g)}골드, 보석은 돌려받음)`,'#9e937a',11]];}});}
     if(so.length<mx){const c=SH.socketCost(it);button(x+w-94,ly+10,84,14,'소켓 뚫기',()=>net({t:'bs',op:'sock',...bsRef()}),{size:10,tip:()=>[['소켓 뚫기','#ffd35a',12],[`무기·갑옷 최대 2개, 반지 1개`,'#e6dcc3',11],[`비용: ${c.gold}골드, 마력 가루 ${c.dust}`,'#9e937a',11]]});costRow(x+w-94,ly+31,c,10);}
@@ -1460,7 +1463,7 @@ function drawGemTab(x,y,w,h,it){const ch=G.ch;let ly=y+38;
     uiRects.push({x:sx,y:sy,w:22,h:22,click:()=>{if(it)net({t:'bs',op:'gem',g,...bsRef()});else msg('먼저 장비를 고르세요','#9e937a');},right:()=>net({t:'bs',op:'comb',g}),
       tip:()=>{const a=SH.gemEff(g,'weapon'),b=SH.gemEff(g,'armor');const L=[[`${SH.gemName(g)} ×${ch.gems[g]}`,SH.GEM_COL[g[0]],13],[`무기: ${affTxt(a)}`,'#8fb8ff',11],[`갑옷·반지: ${affTxt(b)}`,'#8fb8ff',11]];if(+g[1]<5)L.push([`우클릭: 3개 → ${SH.gemName(g[0]+(+g[1]+1))} (${SH.combineCost(+g[1])}골드)`,'#9e937a',11]);return L;}});});}
 function drawSalvTab(x,y,w,h,it){let ly=y+40;const isBag=G.bs&&G.bs.w==='bag'&&it;
-  if(isBag){itemSlot(x+10,ly-4,24,it,null,null,'forge');txt(SH.itemName(it),x+40,ly+1,12,RAR[it.rar].c);const s=SH.salvageOf(it);let t=`철 조각 ${s.iron}`;if(s.dust)t+=`, 마력 가루 ${s.dust}`;if(s.dustP)t+=', 마력 가루(30%)';if(s.ess)t+=`, 핏빛 정수 ${s.ess}`;if(s.myth)t+=`, 신화의 파편 ${s.myth}`;if(it.rar>=1)t+=', 보석(15%)';
+  if(isBag){itemSlot(x+10,ly-4,24,it,null,null,'forge');txt(SH.itemName(it),x+40,ly+1,12,itemCol(it));const s=SH.salvageOf(it);let t=`철 조각 ${s.iron}`;if(s.dust)t+=`, 마력 가루 ${s.dust}`;if(s.dustP)t+=', 마력 가루(30%)';if(s.ess)t+=`, 핏빛 정수 ${s.ess}`;if(s.myth)t+=`, 신화의 파편 ${s.myth}`;if(it.rar>=1)t+=', 보석(15%)';
     txt(`얻는 재료: ${t}`,x+40,ly+12,10,'#d2c7ab');if((it.so||[]).some(Boolean))txt('박힌 보석은 돌려받아요',x+40,ly+23,10,'#7fd05a');ly+=32;
     const arm=G.bsArm===it.id;button(x+12,ly,w-24,16,it.rar>=2&&!arm?'분해하기 (한 번 더 눌러 확인)':'분해하기',()=>{if(it.rar>=2&&G.bsArm!==it.id){G.bsArm=it.id;return;}net({t:'bs',op:'salv',i:G.bs.i});G.bs=null;G.bsArm=null;},{main:arm||it.rar<2});ly+=24;}
   else{txt('인벤토리(가방)의 아이템을 클릭하면 분해할 수 있어요',x+w/2,ly+4,11,'#9e937a','center');txt('장착 중인 장비는 분해할 수 없어요',x+w/2,ly+16,10,'#6b6275','center');ly+=36;}
@@ -1478,7 +1481,7 @@ function drawTent(){const x=6,y=38,w=200,h=194;panel(x,y,w,h,'수상한 도박�
   [['weapon','무기'],['armor','갑옷'],['ring','반지']].forEach(([s,l],i)=>{const ly=y+36+i*26;pr(x+10,ly-2,w-20,22,'rgba(10,7,14,0.6)');txt(`수상한 ${l}`,x+18,ly+5,12,'#e6dcc3');const c=SH.gambleCost(s,lvl);pimg(GOLD,x+18,ly+11);txt(String(c),x+29,ly+14,10,G.ch&&G.ch.gold>=c?'#ffd35a':'#e0574a');
     button(x+w-62,ly+2,50,14,'사기',()=>net({t:'gamble',s}),{size:11,main:true});});
   const ly=y+118;txt('나오는 등급: 일반 ~ 희귀 · 아주 가끔 전설(0.1%)',x+w/2,ly,10,'#9e937a','center');txt('희귀가 나올 확률이 상점보다 높아요',x+w/2,ly+11,10,'#6b6275','center');
-  if(G.gam){const it=G.gam;itemSlot(x+w/2-13,ly+22,26,G.ch&&G.ch.bag.find(b=>b&&b.id===it.id)||it,null,null,'gam');txt(it.name,x+w/2,ly+56,11,RAR[it.rar].c,'center');}}
+  if(G.gam){const it=G.gam;itemSlot(x+w/2-13,ly+22,26,G.ch&&G.ch.bag.find(b=>b&&b.id===it.id)||it,null,null,'gam');txt(it.name,x+w/2,ly+56,11,itemCol(it),'center');}}
 function drawBoard(){const x=6,y=38,w=282,h=194;panel(x,y,w,h,'현상금 게시판');const B=G.bty;if(!B){txt('불러오는 중...',x+w/2,y+90,11,'#6b6275','center');return;}
   const left=Math.max(0,B.reset-(Date.now()-B.at));const hh=Math.floor(left/3600e3),mm=Math.floor(left%3600e3/60e3);txt(`새 의뢰까지 ${hh}시간 ${mm}분 (매일 자정)`,x+w/2,y+21,10,'#9e937a','center');
   B.b.q.forEach((q,i)=>{const ly=y+32+i*44;pr(x+8,ly,w-16,40,'rgba(10,7,14,0.6)');const done=q.n>=q.need;txt(`${B.names[q.t]||q.t} ${q.need}`,x+14,ly+8,12,q.cl?'#6b6275':done?'#7fd05a':'#e6dcc3');
@@ -1830,7 +1833,7 @@ function drawMvp(){const M=G.mvp;if(!M||!inDungeon())return;if(time-M.t0>40){G.m
 function drawAuction(){const a=G.auc;if(!a||!inDungeon())return;const x=300,y=40,w=172,h=168;panel(x,y,w,h,'전리품 경매');const x0=a.items[a.cur];const elig=G.ch&&a.elig.includes(G.ch.id);
   a.items.forEach((q,i)=>{const bx=x+8+i*32,by=y+20;itemSlot(bx,by,26,q.it,null,null,'auc');if(q.done){pr(bx,by,26,26,'rgba(5,4,8,0.6)');txt(q.winN?q.winN.slice(0,4):'-',bx+13,by+31,8,'#9e937a','center','px');}if(i===a.cur)pr(bx,by+27,26,2,PAL.y);});
   if(!x0){txt('경매 종료',x+w/2,y+80,12,'#9e937a','center');return;}
-  const it=x0.it;txt(SH.itemName(it),x+w/2,y+62,12,RAR[it.rar].c,'center');txt(`${RAR[it.rar].n} · 아이템 레벨 ${it.L}`,x+w/2,y+74,10,'#9e937a','center');
+  const it=x0.it;txt(SH.itemName(it),x+w/2,y+62,12,itemCol(it),'center');txt(`${RAR[it.rar].n} · 아이템 레벨 ${it.L}`,x+w/2,y+74,10,'#9e937a','center');
   const left=Math.max(0,a.t-(time-(G.aucT||time)));pr(x+10,y+84,w-20,4,PAL.k);pr(x+10,y+84,Math.round((w-20)*Math.min(1,left/18)),4,left<4?'#e0574a':PAL.y);txt(`${left.toFixed(1)}초`,x+w-10,y+94,10,'#e6dcc3','right');
   txt(x0.high?`최고 ${x0.high}골드 · ${x0.byN}`:'입찰 없음 (없으면 주사위)',x+10,y+94,10,x0.high?'#ffd35a':'#9e937a');
   const mn=x0.high?Math.max(x0.high+10,Math.round(x0.high*1.1)):Math.max(20,Math.round(it.value*0.5));const big=Math.round(mn*1.5);

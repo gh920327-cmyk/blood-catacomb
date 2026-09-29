@@ -247,7 +247,7 @@ function counterWindow(inst,m,T){const win=CTR_WIN*(inst.raid&&inst.raid.hard?0.
   return win+0.75;}
 // 보스 기준 플레이어 위치: 1 헤드(앞), -1 백(뒤), 0 옆
 function bossSide(m,P){const f=m.face<0?-1:1;const dx=P.x-m.x,dy=P.y-m.y,d=Math.hypot(dx,dy)||1;const c=dx*f/d;return c>0.5?1:c<-0.5?-1:0;}
-function counterHit(inst,m,P){if(inst.raid){const s=rst(inst,P);if(s)s.ctr++;}m.cwEnd=0;m.countered=m.ctrId;m.busy=0;m.wind=0;m.atkT=0;m.stun=Math.max(m.stun||0,1.8);m.grog=inst.time+1.8;
+function counterHit(inst,m,P){if(P.S&&P.S.set3&&P.S.set3.includes('moon')){buff(P,'sdmg',0.35,10);P.ctrT=0;send(P,{t:'ctrReset'});fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-34),s:'흑월 각성!',c:'#c9a0e8'});}if(inst.raid){const s=rst(inst,P);if(s)s.ctr++;}m.cwEnd=0;m.countered=m.ctrId;m.busy=0;m.wind=0;m.atkT=0;m.stun=Math.max(m.stun||0,1.8);m.grog=inst.time+1.8;
   fx(inst,{k:'counter',id:m.id,x:r1(m.x),y:r1(m.y),by:P.ch.name});fx(inst,{k:'shake',v:3});stInc(P,'ctr');
   for(const q of instPlayers(inst))msg(q,`${P.ch.name}님의 카운터! 보스가 그로기 상태입니다`,'#8fd0ff');}
 
@@ -420,6 +420,7 @@ function hitMonster(inst,m,P,mult,o){if(m.dead)return;o=o||{};if(m.pvp){pvpHit(i
   if(o.kb&&!m.boss){const a=Math.atan2(m.y-P.y,m.x-P.x);SH.moveEnt(inst.map,m,Math.cos(a)*o.kb,Math.sin(a)*o.kb);}
   if(P.S.ls&&!P.downed)P.hp=Math.min(P.S.maxHp,P.hp+real*P.S.ls/100);if(bOn(P,'god')&&!P.downed)P.hp=Math.min(P.S.maxHp,P.hp+real*0.05);
   if(r.crit&&!o.myth&&!o.dotHit&&m.hp>0)mythCrit(inst,m,P,v);
+  if(inst._sk&&!o.dotHit&&P.S.set3&&P.S.set3.includes('bell')&&!(P.bellT>inst.time)&&!m.dummy){P.bellT=inst.time+5;const x=P.x,y=P.y;fx(inst,{k:'bell',c:4,x:r1(x),y:r1(y)});fx(inst,{k:'ring',x:r1(x),y:r1(y),r:60,c:'y',c2:'g'});later(inst,0.05,()=>{if(P.inst===inst)aoe(inst,P,x,y,60,1.5,{kb:4,myth:1});});}
   if(m.hp<=0)killMonster(inst,m,P);}
 function hurtPlayer(inst,P,d,src,o){o=o||{};if(P.downed||P.inst!==inst)return;
   if(P.dodgeT>0&&!o.nododge){fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-18),s:'회피',c:'#8fd0ff'});return;}
@@ -481,7 +482,7 @@ function dashTo(inst,P,a,dist){let nx=P.x,ny=P.y;for(let s=dist;s>=0;s-=4){const
 function aoe(inst,P,x,y,r,mult,o){let n=0;for(const m of inst.monsters)if(!m.dead&&Math.hypot(m.x-x,m.y-y)<r+m.r){hitMonster(inst,m,P,mult,o);n++;}return n;}
 function cone(inst,P,a,r,arc,mult,o){for(const m of inst.monsters){if(m.dead)continue;const d=Math.hypot(m.x-P.x,m.y-P.y);if(d<r+m.r&&(d<10||angDiff(Math.atan2(m.y-P.y,m.x-P.x),a)<arc))hitMonster(inst,m,P,mult,o);}}
 function addZone(inst,P,o){inst.zones.push(Object.assign({x:P.x,y:P.y,r:30,t:3,tick:0,iv:0.5,dmg:0,heal:0,slow:0,vis:0,pid:P.id,follow:false,trap:false,ctr:inst._ctr||null},o));}
-function later(inst,t,f){inst.timers.push({t,f,el:inst._el,ctr:inst._ctr});}
+function later(inst,t,f){inst.timers.push({t,f,el:inst._el,ctr:inst._ctr,sk:inst._sk});}
 // 타격음 속성: 스킬·투사체·기본 무기별
 const SKILL_EL={whirl:'slash',charge:'blunt',cleave:'slash',leap:'quake',rend:'slash',bladestorm:'slash',execute:'heavy',earthsplit:'quake',
   bash:'blunt',hook:'blunt',consecrate:'holy',slam:'quake',shieldthrow:'blunt',bastion:'holy',
@@ -612,8 +613,9 @@ function reviveNear(inst,P,r){for(const q of instPlayers(inst)){if(!q.downed||Ma
 const ULT_OK=new Set(['ragnarok','wargod','aegisdome','judgehammer','skyrain','dragonarrow','apocalypse','absolutezero','angel','divinejudge'].concat((process.env.ULT_OK||'').split(',').filter(Boolean)));;/* 사용자 승인된 궁극기 */function ultOk(id){return ULT_OK.has(id)||!!process.env.BC_DEBUG;}
 function castSkill(inst,P,i,tx,ty){const sid=P.ch.bar&&P.ch.bar[i];if(!sid)return;const sk=SKILLS[sid];if(!sk||sk.pas||!SK[sid])return;const rank=(P.ch.sk&&P.ch.sk[sid])|0;if(rank<1)return;
   if((P.scd[sid]||0)>0.1)return;if(P.mp<sk.mp){msg(P,'마나가 부족합니다','#7aa2ff');return;}
-  P.mp-=sk.mp;P.scd[sid]=sk.cd*(1-(P.S.cdr||0));const a=Math.atan2(ty-P.y,tx-P.x);P.face=Math.cos(a)<0?-1:1;
-  inst._el=SKILL_EL[sid]||null;inst._ctr=sk.ctr?1:null;CUR_CASTER=P;let ok;try{ok=withFoes(inst,P,()=>SK[sid](inst,P,a,tx,ty,SH.skillMul(rank),rank));}finally{inst._el=null;inst._ctr=null;CUR_CASTER=null;}if(ok===false){P.mp+=sk.mp;P.scd[sid]=0;send(P,{t:'cdr',sid});}}
+  P.mp-=sk.mp;P.scd[sid]=sk.cd*(1-(P.S.cdr||0))*(bOn(P,'clock')?0.5:1);const s3=P.S.set3||[];let kk=SH.skillMul(rank);if(s3.includes('twins')&&P.lastSk&&P.lastSk!==sid)kk*=1.4;P.lastSk=sid;
+  if(s3.includes('clock')){P.clockN=(P.clockN|0)+1;if(P.clockN>=10){P.clockN=0;buff(P,'clock',1,6);fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-30),s:'태엽 폭주!',c:'#ffd35a'});fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:36,c:'y',c2:'o'});}}const a=Math.atan2(ty-P.y,tx-P.x);P.face=Math.cos(a)<0?-1:1;
+  inst._el=SKILL_EL[sid]||null;inst._ctr=sk.ctr?1:null;inst._sk=1;CUR_CASTER=P;let ok;try{ok=withFoes(inst,P,()=>SK[sid](inst,P,a,tx,ty,kk,rank));}finally{inst._el=null;inst._ctr=null;inst._sk=null;CUR_CASTER=null;}if(ok===false){P.mp+=sk.mp;P.scd[sid]=0;send(P,{t:'cdr',sid});}}
 
 // ================= 인스턴스 업데이트 =================
 function updatePlayers(inst,dt){
@@ -661,7 +663,7 @@ function updateZones(inst,dt){for(let i=inst.zones.length-1;i>=0;i--){const z=in
   if(z.dmg)aoe(inst,P,z.x,z.y,z.r,z.dmg,{slow:z.slow,ctr:z.ctr});
   if(z.heal)for(const q of livingPlayers(inst))if(Math.hypot(q.x-z.x,q.y-z.y)<z.r)healPlayer(inst,q,z.heal,P);
   if(z.revive)reviveNear(inst,P,z.r);}}
-function updateTimers(inst,dt){for(let i=inst.timers.length-1;i>=0;i--){const t=inst.timers[i];t.t-=dt;if(t.t<=0){inst.timers.splice(i,1);inst._el=t.el;inst._ctr=t.ctr;try{t.f();}catch(e){console.error('timer',e);}inst._el=null;inst._ctr=null;}}}
+function updateTimers(inst,dt){for(let i=inst.timers.length-1;i>=0;i--){const t=inst.timers[i];t.t-=dt;if(t.t<=0){inst.timers.splice(i,1);inst._el=t.el;inst._ctr=t.ctr;inst._sk=t.sk;try{t.f();}catch(e){console.error('timer',e);}inst._el=null;inst._ctr=null;inst._sk=null;}}}
 function updateDungeon(inst,dt){
   if(inst.arena){updateArena(inst,dt);return;}
   if(inst.raid){updateRaid(inst,dt);return;}
@@ -796,6 +798,7 @@ function raidClear(inst,m){const r=inst.raid;if(r.done)return;r.done=true;r.endT
   if(r.practice||!r.elig.length)return;
   const fams=[...new Set(ps.map(P=>CLASSES[P.ch.cls].fam))];const L=def.lvl+5;const items=[];
   items.push(SH.genItem(L,pick(fams),3,0,R,3));for(let i=0;i<4;i++)items.push(SH.genItem(L,pick(fams),2,30,R,2));
+  {const sid=SH.RAID_SET[r.id];if(sid)for(let i=0;i<(r.hard?2:1);i++)items[1+i]=SH.genSet(sid,L,pick(fams),R);}
   const mythic=R()<(r.hard?0.08:0.05);if(mythic){items[items.length-1]=SH.genMythic(L,pick(fams),R);}
   const eligP=ps.filter(P=>r.elig.includes(P.ch.id));
   if(eligP.length===1&&ps.length===1){const W=eligP[0];for(const it of items){if(!addBag(W,it))addDrop(inst,{kind:'item',owner:W.id,it},W.x,W.y);if(it.rar===4){stInc(W,'myth');bcast(hub,{t:'msg',m:`${W.ch.name}님이 레이드에서 신화 '${it.name}'을(를) 얻었다!!`,c:'#ff3a5a'});}}markDirty(W);
@@ -891,7 +894,7 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
   ch.ult=typeof o.ult==='string'&&(C.ults||[]).includes(o.ult)&&ch.lvl>=SH.ULT_LVL?o.ult:null;
   ch.cos={cape:!(o.cos&&o.cos.cape===0)?1:0,glow:!(o.cos&&o.cos.glow===0)?1:0};
   return ch;}
-function okItem(it){return !!(it&&typeof it==='object'&&['weapon','armor','ring'].includes(it.slot)&&Number.isInteger(it.rar)&&it.rar>=0&&it.rar<=4&&(it.rar<4||SH.MYTH[it.myth])&&it.base&&typeof it.base==='object'&&Array.isArray(it.aff)&&typeof it.name==='string');}
+function okItem(it){return !!(it&&typeof it==='object'&&['weapon','armor','ring'].includes(it.slot)&&Number.isInteger(it.rar)&&it.rar>=0&&it.rar<=4&&(it.rar<4||SH.MYTH[it.myth])&&(!it.set||SH.SETS[it.set])&&it.base&&typeof it.base==='object'&&Array.isArray(it.aff)&&typeof it.name==='string');}
 const STASH_N=40;
 function sanitizeStash(a){const out=new Array(STASH_N).fill(null);if(Array.isArray(a))for(let i=0;i<STASH_N;i++)if(okItem(a[i]))out[i]=a[i];return out;}
 function near(P,pt,r){return Math.hypot(P.x-pt.x,P.y-pt.y)<=r;}

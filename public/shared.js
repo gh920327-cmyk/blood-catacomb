@@ -483,6 +483,15 @@ function genItem(L,fam,minR,bonus,R,maxR,fslot){
 // ---------- 신화 (레이드 경매 전용) ----------
 const MYTH={blast:{n:'핏빛 폭발',d:'적을 처치하면 주변에 폭발 (공격력 80%)'},aegis:{n:'불멸의 가호',d:'5초마다 최대 체력 10% 보호막'},chainz:{n:'천둥의 연쇄',d:'치명타 시 번개가 주변 적 3명에게 튄다 (60%)'},vamp:{n:'피의 계약',d:'생명력 흡수 +4%, 처치 시 체력 3% 회복'},haste:{n:'시간의 톱니',d:'스킬 재사용 대기 -15%'},wrath:{n:'군주 사냥꾼',d:'보스에게 주는 피해 +20%'}};
 const MYTH_N={melee:['흑월의 대검','종말의 도끼'],bow:['별을 삼킨 활','피안의 석궁'],staff:['심연의 왕홀','시간을 먹는 지팡이'],armor:['불멸 군주의 갑주','새벽 기사단의 흉갑'],ring:['신들의 반지','엘라의 약속']};
+// ---------- 세트 아이템 (레이드) ----------
+const SETS={
+  bell:{n:'종지기',raid:'bell',lvl:20,nm:{melee:'종지기의 망치',bow:'종탑 파수꾼의 활',staff:'종소리 지팡이',armor:'종지기의 누더기 갑옷',ring:'녹슨 종 반지'},b2:{hpPct:15,armorPct:10},b2d:'체력 +15%, 방어력 +10%',b3d:'스킬이 적에게 맞으면 5초마다 종소리 파동 (주변 피해 150%)'},
+  twins:{n:'쌍둥이 마녀',raid:'mirror',lvl:30,nm:{melee:'황혼의 쌍검',bow:'빛과 그림자의 활',staff:'쌍둥이 달의 지팡이',armor:'마녀의 거울 드레스',ring:'엇갈린 달 반지'},b2:{crit:8},b2d:'치명타 확률 +8%',b3d:'직전과 다른 스킬을 쓰면 그 스킬 피해 +40%'},
+  clock:{n:'태엽 기사',raid:'clock',lvl:40,nm:{melee:'태엽 기사의 창',bow:'태엽 석궁',staff:'톱니 왕홀',armor:'태엽 기사단 흉갑',ring:'멈추지 않는 톱니 반지'},b2:{as:12},b2d:'공격 속도 +12%',b3d:'스킬 10번 사용마다 6초간 태엽 폭주 (재사용 대기 -50%)'},
+  moon:{n:'흑월',raid:'moon',lvl:50,nm:{melee:'흑월의 처형검',bow:'흑월 사냥꾼의 활',staff:'흑월의 홀',armor:'흑왕의 갑주',ring:'꺼지지 않는 흑월 반지'},b2:{bossDmg:15},b2d:'보스에게 주는 피해 +15%',b3d:'카운터 성공 시 10초간 모든 피해 +35%, 카운터 재사용 초기화'}};
+const RAID_SET={bell:'bell',mirror:'twins',clock:'clock',moon:'moon'};
+function genSet(id,L,fam,R,slot){R=R||Math.random;const S0=SETS[id];const it=genItem(L,fam,3,0,R,3,slot);it.set=id;it.name=it.slot==='weapon'?S0.nm[fam]:S0.nm[it.slot];it.value=Math.round(it.value*1.5);return it;}
+function setCount(ch,id){let n=0;for(const s of['weapon','armor','ring']){const it=ch.eq[s];if(it&&it.set===id&&canEquip(it,ch.cls))n++;}return n;}
 function genMythic(L,fam,R,slot){R=R||Math.random;const it=genItem(L,fam,3,0,R,3,slot);it.rar=4;for(const k in it.base)if(k==='dmg'||k==='armor')it.base[k]=Math.round(it.base[k]*1.25);for(const a of it.aff)a.v=Math.round(a.v*1.25);
   const keys=Object.keys(MYTH);it.myth=keys[Math.floor(R()*keys.length)];const pool=MYTH_N[it.slot==='weapon'?fam:it.slot];it.name=pool[Math.floor(R()*pool.length)];it.value=Math.round(it.value*2);if(!it.so)it.so=[null];return it;}
 function starterWeapon(fam){const b=WEAPONS[fam][fam==='melee'?1:fam==='bow'?0:1];return{id:rid(),slot:'weapon',rar:0,L:1,fam,kind:b.kind,bn:b.n,name:'낡은 '+b.n,base:{dmg:4},aff:[],value:3};}
@@ -555,6 +564,7 @@ function calcStats(ch){
   if(r('endless')){S.dmgMul*=1+0.02*r('endless');S.ls+=0.5*r('endless');}if(r('willpower')){S.maxHp=Math.round(S.maxHp*(1+0.03*r('willpower')));S.dr=(S.dr||0)+0.01*r('willpower');}
   if(r('instinct')){S.crit=Math.min(75,S.crit+r('instinct'));S.bossDmg=0.02*r('instinct');}if(r('resonance')){S.spell*=1+0.03*r('resonance');S.cdr=Math.min(0.45,S.cdr+0.01*r('resonance'));}if(r('saint')){S.healPow=Math.round(S.healPow*(1+0.04*r('saint')));S.dr=(S.dr||0)+0.01*r('saint');}
   S.regen=1+(T.regen||0)/100;if(T.mpRegen)S.mpRegen*=1+T.mpRegen/100;
+  S.set3=[];for(const id in SETS){const n=setCount(ch,id);if(n<2)continue;const b=SETS[id].b2;if(b.hpPct)S.maxHp=Math.round(S.maxHp*(1+b.hpPct/100));if(b.armorPct)S.armor=Math.round(S.armor*(1+b.armorPct/100));if(b.crit)S.crit=Math.min(75,S.crit+b.crit);if(b.as)S.atkRate*=1+b.as/100;if(b.bossDmg)S.bossDmg=(S.bossDmg||0)+b.bossDmg/100;if(n>=3)S.set3.push(id);}
   S.myth=[];for(const s2 of['weapon','armor','ring']){const it=ch.eq[s2];if(it&&it.rar===4&&it.myth&&MYTH[it.myth]&&canEquip(it,ch.cls))S.myth.push(it.myth);}
   if(S.myth.includes('vamp'))S.ls+=4;if(S.myth.includes('haste'))S.cdr=Math.min(0.5,(S.cdr||0)+0.15);
   return S;
@@ -569,6 +579,6 @@ function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o
 
 const SH={TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
-  THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
+  THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
 })(typeof self!=='undefined'?self:this);
