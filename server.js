@@ -49,7 +49,7 @@ const players=new Map();   // id -> P
 const parties=new Map();   // id -> party
 const dungeons=new Map();  // id -> inst
 const hub={id:'hub',type:'hub',map:SH.genHub(),players:new Set(),drops:[],fx:[],time:0,did:1,monsters:[],projs:[],zones:[],timers:[],hz:[],dark:0,mid:1,pid:1,flows:new Map(),floor:1};
-for(const d of hub.map.dummies)hub.monsters.push({id:hub.mid++,type:'dummy',tc:99,dummy:true,x:d.x,y:d.y,r:7,maxHp:1e9,hp:1e9,dmg:0,spd:0,xp:0,face:-1,alert:true,slow:0,stun:0,flash:0,wind:0,windType:'',atkT:0,charge:0,dead:false});
+for(const d of (process.env.ONE_DUMMY?hub.map.dummies.slice(0,1):hub.map.dummies))hub.monsters.push({id:hub.mid++,type:'dummy',tc:99,dummy:true,x:d.x,y:d.y,r:7,maxHp:1e9,hp:1e9,dmg:0,spd:0,xp:0,face:-1,alert:true,slow:0,stun:0,flash:0,wind:0,windType:'',atkT:0,charge:0,dead:false});
 
 function send(P,o){if(P.ws.readyState===1)P.ws.send(JSON.stringify(o));}
 function instPlayers(inst){const a=[];for(const id of inst.players){const p=players.get(id);if(p)a.push(p);}return a;}
