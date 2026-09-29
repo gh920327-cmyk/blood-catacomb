@@ -635,7 +635,9 @@ function handle(d){switch(d.t){
   case 'shop':G.shop=d;break;
   case 'cdr':localCd[d.sid]=0;break;
   case 's':onSnap(d);break;
-  case 'ch':{const firstCh=!G.ch;const old=G.ch;G.ch=d.ch;G.S=d.S;if(old&&d.ch.lvl>old.lvl){}saveCurrent(d.ch);break;}
+  case 'ch':{const firstCh=!G.ch;const old=G.ch;G.ch=d.ch;G.S=d.S;if(old&&d.ch.lvl>old.lvl){}
+    {const cp=SH.power(d.ch);const eqk=c=>['weapon','armor','ring'].map(s=>c.eq[s]?c.eq[s].id+'.'+(c.eq[s].up|0)+'.'+(c.eq[s].L|0)+'.'+(c.eq[s].so||[]).join(''):'-').join('|');if(old&&G.cp!=null&&cp!==G.cp&&eqk(old)!==eqk(d.ch)){const dv=cp-G.cp;msg(`전투력 ${dv>0?'+':''}${dv.toLocaleString()} ${dv>0?'▲':'▼'}  (${cp.toLocaleString()})`,dv>0?'#7fd05a':'#e0574a');}G.cp=cp;}
+    saveCurrent(d.ch);break;}
   case 'tp':me.x=d.x;me.y=d.y;me.path=null;me.lastSent='';break;
   case 'force':me.force={vx:d.vx,vy:d.vy,t:d.d};break;
   case 'victory':G.victory=time;sfx('legend');if(G.kind==='hub')setTimeout(()=>playEnding('end1'),3500);else G.pendEnd='end1';break;
@@ -1217,7 +1219,7 @@ function itemTip(it,where,by){const cls=myCls();const L=[[SH.itemName(it),itemCo
   if(it.rar===4&&it.myth&&SH.MYTH[it.myth]){L.push([`★ ${SH.MYTH[it.myth].n}`,'#ff3a5a',12]);L.push([SH.MYTH[it.myth].d,'#ff9ab0',11]);}
   if(it.so&&it.so.length){for(const g of it.so){if(g){const e=SH.gemEff(g,it.slot);L.push([`◇ ${SH.gemName(g)}: ${SH.AFF[e.k].f(e.v)}`,SH.GEM_COL[g[0]],12]);}else L.push(['◇ 빈 소켓','#6b6275',11]);}}
   if(!SH.canEquip(it,cls))L.push([`${CLASSES[cls].n}은(는) 착용 불가`,'#e0574a',12]);
-  else if(where!=='eq'&&G.ch){const cur=G.ch.eq[it.slot];if(!cur)L.push(['빈 칸 · 바로 장착 가능','#7fd05a',11]);else if(cur!==it){L.push(['장착 중인 아이템과 비교','#9e937a',11]);const a=SH.itemStats(it),b=SH.itemStats(cur);let any=false;for(const k of new Set([...Object.keys(a),...Object.keys(b)])){const d=(a[k]||0)-(b[k]||0);if(d){any=true;L.push([diffLine(k,d),d>0?'#7fd05a':'#e0574a',12]);}}if(!any)L.push(['차이 없음','#9e937a',11]);}}
+  else if(where!=='eq'&&G.ch){const cur=G.ch.eq[it.slot];if(cur!==it){const p0=SH.power(G.ch),p1=SH.power(G.ch,{[it.slot]:it}),dv=p1-p0;L.push([dv===0?'전투력 변화 없음':`전투력 ${dv>0?'+':''}${dv.toLocaleString()} ${dv>0?'▲':'▼'}  (${p1.toLocaleString()})`,dv>0?'#7fd05a':dv<0?'#e0574a':'#9e937a',13]);}if(!cur)L.push(['빈 칸 · 바로 장착 가능','#7fd05a',11]);else if(cur!==it){L.push(['장착 중인 아이템과 비교','#9e937a',11]);const a=SH.itemStats(it),b=SH.itemStats(cur);let any=false;for(const k of new Set([...Object.keys(a),...Object.keys(b)])){const d=(a[k]||0)-(b[k]||0);if(d){any=true;L.push([diffLine(k,d),d>0?'#7fd05a':'#e0574a',12]);}}if(!any)L.push(['차이 없음','#9e937a',11]);}}
   if(by)L.push([`${by}님이 내려놓은 아이템`,'#c77ad8',11]);
   if(where==='forge'||where==='gam')return L;if(where==='stash'){L.push(['클릭: 가방으로 꺼내기','#6b6275',11]);return L;}
   if(G.fac==='forge'&&(where==='bag'||where==='eq')){L.push(['클릭: 대장간에 올리기','#ffd35a',11]);return L;}if(G.fac==='vault'&&where==='bag'){L.push(['클릭: 창고에 넣기','#ffd35a',11]);return L;}
@@ -1269,7 +1271,7 @@ function drawPartyFrames(){const pt=G.party;if(!pt||pt.members.length<=1)return;
     else txt(G.kind==='hub'?'던전에 있음':'마을에 있음',9,y+11,9,'#6b6275');
     y+=17;}
   if(G.kind==='hub'){button(4,y,48,11,'파티 나가기',()=>net({t:'leave'}),{size:10});}}
-function drawChar(){const S=G.S,ch=G.ch;if(!S||!ch)return;const x=6,y=38,w=172,h=194;panel(x,y,w,h,'캐릭터');let ly=y+24;const row=(a,b,c)=>{txt(a,x+10,ly,12,'#9e937a');txt(b,x+w-10,ly,12,c||'#e6dcc3','right');ly+=10;};
+function drawChar(){const S=G.S,ch=G.ch;if(!S||!ch)return;const x=6,y=38,w=172,h=194;panel(x,y,w,h,'캐릭터');{const cp=G.cp!=null?G.cp:SH.power(ch);txt(`전투력 ${cp.toLocaleString()}`,x+w-8,y+9,11,'#ffd35a','right');uiRects.push({x:x+w-70,y:y+3,w:64,h:12,tip:()=>[['종합 전투력','#ffd35a',12],['공격(피해·치명·공속·주문) + 생존(체력·방어) + 치유','#e6dcc3',11],['장비를 바꾸면 오르내린 값이 표시돼요','#9e937a',11]]});}let ly=y+24;const row=(a,b,c)=>{txt(a,x+10,ly,12,'#9e937a');txt(b,x+w-10,ly,12,c||'#e6dcc3','right');ly+=10;};
   row(`${CLASSES[ch.cls].n} · ${CLASSES[ch.cls].role}`,`레벨 ${ch.lvl}`,'#ffd35a');ly+=1;txt(ch.pts>0?`스탯 포인트 ${ch.pts}`:'스탯 포인트 없음',x+10,ly,12,ch.pts>0?'#ffd35a':'#6b6275');ly+=11;
   for(const[k,l,dsc]of[['str','힘',CLASSES[ch.cls].prim==='str'?'주 능력치 · 피해':'근접 피해'],['dex','민첩',CLASSES[ch.cls].prim==='dex'?'주 능력치 · 치명타':'치명타 · 공속'],['vit','활력','체력 +4'],['ene','에너지',CLASSES[ch.cls].prim==='ene'?'주 능력치 · 주문':'마나 · 주문']]){txt(l,x+10,ly,12,'#e6dcc3');txt(dsc,x+48,ly,11,'#6b6275');txt(String(S[k]),x+w-(ch.pts>0?24:10),ly,12,'#f2eadb','right');
     if(ch.pts>0){const bx=x+w-20,by=ly-5;pr(bx,by,10,10,PAL.g);pr(bx+1,by+1,8,8,PAL.k);pr(bx+4,by+2,2,6,PAL.y);pr(bx+2,by+4,6,2,PAL.y);uiRects.push({x:bx,y:by,w:10,h:10,click:()=>net({t:'stat',k})});}ly+=11;}
@@ -1316,7 +1318,7 @@ function drawShop(){const x=6,y=38,w=172,h=194;panel(x,y,w,h,'상인');const pri
   pr(x+8,y+62,w-16,1,PAL.m);txt('장비',x+10,y+70,11,'#9e937a');const sh=G.shop;
   if(sh){txt(`새 물건까지 ${Math.floor(sh.refresh/60)}분`,x+w-10,y+70,10,'#6b6275','right');
     sh.items.forEach((it,i)=>{const c=i%3,r=(i/3)|0,sx=x+14+c*52,sy=y+78+r*40;itemSlot(sx,sy,24,it,()=>net({t:'shopbuy',id:it.id}),null,'shop');txt(`${it.price}`,sx+12,sy+30,10,G.ch&&G.ch.gold>=it.price?'#ffd35a':'#e0574a','center');});
-    button(x+10,y+h-20,w-20,14,`스킬 초기화 (${sh.respec}골드)`,()=>net({t:'respec'}),{size:10});}
+    const hw=(w-24)/2;button(x+10,y+h-20,hw,14,'스킬 초기화',()=>net({t:'respec'}),{size:10,tip:[['스킬 포인트를 모두 돌려받아요','#e6dcc3',11],[`비용 ${sh.respec} 골드`,'#ffd35a',11]]});button(x+14+hw,y+h-20,hw,14,'능력치 초기화',()=>net({t:'srespec'}),{size:10,tip:[['힘·민첩·체력·에너지에 쓴 포인트를 모두 돌려받아요','#e6dcc3',11],[`비용 ${sh.respec} 골드`,'#ffd35a',11]]});}
   else txt('불러오는 중...',x+w/2,y+100,11,'#6b6275','center');
   let fn=0,fg=0;if(G.ch&&G.ch.fish)for(const f of SH.FISH){const c=G.ch.fish[f.id]|0;fn+=c;fg+=c*f.v;}
   if(fn)button(x+10,y+h-35,w-20,13,`물고기 ${fn}마리 팔기 (+${fg}골드)`,()=>net({t:'sellfish'}),{size:10,main:true});else txt('판매: 인벤토리에서 우클릭',x+w/2,y+h-28,10,'#9e937a','center');}
