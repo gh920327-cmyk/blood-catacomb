@@ -804,7 +804,7 @@ function anyPanel(){return showInv||showChar||showShop||showSkills||G.portalMenu
 cv.addEventListener('pointermove',e=>setMouse(e));
 cv.addEventListener('pointerdown',e=>{e.preventDefault();setMouse(e);initAudio();if(chatBox.style.display==='block'){chatBox.style.display='none';chatBox.value='';}cv.focus();if(scene!=='game')return;
   mouse.wx=mouse.x+camX;mouse.wy=mouse.y+camY;
-  if(e.button===2){const r=uiHit();if(r){r.right&&r.right();return;}if(G.ctxMenu){G.ctxMenu=null;return;}if(G.paused&&inDungeon())return;castSkill(G.sel||0,mouse.wx,mouse.wy);return;}
+  if(e.button===2){const r=uiHit();if(r){r.right&&r.right();return;}if(G.ctxMenu){G.ctxMenu=null;return;}if(G.paused&&inDungeon())return;castSkill(SH.BAR_SIZE,mouse.wx,mouse.wy);return;}
   if(e.button!==0)return;
   const r=uiHit();if(r){r.click&&r.click();return;}
   if(G.emoWheel){G.emoWheel=false;return;}if(G.fishS&&fishPress())return;
@@ -866,7 +866,7 @@ window.addEventListener('keydown',e=>{
   if(G.treq&&!G.invite&&(c==='KeyY'||c==='KeyN')){net({t:'tans',from:G.treq.from,ok:c==='KeyY'});G.treq=null;return;}
   if(G.invite&&(c==='KeyY'||c==='KeyN')){net({t:'ians',from:G.invite.from,ok:c==='KeyY'});G.invite=null;return;}
   if(inDungeon()&&G.paused)return;
-  if(act&&act.startsWith('sk')){const i=+act.slice(2);if(i>=0&&i<SH.BAR_SIZE){G.sel=i;castSkill(i,mouse.wx,mouse.wy);}}
+  if(act&&act.startsWith('sk')){const i=+act.slice(2);if(i>=0&&i<SH.BAR_SIZE){castSkill(i,mouse.wx,mouse.wy);}}
   else if(act==='potHp')usePot('hp');else if(act==='potMp')usePot('mp');
   else if(act==='act')interact();
   else if(act==='ping')sendPing();
@@ -878,8 +878,8 @@ function openChat(){const r=cv.getBoundingClientRect();const s=r.width/W;chatBox
 // ================= 로컬 행동 =================
 function usePot(k){if(meDowned()||potCd>0)return;if(!G.ch)return;if(G.ch.pots[k]<=0){msg(k==='hp'?'체력 물약이 없습니다':'마나 물약이 없습니다','#ff6a5a');sfx('no');return;}potCd=0.4;net({t:'pot',k});}
 function castSkill(i,tx,ty){if(!G.ch||meDowned())return;if(!canFight()){msg('마을에서는 훈련장(허수아비 근처)에서만 스킬을 쓸 수 있어요','#9e937a');return;}
-  const sid=G.ch.bar&&G.ch.bar[i];if(!sid){msg(`${i+1}번 칸이 비어 있습니다 · K에서 스킬을 넣으세요`,'#9e937a');return;}const sk=SKILLS[sid];if((localCd[sid]||0)>time){return;}if(G.mev[2]<sk.mp){msg('마나가 부족합니다','#7aa2ff');sfx('no');return;}
-  localCd[sid]=time+sk.cd*(1-((G.S&&G.S.cdr)||0));G.sel=i;me.face=tx<me.x?-1:1;net({t:'sk',i,x:Math.round(tx),y:Math.round(ty)});me.path=null;me.pickTarget=null;}
+  const rmb=i===SH.BAR_SIZE;const sid=rmb?G.ch.rmb:(G.ch.bar&&G.ch.bar[i]);if(!sid){msg(rmb?'우클릭 스킬이 없어요 · K 스킬 창에서 [우클릭] 칸에 넣으세요':`${i+1}번 칸이 비어 있습니다 · K에서 스킬을 넣으세요`,'#9e937a');return;}const sk=SKILLS[sid];if((localCd[sid]||0)>time){return;}if(G.mev[2]<sk.mp){msg('마나가 부족합니다','#7aa2ff');sfx('no');return;}
+  localCd[sid]=time+sk.cd*(1-((G.S&&G.S.cdr)||0));me.face=tx<me.x?-1:1;net({t:'sk',i,x:Math.round(tx),y:Math.round(ty)});me.path=null;me.pickTarget=null;}
 function dodge(){if(meDowned()||me.dodgeCd>0||!G.map||G.mev[9]===0)return;let vx=0,vy=0;for(const k of keys){const v=MOVEK[k];if(v){vx+=v[0];vy+=v[1];}}
   if(!vx&&!vy){vx=mouse.wx-me.x;vy=mouse.wy-me.y;}const l=Math.hypot(vx,vy)||1;me.dodx=vx/l;me.dody=vy/l;me.dodgeT=0.28;me.dodgeCd=0.9;me.path=null;net({t:'dodge'});sfx('dodge');}
 function tryAttack(){if(!G.ch||!G.S||meDowned()||me.atkCd>0)return;const a=Math.atan2(mouse.wy-(me.y-6),mouse.wx-me.x);me.atkCd=1/(G.S.atkRate*(G.mev[7]||1));net({t:'atk',a:Math.round(a*100)/100});
@@ -1214,7 +1214,9 @@ function drawSkills(){const ch=G.ch;if(!ch)return;const x=40,y=14,w=400,h=228;pa
   const by=y+h-34;txt('단축키',x+10,by+10,11,'#9e937a');
   for(let i=0;i<SH.BAR_SIZE;i++){const sx=x+56+i*26;const sid=ch.bar[i];slotBox(sx,by,22,22,false);if(sid)pimg(SKILL_ICON[sid],sx+3,by+3);txt(String(i+1),sx+2,by+5,8,'#e6dcc3','left','px');
     uiRects.push({x:sx,y:by,w:22,h:22,click:()=>{const s2=G.skSel;if(s2&&!SKILLS[s2].pas&&(ch.sk[s2]||0)>0)net({t:'bar',i,sid:s2});else if(s2&&SKILLS[s2].pas)msg('패시브는 단축키에 넣지 않아도 항상 적용됩니다','#9e937a');},right:()=>net({t:'bar',i,sid:null}),tip:sid?()=>skillTip(sid,i):null});}
-  txt('스킬 클릭 후 단축키 칸 클릭: 배치  ·  우클릭: 비우기',x+w-10,by+28,10,'#6b6275','right');
+  {const sx=x+56+SH.BAR_SIZE*26+10;const sid=ch.rmb;slotBox(sx,by,22,22,false);if(sid)pimg(SKILL_ICON[sid],sx+3,by+3);txt('우클릭',sx+11,by-5,9,'#ffd35a','center');
+    uiRects.push({x:sx,y:by,w:22,h:22,click:()=>{const s2=G.skSel;if(s2&&!SKILLS[s2].pas&&(ch.sk[s2]||0)>0)net({t:'rmb',sid:s2});else if(s2&&SKILLS[s2].pas)msg('패시브는 넣을 수 없어요','#9e937a');else msg('먼저 위에서 스킬을 클릭하세요','#9e937a');},right:()=>net({t:'rmb',sid:null}),tip:()=>sid?skillTip(sid,null).concat([['마우스 우클릭으로 사용','#ffd35a',11]]):[['우클릭 스킬 칸','#ffd35a',13],['스킬을 클릭한 뒤 이 칸을 클릭하면 마우스 우클릭에 배치','#e6dcc3',11]]});}
+  txt('스킬 클릭 후 칸 클릭: 배치  ·  칸 우클릭: 비우기',x+w-10,by+28,10,'#6b6275','right');
   txt('+ 버튼: 스킬 포인트로 배우기·강화',x+w-10,by+10,10,'#6b6275','right');}
 
 function baseLine(k,v){if(k==='dmg')return`공격력 ${v}`;if(k==='armor')return`방어력 ${v}`;if(k==='as')return`${v>0?'+':''}${v}% 공격 속도`;if(k==='ms')return`${v}% 이동 속도`;if(k==='mp')return`+${v} 마나`;return'';}
@@ -1241,11 +1243,15 @@ function drawHUD(){const mv=G.mev,cls=myCls(),skills=CLASSES[cls].skills;
   if(mv[4]>0){txt(`보호막 ${mv[4]}`,26,218,11,'#bfe3ff','center');}
   uiRects.push({x:2,y:222,w:48,h:48,block:true,tip:()=>[['체력',"#ff7a6a",13],[`${mv[0]} / ${mv[1]}`,'#e6dcc3',12],['Q: 체력 물약 (45% 회복)','#6b6275',11]]});
   uiRects.push({x:430,y:222,w:48,h:48,block:true,tip:()=>[['마나',"#8fd0ff",13],[`${mv[2]} / ${mv[3]}`,'#e6dcc3',12],['E: 마나 물약 (50% 회복)','#6b6275',11]]});
-  const slots=[{t:'pot',k:'hp'}];for(let i=0;i<SH.BAR_SIZE;i++)slots.push({t:'sk',i});slots.push({t:'pot',k:'mp'});const sw=20,gap=3,x0=240-(slots.length*sw+(slots.length-1)*gap)/2;
+  const slots=[{t:'pot',k:'hp'}];for(let i=0;i<SH.BAR_SIZE;i++)slots.push({t:'sk',i});slots.push({t:'rmb'});slots.push({t:'pot',k:'mp'});const sw=20,gap=3,x0=240-(slots.length*sw+(slots.length-1)*gap)/2-12;
   slots.forEach((s,n)=>{const x=x0+n*(sw+gap),y=237;
-    if(s.t==='sk'){const i=s.i,sid=G.ch&&G.ch.bar?G.ch.bar[i]:null;slotBox(x,y,sw,sw,(G.sel||0)===i);
+    if(s.t==='rmb'){const sid=G.ch?G.ch.rmb:null;slotBox(x,y,sw,sw,false);pr(x-2,y+2,1,sw-4,PAL.m);
+      if(sid){const sk=SKILLS[sid];pimg(SKILL_ICON[sid],x+2,y+2);const left=(localCd[sid]||0)-time;if(left>0){pr(x+2,y+2,16,Math.ceil(16*left/sk.cd),'rgba(5,4,8,0.72)');if(left>1.5)txt(String(Math.ceil(left)),x+10,y+11,8,'#ffffff','center','px');}if(mv[2]<sk.mp)pr(x+2,y+2,16,16,'rgba(30,50,150,0.5)');uiRects.push({x,y,w:sw,h:sw,click:()=>{showSkills=true;showInv=showChar=showShop=false;},tip:()=>skillTip(sid,null).concat([['마우스 우클릭으로 사용','#ffd35a',11],['K 스킬 창에서 바꿀 수 있어요','#6b6275',11]])});}
+      else uiRects.push({x,y,w:sw,h:sw,click:()=>{showSkills=true;showInv=showChar=showShop=false;},tip:()=>[['우클릭 스킬 (비어 있음)','#9e937a',13],['K 스킬 창에서 [우클릭] 칸에 스킬을 넣으세요','#6b6275',11]]});
+      pr(x+1,y+1,9,6,'rgba(10,7,14,0.8)');txt('우',x+2,y+5,8,'#ffd35a','left','px');return;}
+    if(s.t==='sk'){const i=s.i,sid=G.ch&&G.ch.bar?G.ch.bar[i]:null;slotBox(x,y,sw,sw,false);
       if(sid){const sk=SKILLS[sid];pimg(SKILL_ICON[sid],x+2,y+2);if(sk.ctr){pr(x+sw-5,y+1,4,4,PAL.k);pr(x+sw-4,y+2,2,2,'#8fd0ff');}const left=(localCd[sid]||0)-time;if(left>0){pr(x+2,y+2,16,Math.ceil(16*left/sk.cd),'rgba(5,4,8,0.72)');if(left>1.5)txt(String(Math.ceil(left)),x+10,y+11,8,'#ffffff','center','px');}if(mv[2]<sk.mp)pr(x+2,y+2,16,16,'rgba(30,50,150,0.5)');
-        uiRects.push({x,y,w:sw,h:sw,click:()=>{G.sel=i;},right:()=>{G.sel=i;},tip:()=>skillTip(sid,i)});}
+        uiRects.push({x,y,w:sw,h:sw,tip:()=>skillTip(sid,i)});}
       else uiRects.push({x,y,w:sw,h:sw,click:()=>{showSkills=true;showInv=showChar=showShop=false;},tip:()=>[['빈 칸','#9e937a',13],['K를 눌러 스킬을 넣으세요','#6b6275',11]]});
       txt(keyLabel(kbCode('sk'+i)).slice(0,3),x+2,y+5,8,'#e6dcc3','left','px');}
     else{slotBox(x,y,sw,sw,false);pimg(s.k==='hp'?POT_HP:POT_MP,x+2,y+6);txt(String(G.ch?G.ch.pots[s.k]:0),x+18,y+16,8,'#ffffff','right','px');txt(keyLabel(kbCode(s.k==='hp'?'potHp':'potMp')).slice(0,3),x+2,y+5,8,'#e6dcc3','left','px');
