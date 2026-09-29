@@ -55,9 +55,11 @@ const TRIM={warrior:'g',guardian:'y',archer:'G',mage:'y',priest:'y',knight:'y'};
 const RTRIM=[null,'C','y','o'];
 const HELM={plate:{s:'w',S:'s'},leather:{s:'b',S:'B'},robe:{s:'p',S:'P'}};
 const PF_CACHE={};
-function lookOfMe(){const e=G.ch?G.ch.eq:{};return{w:e.weapon?e.weapon.kind:null,wr:e.weapon?e.weapon.rar:-1,wid:e.weapon?e.weapon.id:null,a:e.armor?e.armor.kind:null,ar:e.armor?e.armor.rar:-1,rr:e.ring?e.ring.rar:-1,dy:G.ch?G.ch.dye|0:0,cp:G.ch&&G.ch.cos&&G.ch.cos.cape===0?0:1,gl:G.ch&&G.ch.cos&&G.ch.cos.glow===0?0:1};}
-function playerFrames(cls,look){look=look||{};const ar=Math.max(0,look.ar|0),a=look.a||'';const dy=look.dy|0;const key=(SPR.ready?'ai|':'')+cls+'|'+a+'|'+ar+'|'+dy;if(PF_CACHE[key])return PF_CACHE[key];
+function lookOfMe(){const e=G.ch?G.ch.eq:{};return{w:e.weapon?e.weapon.kind:null,wr:e.weapon?e.weapon.rar:-1,wid:e.weapon?e.weapon.id:null,a:e.armor?e.armor.kind:null,ar:e.armor?e.armor.rar:-1,rr:e.ring?e.ring.rar:-1,dy:G.ch?G.ch.dye|0:0,cp:G.ch&&G.ch.cos&&G.ch.cos.cape===0?0:1,gl:G.ch&&G.ch.cos&&G.ch.cos.glow===0?0:1,adv:G.ch&&SH.advOf(G.ch)?G.ch.adv:null};}
+const ADV_KEYS=Object.keys(SH.ADV);
+function playerFrames(cls,look){look=look||{};const ar=Math.max(0,look.ar|0),a=look.a||'';const dy=look.dy|0;const adv=look.adv&&SH.ADV[look.adv]&&SH.ADV[look.adv].cls===cls?look.adv:'';const key=(SPR.ready?'ai|':'')+cls+'|'+a+'|'+ar+'|'+dy+'|'+(SPR.heroAdv?adv:'');if(PF_CACHE[key])return PF_CACHE[key];
   if(dy>0&&SH.DYES[dy]){const base=playerFrames(cls,Object.assign({},look,{dy:0}));const fr2=dyeFrames(base,SH.DYES[dy]);PF_CACHE[key]=fr2;return fr2;}
+  if(SPR.ready&&adv&&SPR.heroAdv){const ai=ADV_KEYS.indexOf(adv)*4+Math.min(3,ar);if(SPR.heroAdv[ai]){const fr=animFrames(SPR.heroAdv[ai]);PF_CACHE[key]=fr;return fr;}}
   if(SPR.ready){const hi=SH.CLASS_ORDER.indexOf(cls)*4+Math.min(3,ar);const fr=SPR.heroBare&&SPR.heroBare[hi]?animFrames(SPR.heroBare[hi]):SPR.heroAnim&&SPR.heroAnim[hi]?animFrames(SPR.heroAnim[hi]):aiFrames(SPR.heroes[hi]);PF_CACHE[key]=fr;return fr;}
   let body=CLASS_BODY[cls].slice();const m={};if(ar>0)m[TRIM[cls]]=RTRIM[ar];body=remap(body,m);
   if((cls==='warrior'||cls==='guardian')&&HELM[a])body=body.map((r,i)=>i<=5?remap([r],HELM[a])[0]:r);
@@ -2654,10 +2656,11 @@ function playIntro(){playCine(CINE_INTRO,{key:'bc_intro'});}
   const b=cineEl('introBtn');if(b)b.addEventListener('click',playIntro);
   let seen=false;try{seen=!!localStorage.getItem('bc_intro');}catch(e){}if(!seen)setTimeout(()=>{if(scene==='select')playIntro();},300);})();
 renderSelect();
+loadImg('sprites/heroes_adv.png').then(im=>{if(!im)return;SPR.heroAdv=sliceBare(im,40,24);for(const k in PF_CACHE)delete PF_CACHE[k];});
 Promise.all([loadImg('sprites/heroes_anim.png'),loadImg('sprites/bosses_anim.png'),loadImg('sprites/heroes_bare.png'),loadImg('sprites/weapons.png'),loadImg('sprites/mons_anim.png')]).then(([h,b,hb,wp,ma])=>{if(h)SPR.heroAnim=sliceAnim(h,40,24);if(ma)SPR.monAnim=sliceAnim(ma,36,24);if(hb&&wp){SPR.heroBare=sliceBare(hb,40,24);SPR.weap=wp;ICONS.clear();}if(b)SPR.bossAnim=sliceAnim(b,72,48);for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
 Promise.all([loadImg('sprites/lobby.png'),loadImg('sprites/hubtiles.png'),loadImg('sprites/npcs.png'),loadImg('sprites/pets.png')]).then(([a,b,c,d])=>{LOB.img=a;LOB.tiles=b;LOB.npc=c;LOB.pets=d;LOB.ftex=null;NPC_FR=null;PET_FR=null;});
 loadImg('sprites/tiles.png').then(t=>{if(!t)return;SPR.tiles=t;for(const k in THEME_CACHE)delete THEME_CACHE[k];});
 Promise.all([loadImg('sprites/heroes.png'),loadImg('sprites/mons.png'),loadImg('sprites/bosses.png')]).then(([h,m,b])=>{if(!h||!m||!b)return;SPR.heroes=sliceAtlas(h,24);SPR.mons=sliceAtlas(m,24);SPR.bosses=sliceAtlas(b,48);SPR.ready=true;for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
 requestAnimationFrame(frame);
-window.__BC={G,me,net,playCine,playIntro,cineStop,get time(){return time;},get myId(){return myId;},startGame,loadChars,saveChars,get scene(){return scene;},get mus(){return MUS?{mode:MUS.mode,prof:MUS.prof,err:!!MUS.err,state:AC&&AC.state}:null;}};
+window.__BC={G,me,net,pf:playerFrames,playCine,playIntro,cineStop,get time(){return time;},get myId(){return myId;},startGame,loadChars,saveChars,get scene(){return scene;},get mus(){return MUS?{mode:MUS.mode,prof:MUS.prof,err:!!MUS.err,state:AC&&AC.state}:null;}};
 })();
