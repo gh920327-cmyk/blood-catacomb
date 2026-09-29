@@ -63,6 +63,52 @@ function genFloor(seed,fl){
 function openStairs(map){map.tiles[map.stairsIdx]=2;}
 
 // ---------- 마을 (던전 입구 광장) ----------
+// ---------- 특성 나무 (직업마다 3갈래 × 3단계) ----------
+const TN={dmgPct:v=>`공격력 +${v}%`,crit:v=>`치명타 확률 +${v}%`,critDmg:v=>`치명타 피해 +${v}%`,as:v=>`공격 속도 +${v}%`,ms:v=>`이동 속도 +${v}%`,ls:v=>`생명력 흡수 +${v}%`,hpPct:v=>`최대 체력 +${v}%`,mpPct:v=>`최대 마나 +${v}%`,armorPct:v=>`방어력 +${v}%`,dr:v=>`받는 피해 -${v}%`,cdr:v=>`스킬 재사용 대기 -${v}%`,healPct:v=>`치유력 +${v}%`,spellPct:v=>`주문 피해 +${v}%`,regen:v=>`체력 재생 +${v}%`,mpRegen:v=>`마나 재생 +${v}%`};
+const tn=(id,n,k,v)=>({id,n,k,v,max:5});
+const TALENTS={
+  warrior:[{b:'학살자',n:[tn('w1','무기 숙련','dmgPct',3),tn('w2','처형자의 눈','critDmg',8),tn('w3','광란의 칼날','as',3)]},{b:'불굴',n:[tn('w4','강철 피부','hpPct',4),tn('w5','버티기','dr',2),tn('w6','피의 갈증','ls',0.5)]},{b:'돌격대장',n:[tn('w7','질주','ms',2),tn('w8','전투 감각','cdr',3),tn('w9','급소 찌르기','crit',1.5)]}],
+  guardian:[{b:'성벽',n:[tn('g1','두꺼운 갑옷','armorPct',6),tn('g2','굳건함','dr',2),tn('g3','거인의 체력','hpPct',4)]},{b:'응징',n:[tn('g4','방패 강타','dmgPct',4),tn('g5','약점 간파','critDmg',8),tn('g6','연속 타격','as',3)]},{b:'수호 서약',n:[tn('g7','회복의 맹세','regen',15),tn('g8','숙련된 방어','cdr',3),tn('g9','신성한 보호','healPct',5)]}],
+  archer:[{b:'저격수',n:[tn('a1','정밀 사격','critDmg',10),tn('a2','매의 눈','crit',1.5),tn('a3','관통 화살','dmgPct',3)]},{b:'사냥꾼',n:[tn('a4','속사','as',3),tn('a5','바람 걸음','ms',2),tn('a6','포식자','ls',0.5)]},{b:'생존술',n:[tn('a7','질긴 몸','hpPct',4),tn('a8','몸 낮추기','dr',2),tn('a9','사냥 본능','cdr',3)]}],
+  mage:[{b:'파괴',n:[tn('m1','화염 친화','spellPct',4),tn('m2','불안정한 마력','critDmg',8),tn('m3','집중','crit',1.5)]},{b:'비전',n:[tn('m4','마력 저장소','mpPct',6),tn('m5','시간 왜곡','cdr',3),tn('m6','마나 순환','mpRegen',10)]},{b:'마법 방벽',n:[tn('m7','비전 갑옷','armorPct',8),tn('m8','마력 보호막','dr',2),tn('m9','생명 흡수술','hpPct',4)]}],
+  priest:[{b:'신성',n:[tn('p1','축복의 손','healPct',5),tn('p2','빛의 권능','spellPct',3),tn('p3','기도의 시간','cdr',3)]},{b:'응징자',n:[tn('p4','심판','dmgPct',4),tn('p5','성스러운 분노','crit',1.5),tn('p6','천벌','critDmg',8)]},{b:'인내',n:[tn('p7','순교자의 몸','hpPct',4),tn('p8','깊은 신앙','mpPct',6),tn('p9','고행','dr',2)]}]};
+const TAL_NEED=[0,5,10];
+function talentPts(lvl){return Math.max(0,Math.floor(((lvl|0)-5)/3));}
+function talentSpent(ch){let n=0;if(ch.tal)for(const k in ch.tal)n+=ch.tal[k]|0;return n;}
+function talentSums(ch){const T={};const tr=TALENTS[ch.cls];if(!tr||!ch.tal)return T;for(const br of tr)for(const nd of br.n){const r=ch.tal[nd.id]|0;if(r)T[nd.k]=(T[nd.k]||0)+nd.v*r;}return T;}
+function branchSpent(ch,bi){const br=TALENTS[ch.cls][bi];let n=0;for(const nd of br.n)n+=(ch.tal&&ch.tal[nd.id])|0;return n;}
+function canTalent(ch,id){const tr=TALENTS[ch.cls];for(let bi=0;bi<3;bi++){const k=tr[bi].n.findIndex(x=>x.id===id);if(k<0)continue;const nd=tr[bi].n[k];const r=(ch.tal&&ch.tal[id])|0;if(r>=nd.max)return '이미 최대입니다';if(talentSpent(ch)>=talentPts(ch.lvl))return '특성 포인트가 없습니다';
+  let before=0;for(let j=0;j<k;j++)before+=(ch.tal&&ch.tal[tr[bi].n[j].id])|0;if(before<TAL_NEED[k])return `이 갈래 윗단계에 ${TAL_NEED[k]}포인트가 필요합니다`;return null;}return '없는 특성입니다';}
+// ---------- 업적 · 칭호 · 도감 · 펫 ----------
+const PETS=[{id:'slime',n:'꼬마 슬라임'},{id:'bat',n:'아기 박쥐'},{id:'crow',n:'해골 까마귀'},{id:'cat',n:'유령 고양이'},{id:'fox',n:'여우 정령'},{id:'dragon',n:'아기 용'}];
+const ACH=[
+  {id:'k100',n:'첫 사냥',d:'몬스터 100마리 처치',t:'사냥꾼',c:ch=>ch.kills,need:100},
+  {id:'k1000',n:'학살',d:'몬스터 1,000마리 처치',t:'학살자',c:ch=>ch.kills,need:1000,pet:'bat'},
+  {id:'k5000',n:'끝없는 전투',d:'몬스터 5,000마리 처치',t:'끝없는 칼날',c:ch=>ch.kills,need:5000},
+  {id:'b1',n:'첫 보스',d:'보스 1마리 처치',t:'보스 사냥꾼',c:ch=>ch.bossK,need:1},
+  {id:'b10',n:'군주 살해',d:'보스 10마리 처치',t:'군주 살해자',c:ch=>ch.bossK,need:10,pet:'crow'},
+  {id:'b50',n:'심연의 공포',d:'보스 50마리 처치',t:'심연의 공포',c:ch=>ch.bossK,need:50},
+  {id:'f10',n:'첫걸음',d:'지하 10층 도달',t:'초보 탐험가',c:ch=>ch.best,need:10},
+  {id:'f25',n:'깊은 곳으로',d:'지하 25층 도달',t:'심층 탐험가',c:ch=>ch.best,need:25},
+  {id:'f50',n:'타락의 문턱',d:'지하 50층 도달',t:'타락을 본 자',c:ch=>ch.best,need:50,pet:'dragon'},
+  {id:'f100',n:'심연 정복',d:'지하 100층 정복',t:'심연 정복자',c:ch=>ch.cleared|0,need:1},
+  {id:'lv30',n:'성장',d:'레벨 30 달성',t:'숙련자',c:ch=>ch.lvl,need:30},
+  {id:'lv60',n:'베테랑',d:'레벨 60 달성',t:'베테랑',c:ch=>ch.lvl,need:60},
+  {id:'fish10',n:'낚시 입문',d:'물고기 10마리 낚기',t:'낚시꾼',c:ch=>ch.fishN|0,need:10,pet:'slime'},
+  {id:'fish100',n:'연못의 주인',d:'물고기 100마리 낚기',t:'연못의 주인',c:ch=>ch.fishN|0,need:100},
+  {id:'pvp1',n:'첫 승리',d:'결투 1승',t:'결투가',c:ch=>ch.pvp?ch.pvp.w:0,need:1},
+  {id:'pvp10',n:'투기장의 별',d:'결투 10승',t:'투기장의 별',c:ch=>ch.pvp?ch.pvp.w:0,need:10},
+  {id:'up10',n:'전설의 망치',d:'장비 +10 강화 성공',t:'전설의 대장장이',c:ch=>ch.st&&ch.st.maxUp|0,need:10},
+  {id:'leg1',n:'전설과의 만남',d:'전설 장비 줍기',t:'전설의 주인',c:ch=>ch.st&&ch.st.leg|0,need:1},
+  {id:'gob5',n:'보물 사냥',d:'보물 고블린 5마리 처치',t:'보물 사냥꾼',c:ch=>ch.st&&ch.st.gob|0,need:5,pet:'fox'},
+  {id:'alt3',n:'저주 파괴',d:'저주받은 제단 3번 정화',t:'저주 파괴자',c:ch=>ch.st&&ch.st.alt|0,need:3},
+  {id:'sec3',n:'비밀 탐험',d:'비밀방 3곳 발견',t:'비밀 탐험가',c:ch=>ch.st&&ch.st.sec|0,need:3},
+  {id:'bty10',n:'현상금',d:'의뢰 10개 완료',t:'현상금 사냥꾼',c:ch=>ch.st&&ch.st.bty|0,need:10},
+  {id:'gam20',n:'운명의 주사위',d:'도박 20번',t:'도박꾼',c:ch=>ch.st&&ch.st.gam|0,need:20},
+  {id:'cdx30',n:'박물학',d:'도감 30종 채우기',t:'박물학자',c:ch=>(ch.cdx||[]).length,need:30,pet:'cat'}];
+let _cdx=null;function codexList(){if(_cdx)return _cdx;const L=[];THEMES.forEach((th,i)=>{for(const t of['zombie','skel','hound'])L.push({k:`m:${i}:${t}`,n:th.mon[t],g:'몬스터'});});THEMES.forEach((th,i)=>L.push({k:`b:${i}`,n:th.boss.n,g:'보스'}));L.push({k:'b:fin',n:FINAL_BOSS.n,g:'보스'});L.push({k:'gob',n:'보물 고블린',g:'몬스터'});
+  for(const k in LEG)for(const n of LEG[k])L.push({k:'l:'+n,n,g:'전설 장비'});for(const f of FISH)L.push({k:'f:'+f.id,n:f.n,g:'물고기'});return _cdx=L;}
+function titleOf(id){const a=ACH.find(x=>x.id===id);return a?a.t:null;}
 // ---------- 결투장 ----------
 function genArena(seed){const R=mulberry(seed);const W=32,H=22,tiles=new Uint8Array(W*H);const map={w:W,h:H,tiles,boss:false,floor:1,arena:true};
   for(let y=4;y<=17;y++)for(let x=3;x<=28;x++)tiles[y*W+x]=1;
@@ -392,6 +438,7 @@ function newChar(name,cls){const C=CLASSES[cls];return{v:1,id:rid(),name,cls,lvl
 function calcStats(ch){
   const C=CLASSES[ch.cls],g={};
   for(const s of['weapon','armor','ring']){const it=ch.eq[s];if(!it||!canEquip(it,ch.cls))continue;const st=itemStats(it);for(const k in st)g[k]=(g[k]||0)+st[k];}
+  const T=talentSums(ch);for(const k of['dmgPct','crit','critDmg','as','ms','ls'])if(T[k])g[k]=(g[k]||0)+T[k];
   const str=ch.str+(g.str||0),dex=ch.dex+(g.dex||0),vit=ch.vit+(g.vit||0),ene=ch.ene+(g.ene||0);
   const S={str,dex,vit,ene};const prim=S[C.prim];
   S.maxHp=Math.round((40+vit*4+(ch.lvl-1)*6+(g.hp||0))*C.hpMul);
@@ -412,6 +459,9 @@ function calcStats(ch){
   if(r('manaflow')){S.mpRegen*=1+0.15*r('manaflow');S.maxMp+=5*r('manaflow');}
   if(r('devotion'))S.healPow=Math.round(S.healPow*(1+0.06*r('devotion')));
   if(r('grace')){S.dr=0.02*r('grace');S.maxMp+=5*r('grace');}
+  if(T.hpPct)S.maxHp=Math.round(S.maxHp*(1+T.hpPct/100));if(T.mpPct)S.maxMp=Math.round(S.maxMp*(1+T.mpPct/100));if(T.armorPct)S.armor=Math.round(S.armor*(1+T.armorPct/100));
+  if(T.dr)S.dr=(S.dr||0)+T.dr/100;S.cdr=Math.min(0.4,(T.cdr||0)/100);if(T.healPct)S.healPow=Math.round(S.healPow*(1+T.healPct/100));if(T.spellPct)S.spell*=1+T.spellPct/100;
+  S.regen=1+(T.regen||0)/100;if(T.mpRegen)S.mpRegen*=1+T.mpRegen/100;
   return S;
 }
 function dmgReduce(S,floor){return Math.min(0.75,S.armor/(S.armor+40+12*Math.max(1,floor)));}
@@ -422,7 +472,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
   THEMES,FINAL_BOSS,themeOf,ENH_MAX,ENH_RATE,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
