@@ -582,7 +582,7 @@ function handle(d){switch(d.t){
   case 'err':toast(d.m);break;
   case 'map':{closeFac();G.raid=null;G.rvote=null;G.mvp=null;G.auc=null;G.bseq=null;G.rings=[];G.tethers=[];G.block=null;me.inBoss=false;G.bossLive=null;G.kind=d.kind;G.paused=d.paused||null;G.trans=0;G.monsters.clear();G.deadM.clear();G.projs.clear();G.drops.clear();G.zones=[];parts=[];effects=[];texts=[];G.portalMenu=false;showShop=false;
     if(d.kind==='hub'){G.arena=null;G.arenaRes=null;G.fishS=null;G.map=SH.genHub();G.floor=0;banner={t:0,a:'던전 입구 광장',b:'동료를 모아 포탈로 들어가세요'};}
-    else if(d.raid){G.arena=null;G.arenaRes=null;G.map=SH.genRaid(d.raid.id,d.seed);G.floor=d.raid.tf;G.stairsOpen=false;G.raid=d.raid.st;G.auc=null;if(d.raid.door)for(const i of G.map.door)G.map.tiles[i]=1;const rd=SH.RAIDS.find(r=>r.id===d.raid.id);banner={t:0,a:`${rd.n} · ${RAID_MODE_N[d.raid.mode]}`,b:`${rd.boss}이(가) 기다린다`};}
+    else if(d.raid){G.arena=null;G.arenaRes=null;G.map=SH.genRaid(d.raid.id,d.seed);G.floor=d.raid.tf;G.stairsOpen=false;G.raid=d.raid.st;G.auc=null;if(d.raid.door)for(const i of G.map.door)G.map.tiles[i]=1;const rd=SH.RAIDS.find(r=>r.id===d.raid.id);for(const k in BPH)artOf(BPH[k].img);banner={t:0,a:`${rd.n} · ${RAID_MODE_N[d.raid.mode]}`,b:`${rd.boss}이(가) 기다린다`};}
     else if(d.arena){G.map=SH.genArena(d.seed);G.floor=d.floor;G.stairsOpen=false;banner={t:0,a:'결투장',b:'상대 팀을 모두 쓰러뜨리세요'};}
     else{G.arena=null;G.arenaRes=null;G.map=SH.genFloor(d.seed,d.floor);G.floor=d.floor;G.stairsOpen=!!d.stairs;if(d.stairs)SH.openStairs(G.map);const th=SH.themeOf(d.floor);banner={t:0,a:`지하 ${d.floor}층 · ${th.corrupt?'타락한 ':''}${th.t.n}`,b:G.map.boss?`${SH.bossOf(d.floor).n}이(가) 기다린다`:pick(th.t.lines)};}
     torches=G.map.torches;G.explored=new Uint8Array(G.map.w*G.map.h);me.x=d.x;me.y=d.y;me.path=null;me.pickTarget=null;me.goal=null;me.dodgeT=0;
@@ -784,7 +784,7 @@ window.addEventListener('keydown',e=>{
   if(act==='meter'){showMeter=true;return;}
   if(G.stairsAsk&&(act==='act'||c==='Enter'||c==='Space')){net({t:'descend'});G.stairsAsk=null;e.preventDefault();return;}
   if(G.stairsAsk&&c==='Escape'){G.stairsAsk=null;return;}
-  if(G.bintro&&c==='Escape'){G.bintro=null;return;}
+  if(G.bintro&&c==='Escape'){G.bintro.t0=time-3.2;return;}
   if(raidSelKey(c)){e.preventDefault();return;}
   if(c==='Escape'){
     if(G.opts){G.opts=false;return;}if(G.emoWheel){G.emoWheel=false;return;}if(G.talent||G.rec){G.talent=false;G.rec=false;return;}if(G.fishS){G.fishS=null;return;}
@@ -1853,10 +1853,20 @@ function drawAuction(){const a=G.auc;if(!a||!inDungeon())return;const x=300,y=40
 function raidToday(){return new Date(Date.now()+9*3600e3).toISOString().slice(0,10);}
 // ---- 보스 카드 (석판 선택창 · 등장 씬) ----
 const BCARD={bell:{img:'art/boss_bell.jpg',ep:'울리지 못한 종',q:'"또 종을 울리러 왔나…"',face:[805,228],z:2.6,spr:['r_greg']},
-  mirror:{img:'art/boss_mirror.jpg',ep:'별을 읽던 자매',q:'"별이 말했어. 너희는 여기서 끝난다고."',face:[512,200],z:2.4,spr:['r_lyra','r_nora']},
-  clock:{img:'art/boss_clock.jpg',ep:'멈추지 않는 태엽',q:'"명령은… 아직… 유효하다."',face:[640,200],z:2.6,spr:['r_valen']},
-  moon:{img:'art/boss_moon.jpg',ep:'새벽을 버린 기사',q:'"등불 하나로 이 밤을 밝히겠다고?"',face:[640,200],z:2.6,spr:['r_karnas']}};
-const BIMG={};function bossArt(id){const c=BCARD[id];if(!c)return null;if(!(id in BIMG)){BIMG[id]=null;loadImg(c.img).then(i=>{BIMG[id]=i||false;});}return BIMG[id]||null;}
+  mirror:{img:'art/boss_mirror.jpg',ep:'별을 읽던 자매',q:'"별이 말했어. 너희는 여기서 끝난다고."',face:[660,185],z:2.1,off:18,spr:['r_lyra','r_nora']},
+  clock:{img:'art/boss_clock.jpg',ep:'멈추지 않는 태엽',q:'"명령은… 아직… 유효하다."',face:[717,105],z:2.6,spr:['r_valen']},
+  moon:{img:'art/boss_moon.jpg',ep:'새벽을 버린 기사',q:'"등불 하나로 이 밤을 밝히겠다고?"',face:[731,125],z:2.6,spr:['r_karnas']}};
+// 페이즈 카드 (보스 모습이 바뀔 때)
+const BPH={bell2:{img:'art/ph_bell2.jpg',top:'2 페이즈 · 무너지는 종탑',n:'종지기 그레고르',q:'"종탑이… 무너진다! 너희도 함께!"',face:[756,156],z:2.6,spr:['r_greg']},
+  lyra2:{img:'art/ph_lyra2.jpg',top:'각성 · 눈부신 빛',n:'빛의 마녀 리라',q:'"빛이여, 모두 눈멀게 하라!"',face:[629,118],z:2.3,spr:['r_lyra']},
+  nora2:{img:'art/ph_nora2.jpg',top:'각성 · 가라앉는 그림자',n:'그림자 마녀 노라',q:'"그림자 속으로 가라앉아라…"',face:[739,111],z:2.6,spr:['r_nora']},
+  lyraAlone:{img:'art/ph_lyra2.jpg',top:'홀로 남은 언니',n:'빛의 마녀 리라',q:'"노라…! 너희 모두 빛에 타 버려라!"',face:[629,118],z:2.3,spr:['r_lyra']},
+  noraAlone:{img:'art/ph_nora2.jpg',top:'홀로 남은 동생',n:'그림자 마녀 노라',q:'"리라…! 용서하지 않겠어!"',face:[739,111],z:2.6,spr:['r_nora']},
+  golem:{img:'art/ph_golem.jpg',top:'2 페이즈 · 태엽 심장과 하나로',n:'태엽 거인 발렌',q:'"태엽 심장이여, 나와 하나가 되어라!"',face:[680,80],z:2.1,spr:['r_golem']},
+  karnas2:{img:'art/ph_karnas2.jpg',top:'2 페이즈 · 흑월이 차오른다',n:'흑왕 카르나스',q:'"이제부터가 진짜다."',face:[722,190],z:2.6,spr:['r_karnas']},
+  karnas3:{img:'art/ph_karnas3.jpg',top:'마지막 페이즈 · 깨어지는 심장',n:'흑왕 카르나스',q:'"아직… 새벽은… 오지 않는다…!"',face:[739,127],z:2.6,spr:['r_karnas']}};
+const BIMG={};function artOf(src){if(!src)return null;if(!(src in BIMG)){BIMG[src]=null;loadImg(src).then(i=>{BIMG[src]=i||false;});}return BIMG[src]||null;}
+function bossArt(id){const c=BCARD[id];return c?artOf(c.img):null;}
 SH.RAIDS.forEach(r=>bossArt(r.id));
 function artDraw(img,sx,sy,sw,sh,dx,dy,dw,dh){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,sx,sy,sw,sh,dx*SC,dy*SC,dw*SC,dh*SC);ctx.imageSmoothingEnabled=false;}
 function bossSprDraw(types,cx,by,sc){const n=types.length;types.forEach((t,k)=>{const i=RB_ORDER.indexOf(t);const f=RSPR&&RSPR[i]&&RSPR[i][((time*3)|0)%4];if(!f)return;const s=f.r;const x=cx+(k-(n-1)/2)*s.w*sc*0.7;ctx.drawImage(s.c,Math.round((x-s.w*sc/2)*SC),Math.round((by-s.h*sc)*SC),s.w*sc*SC,s.h*sc*SC);});}
@@ -1868,7 +1878,7 @@ function drawRaidPanel(){const ch=G.ch;if(!ch)return;const pt=G.party;const lead
   ctx.save();ctx.beginPath();ctx.rect(0,y0*SC,W*SC,bh*SC);ctx.clip();
   pr(0,y0,W,bh,'#0a070e');
   const img=bossArt(r.id);
-  if(img){const dh=bh,dw=dh*img.width/img.height,dx=W-dw+(1-t)*30;ctx.globalAlpha=t;artDraw(img,0,0,img.width,img.height,dx,y0,dw,dh);ctx.globalAlpha=1;
+  if(img){const dh=bh,dw=dh*img.width/img.height,dx=W-dw+(c.off||0)+(1-t)*30;ctx.globalAlpha=t;artDraw(img,0,0,img.width,img.height,dx,y0,dw,dh);ctx.globalAlpha=1;
     const g=ctx.createLinearGradient(dx*SC,0,(dx+190)*SC,0);g.addColorStop(0,'rgba(10,7,14,1)');g.addColorStop(0.55,'rgba(10,7,14,0.6)');g.addColorStop(1,'rgba(10,7,14,0)');ctx.fillStyle=g;ctx.fillRect(dx*SC,y0*SC,190*SC,bh*SC);}
   else{const g=ctx.createRadialGradient(360*SC,(y0+110)*SC,4*SC,360*SC,(y0+110)*SC,140*SC);g.addColorStop(0,'rgba(110,30,40,0.55)');g.addColorStop(1,'rgba(10,7,14,0)');ctx.fillStyle=g;ctx.fillRect(0,y0*SC,W*SC,bh*SC);bossSprDraw(c.spr,360,y0+bh-12,3);}
   ctx.restore();
@@ -1886,9 +1896,12 @@ function drawRaidPanel(){const ch=G.ch;if(!ch)return;const pt=G.party;const lead
   button(W-44,y0+8,36,15,'닫기',closeFac,{size:12});}
 function raidSelKey(c){if(G.fac!=='raid')return false;const n=SH.RAIDS.length;if(c==='ArrowLeft'||c==='ArrowRight'){G.rsel=(raidSelIdx()+(c==='ArrowLeft'?-1:1)+n)%n;G.facT=time;return true;}return false;}
 // 보스 등장 씬 (약 3초, 클릭·Esc로 넘기기)
-function onBossIntro(o){const rid=o.r||(G.map&&G.map.raid);if(!BCARD[rid])return;G.bintro={id:rid,t0:time};}
-function drawBossIntro(){const B=G.bintro;if(!B)return;const t=time-B.t0,T=3.2;if(t>T||!G.map||!G.map.raid){G.bintro=null;return;}
-  const r=SH.RAIDS.find(q=>q.id===B.id)||{n:'',boss:''},c=BCARD[B.id],img=bossArt(B.id);
+function onBossIntro(o){const rid=o.r||(G.map&&G.map.raid);const r=SH.RAIDS.find(q=>q.id===rid);let card;
+  if(o.p){const P=BPH[o.p];if(!P)return;artOf(P.img);card={img:P.img,face:P.face,z:P.z,spr:P.spr,top:P.top,topC:'#ff6a5a',name:P.n,q:P.q,lc:'#e0473a'};}
+  else{const c=BCARD[rid];if(!c||!r)return;card={img:c.img,face:c.face,z:c.z,spr:c.spr,top:r.n,topC:'#9e937a',name:r.boss,q:c.q,lc:'#ffd35a'};}
+  card.id=rid;if(G.bintro&&time-G.bintro.t0<2.4){G.bq=G.bq||[];G.bq.push(card);return;}card.t0=time;G.bintro=card;}
+function drawBossIntro(){let B=G.bintro;if(!B)return;const T=3.2;if(time-B.t0>T&&G.bq&&G.bq.length){B=G.bintro=G.bq.shift();B.t0=time;}const t=time-B.t0;if(t>T||!G.map||!G.map.raid){G.bintro=null;G.bq=null;return;}
+  const c=B,img=artOf(B.img);
   const inA=Math.min(1,t/0.35),e=1-Math.pow(1-inA,3),out=t>T-0.45?Math.max(0,(T-t)/0.45):1;
   ctx.globalAlpha=out;pr(0,0,W,H,'rgba(0,0,0,0.55)');
   // 대각선 칸 (왼쪽 위) — 보스 얼굴
@@ -1898,14 +1911,14 @@ function drawBossIntro(){const B=G.bintro;if(!B)return;const t=time-B.t0,T=3.2;i
   if(img){const k=img.width/1024,L=c.z/3*(1+t*0.025);artDraw(img,0,0,img.width,img.height,100-c.face[0]*L,58-c.face[1]*L,1024*L,img.height/k*L);}
   else bossSprDraw(c.spr,110,ay-20,4);
   ctx.restore();
-  ctx.save();ctx.translate(sl*SC,sl*0.55*SC);ctx.strokeStyle='#ffd35a';ctx.lineWidth=2*SC;ctx.beginPath();ctx.moveTo(-4*SC,(ay+4*ay/ax)*SC);ctx.lineTo((ax+4)*SC,-4*ay/ax*SC);ctx.stroke();ctx.restore();
+  ctx.save();ctx.translate(sl*SC,sl*0.55*SC);ctx.strokeStyle=B.lc;ctx.lineWidth=2*SC;ctx.beginPath();ctx.moveTo(-4*SC,(ay+4*ay/ax)*SC);ctx.lineTo((ax+4)*SC,-4*ay/ax*SC);ctx.stroke();ctx.restore();
   // 이름 상자 (왼쪽 아래)
   const nb=Math.min(1,Math.max(0,(t-0.25)/0.3)),ne=1-Math.pow(1-nb,3),bx=14-(1-ne)*280,by=186,bw=252,bh=66;
-  pr(bx,by,bw,bh,'rgba(10,7,14,0.92)');pr(bx,by,bw,1,'#ffd35a');pr(bx+bw-1,by,1,bh,'#ffd35a');
-  txt(r.n,bx+4,by+10,20,'#9e937a',null,'serif');const ns=r.boss.length>9?38:50;txt(r.boss,bx+2,by+32,ns,'#f2eadb',null,'serif');txt(c.q,bx+4,by+56,18,'#c9a0e8',null,'serif');
+  pr(bx,by,bw,bh,'rgba(10,7,14,0.92)');pr(bx,by,bw,1,B.lc);pr(bx+bw-1,by,1,bh,B.lc);
+  txt(B.top,bx+4,by+10,20,B.topC,null,'serif');const ns=B.name.length>9?38:50;txt(B.name,bx+2,by+32,ns,'#f2eadb',null,'serif');txt(B.q,bx+4,by+56,18,'#c9a0e8',null,'serif');
   ctx.globalAlpha=1;
   if(t>0.6)txt('클릭해서 넘기기',W-8,H-8,13,'#8a7f99','right');
-  uiRects.push({x:0,y:0,w:W,h:H,click:()=>{G.bintro=null;}});}
+  uiRects.push({x:0,y:0,w:W,h:H,click:()=>{G.bintro.t0=time-T;}});}
 function drawRaidStone(icx,icy,ents){const p=G.map&&G.map.raidStone;if(!p||G.kind!=='hub')return;const bx=Math.round(p.x)-icx,by=Math.round(p.y)-icy;if(bx<-40||bx>W+40||by<-60||by>H+30)return;
   ents.push({y:p.y,f:()=>{wx.drawImage(SH_S,bx-6,by-1);wx.fillStyle='#0e0b12';wx.fillRect(bx-13,by-4,26,5);wx.fillStyle='#3a3144';wx.fillRect(bx-12,by-3,24,3);
     const H0=34;for(let j=0;j<H0;j++){const hw=Math.round(8-j*0.08);wx.fillStyle=j===0?'#0e0b12':'#0e0b12';wx.fillRect(bx-hw-1,by-4-j,hw*2+2,1);wx.fillStyle=j%9===0?'#4a4152':'#2e2838';wx.fillRect(bx-hw,by-4-j,hw*2,1);wx.fillStyle='#5a5066';wx.fillRect(bx-hw,by-4-j,2,1);}

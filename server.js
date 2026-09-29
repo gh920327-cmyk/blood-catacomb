@@ -122,7 +122,7 @@ function pickTarget(inst,m){if(m.taunt&&m.taunt.t>0){const p=players.get(m.taunt
   let best=null,bd=1e9;for(const p of livingPlayers(inst)){let d=Math.hypot(p.x-m.x,p.y-m.y);if(p.ch.cls==='guardian')d*=0.6;if(d<bd){bd=d;best=p;}}
   if(inst.allies&&!m.boss)for(const a of inst.allies){if(a.downed)continue;let d=Math.hypot(a.x-m.x,a.y-m.y);if(a.type==='w')d*=0.6;else d*=1.15;if(d<bd){bd=d;best=a;}}return best;}
 function getFlow(inst,P){if(P.ally){if(!P.fl||inst.time-P.fl.t>0.4)P.fl={t:inst.time,d:SH.bfs(inst.map,Math.floor(P.x/TS),Math.floor(P.y/TS),30)};return P.fl.d;}let f=inst.flows.get(P.id);if(!f||inst.time-f.t>0.3){f={t:inst.time,d:SH.bfs(inst.map,Math.floor(P.x/TS),Math.floor(P.y/TS),45)};inst.flows.set(P.id,f);}return f.d;}
-function alertPack(inst,m){const wake=o=>{if(o.alert)return;o.alert=true;if(o.boss&&inst.raid){if(!inst.raid.introDone){inst.raid.introDone=1;fx(inst,{k:'bintro',r:inst.raid.id});const bs=inst.monsters.filter(b=>b.boss&&!b.dead&&!b.frozen);for(const b of bs){b.frozen=true;b.invul=99;b.introFz=1;}later(inst,3,()=>{for(const b of bs){if(!b.introFz)continue;b.introFz=0;b.frozen=false;if(b.invul===99)b.invul=0;}});}fx(inst,{k:'bsay',id:o.id,m:(RAID_LINES[inst.raid.id]||[''])[0]});fx(inst,{k:'msg',m:`${o.bname}이(가) 깨어났다!`,c:'#ff5a4a'});fx(inst,{k:'sfx',n:'boss'});inst.bossMeter=new Map();inst.bossStart=inst.time;return;}if(o.boss){{const th=SH.themeOf(inst.floor);const ln=th.final?SH.FINAL_LINES[0]:(th.corrupt?'다시 왔구나… 심장이 나를 되살렸다! ':'')+SH.BOSS_LINES[th.idx][0];fx(inst,{k:'bsay',id:o.id,m:ln});}fx(inst,{k:'msg',m:`${SH.bossOf(inst.floor).n}이(가) 깨어났다!`,c:'#ff5a4a'});fx(inst,{k:'sfx',n:'boss'});inst.bossMeter=new Map();inst.bossStart=inst.time;}};
+function alertPack(inst,m){const wake=o=>{if(o.alert)return;o.alert=true;if(o.boss&&inst.raid){if(!inst.raid.introDone){inst.raid.introDone=1;bossCard(inst,null);}fx(inst,{k:'bsay',id:o.id,m:(RAID_LINES[inst.raid.id]||[''])[0]});fx(inst,{k:'msg',m:`${o.bname}이(가) 깨어났다!`,c:'#ff5a4a'});fx(inst,{k:'sfx',n:'boss'});inst.bossMeter=new Map();inst.bossStart=inst.time;return;}if(o.boss){{const th=SH.themeOf(inst.floor);const ln=th.final?SH.FINAL_LINES[0]:(th.corrupt?'다시 왔구나… 심장이 나를 되살렸다! ':'')+SH.BOSS_LINES[th.idx][0];fx(inst,{k:'bsay',id:o.id,m:ln});}fx(inst,{k:'msg',m:`${SH.bossOf(inst.floor).n}이(가) 깨어났다!`,c:'#ff5a4a'});fx(inst,{k:'sfx',n:'boss'});inst.bossMeter=new Map();inst.bossStart=inst.time;}};
   wake(m);for(const o of inst.monsters)if(!o.dead&&!o.alert&&Math.hypot(o.x-m.x,o.y-m.y)<90)wake(o);}
 function wanderStep(inst,m,dt){m.wander-=dt;if(m.wander<=0){m.wander=rf(1,3);if(R()<.5){m.wdx=0;m.wdy=0;}else{const a=R()*Math.PI*2;m.wdx=Math.cos(a);m.wdy=Math.sin(a);}}
   if(m.wdx||m.wdy){if(!SH.moveEnt(inst.map,m,m.wdx*m.spd*0.35*dt,m.wdy*m.spd*0.35*dt)){m.wdx=-m.wdx;m.wdy=-m.wdy;}m.moving=true;if(m.wdx)m.face=m.wdx<0?-1:1;}}
@@ -483,6 +483,8 @@ function dashTo(inst,P,a,dist){let nx=P.x,ny=P.y;for(let s=dist;s>=0;s-=4){const
 function aoe(inst,P,x,y,r,mult,o){let n=0;for(const m of inst.monsters)if(!m.dead&&Math.hypot(m.x-x,m.y-y)<r+m.r){hitMonster(inst,m,P,mult,o);n++;}return n;}
 function cone(inst,P,a,r,arc,mult,o){for(const m of inst.monsters){if(m.dead)continue;const d=Math.hypot(m.x-P.x,m.y-P.y);if(d<r+m.r&&(d<10||angDiff(Math.atan2(m.y-P.y,m.x-P.x),a)<arc))hitMonster(inst,m,P,mult,o);}}
 function addZone(inst,P,o){inst.zones.push(Object.assign({x:P.x,y:P.y,r:30,t:3,tick:0,iv:0.5,dmg:0,heal:0,slow:0,vis:0,pid:P.id,follow:false,trap:false,ctr:inst._ctr||null},o));}
+// 보스 등장·페이즈 카드: 약 3초 동안 보스를 멈추고 무적
+function bossCard(inst,ph){const r=inst.raid;if(!r)return;fx(inst,{k:'bintro',r:r.id,p:ph||null});r.cardT=inst.time+3;const bs=inst.monsters.filter(b=>b.boss&&!b.dead&&!b.introFz);for(const b of bs){b.frozen=true;b.invul=99;b.introFz=1;}later(inst,3,()=>{for(const b of bs){if(!b.introFz)continue;b.introFz=0;b.frozen=false;if(b.invul===99)b.invul=0;}});}
 function later(inst,t,f){inst.timers.push({t,f,el:inst._el,ctr:inst._ctr,sk:inst._sk});}
 // 타격음 속성: 스킬·투사체·기본 무기별
 const SKILL_EL={whirl:'slash',charge:'blunt',cleave:'slash',leap:'quake',rend:'slash',bladestorm:'slash',execute:'heavy',earthsplit:'quake',
@@ -759,7 +761,7 @@ function ringBell(inst,P,i){const r=inst.raid;const map=inst.map;
 const RAID_AI={r_greg:gregAI,r_lyra:lyraAI,r_nora:noraAI,r_valen:valenAI,r_golem:valenAI,r_karnas:karnasAI};
 const RAID_LINES={bell:['또 종을 울리러 왔나… 이번엔 너희 장례식 종이다!','종소리가… 멈춘다… 드디어… 조용하구나…']};
 function gregAI(inst,m,T,d,dt,sm){const r=inst.raid;if(!(m.faceLock>inst.time))m.face=T.x<m.x?-1:1;m.fightT+=dt;const hpf=m.hp/m.maxHp;
-  if(m.phase===1&&hpf<0.5){m.phase=2;m.patCd=0.6;fx(inst,{k:'bsay',id:m.id,m:'종탑이… 무너진다! 너희도 함께!'});fx(inst,{k:'shake',v:5});}
+  if(m.phase===1&&hpf<0.5){m.phase=2;m.patCd=0.6;bossCard(inst,'bell2');fx(inst,{k:'bsay',id:m.id,m:'종탑이… 무너진다! 너희도 함께!'});fx(inst,{k:'shake',v:5});}
   // 종 동시 타격 (무적 보호막)
   const marks=r.hard?[0.85,0.55,0.25]:[0.7,0.35];m.bbDone=m.bbDone||0;
   if(m.bbDone<marks.length&&hpf<marks[m.bbDone]&&!r.bb){m.bbDone++;const need=Math.max(1,Math.min(4,livingPlayers(inst).length));r.bb={need,hit:{},win:r.hard?1.5:4,t:12};m.invul=99;m.busy=0;m.atkT=0;
@@ -864,11 +866,11 @@ RAIDX.mirror={init(inst){const r=inst.raid,bp=inst.map.bossPt;const a=raidBoss(i
   pub(inst){const r=inst.raid,pz=r.pz;return{mir:pz.mir?pz.mir.map(q=>[q.tx*TS+8,q.ty*TS+8,q.t]):[],src:pz.src&&!r.doorOpen?[pz.src.tx*TS+8,pz.src.ty*TS+8]:null,rcv:pz.rcv&&!r.doorOpen?[pz.rcv.tx*TS+8,pz.rcv.ty*TS+8]:null,beam:r.doorOpen?[]:pz.beam,hit:pz.hit,stage:pz.stage,total:pz.stages.length,
     marks:r.marks||null,cz:r.cz?r.cz.map(z=>[r1(z.x),r1(z.y),z.c]):null,split:r.split?Math.ceil(r.split.t):0,twin:r.twinDead?Math.ceil(r.twinDead.t):0};},
   dmgMod(inst,m,P){const sad=m.sad&&inst.raid.twinDead?1.5:1;const mk=inst.raid.marks&&inst.raid.marks[P.id];if(!mk||!m.boss)return sad;if(m.type==='r_lyra')return sad*(mk==='S'?1.5:0.4);if(m.type==='r_nora')return sad*(mk==='L'?1.5:0.4);return sad;},
-  bossDied(inst,m){const r=inst.raid;const o=bossList(inst).find(x=>x!==m);if(o){r.twinDead={type:m.type,t:30};o.dmg*=1.4;o.sad=true;fx(inst,{k:'bsay',id:o.id,m:m.type==='r_lyra'?'리라…! 용서하지 않겠어!':'노라…! 너희 모두 빛에 타 버려라!'});fx(inst,{k:'msg',m:`${o.bname}이(가) 분노했다! 30초 안에 쓰러뜨리지 않으면 ${m.bname}이(가) 되살아난다 (슬픔으로 받는 피해 +50%)`,c:'#ffb03a'});raidState(inst);return false;}return true;}};
+  bossDied(inst,m){const r=inst.raid;const o=bossList(inst).find(x=>x!==m);if(o){r.twinDead={type:m.type,t:33};o.dmg*=1.4;o.sad=true;bossCard(inst,o.type==='r_lyra'?'lyraAlone':'noraAlone');fx(inst,{k:'bsay',id:o.id,m:m.type==='r_lyra'?'리라…! 용서하지 않겠어!':'노라…! 너희 모두 빛에 타 버려라!'});fx(inst,{k:'msg',m:`${o.bname}이(가) 분노했다! 30초 안에 쓰러뜨리지 않으면 ${m.bname}이(가) 되살아난다 (슬픔으로 받는 피해 +50%)`,c:'#ffb03a'});raidState(inst);return false;}return true;}};
 const TWIN_P={};
-function lyraAI(inst,m,T0,d,dt,sm){const T=twinTarget(inst,m);if(!T){return;}const dd=Math.hypot(T.x-m.x,T.y-m.y);if(m.phase===1&&m.hp/m.maxHp<0.5){m.phase=2;fx(inst,{k:'bsay',id:m.id,m:'빛이여, 모두 눈멀게 하라!'});}
+function lyraAI(inst,m,T0,d,dt,sm){const T=twinTarget(inst,m);if(!T){return;}const dd=Math.hypot(T.x-m.x,T.y-m.y);if(m.phase===1&&m.hp/m.maxHp<0.5){m.phase=2;bossCard(inst,'lyra2');fx(inst,{k:'bsay',id:m.id,m:'빛이여, 모두 눈멀게 하라!'});}
   raidAIcore(inst,m,T,dd,dt,sm,{pool:m2=>m2.phase>1?['lines','homing','circles','sweep','lines']:['lines','homing','circles'],P:TWIN_P,ctrMul:1.6});}
-function noraAI(inst,m,T0,d,dt,sm){const T=twinTarget(inst,m);if(!T){return;}const dd=Math.hypot(T.x-m.x,T.y-m.y);if(m.phase===1&&m.hp/m.maxHp<0.5){m.phase=2;fx(inst,{k:'bsay',id:m.id,m:'그림자 속으로 가라앉아라…'});}
+function noraAI(inst,m,T0,d,dt,sm){const T=twinTarget(inst,m);if(!T){return;}const dd=Math.hypot(T.x-m.x,T.y-m.y);if(m.phase===1&&m.hp/m.maxHp<0.5){m.phase=2;bossCard(inst,'nora2');fx(inst,{k:'bsay',id:m.id,m:'그림자 속으로 가라앉아라…'});}
   raidAIcore(inst,m,T,dd,dt,sm,{pool:m2=>m2.phase>1?['voidOrb','poisonPools','markSpread','circles','voidOrb']:['voidOrb','poisonPools','circles'],P:TWIN_P,ctrMul:1.6});}
 
 // ---------- 40 태엽 심장 공장: 기사단장 발렌 ----------
@@ -887,7 +889,7 @@ RAIDX.clock={init(inst){const r=inst.raid;const b=raidBoss(inst,'r_valen',inst.m
     if(r.pl){const pl=r.pl;pl.t-=dt;const on=r.plates.filter(q=>livingPlayers(inst).some(p=>Math.hypot(p.x-q.x,p.y-q.y)<18)).length;pl.on=on;if(on>=pl.need){pl.hold+=dt;if(pl.hold>=1.5){r.pl=null;b.invul=0;b.stun=4;b.grog=inst.time+5;fx(inst,{k:'counter',id:b.id,x:r1(b.x),y:r1(b.y),by:''});fx(inst,{k:'msg',m:'압력이 빠졌다! 발렌이 휘청인다',c:'#7fd05a'});for(const p of livingPlayers(inst))rst(inst,p).gim++;raidState(inst);}}else pl.hold=0;
       if(r.pl&&pl.t<=0){r.pl=null;b.invul=0;fx(inst,{k:'msg',m:'과열 폭발!',c:'#ff4a3a'});fx(inst,{k:'shake',v:9});fx(inst,{k:'boom',x:r1(b.x),y:r1(b.y),r:200});for(const p of livingPlayers(inst))hurtPlayer(inst,p,p.S.maxHp*(r.hard?3:0.75),null,{what:'과열 폭발',nododge:true});raidState(inst);}
       if(r.pl&&(((pl.t*2)|0)!==pl.lt)){pl.lt=(pl.t*2)|0;raidState(inst);}}
-    if(b.type==='r_valen'&&hpf<0.5&&!r.golem&&!r.pl){r.golem=true;b.busy=2.2;b.invul=2.2;fx(inst,{k:'bsay',id:b.id,m:'태엽 심장이여, 나와 하나가 되어라!'});fx(inst,{k:'shake',v:8});fx(inst,{k:'boom',x:r1(b.x),y:r1(b.y),r:60});
+    if(b.type==='r_valen'&&hpf<0.5&&!r.golem&&!r.pl){r.golem=true;b.busy=2.2;b.invul=2.2;bossCard(inst,'golem');fx(inst,{k:'bsay',id:b.id,m:'태엽 심장이여, 나와 하나가 되어라!'});fx(inst,{k:'shake',v:8});fx(inst,{k:'boom',x:r1(b.x),y:r1(b.y),r:60});
       later(inst,1.2,()=>{if(b.dead)return;b.type='r_golem';b.tc=SH.MT_LIST.indexOf('r_golem');b.d=SH.MT.r_golem;b.r=SH.MT.r_golem.r;b.bname='태엽 거인 발렌';b.spd=SH.MT.r_golem.spd*(1+BAL.monDmgPerFloor*0);b.phase=2;fx(inst,{k:'msg',m:'발렌이 태엽 거인과 합체했다!',c:'#ffb03a'});});}},
   act(inst,P,i){const r=inst.raid,pz=r.pz;if(r.doorOpen||pz.st!=='play')return;const q=pz.lev[i];if(!q||Math.hypot(P.x-q.x,P.y-q.y)>30)return;for(const j of[i-1,i,i+1])if(j>=0&&j<pz.st2.length)pz.st2[j]^=1;rst(inst,P).gim++;fx(inst,{k:'bell',c:3,x:q.x,y:q.y});
     if(pz.st2.every(v=>v)){pz.st='ok';fx(inst,{k:'msg',m:'등불이 모두 켜졌다!',c:'#7fd05a'});raidState(inst);later(inst,1.4,()=>{if(r.doorOpen)return;pz.round++;if(pz.round>=pz.sizes.length){for(const q2 of pz.lev)setTile(inst,Math.floor(q2.x/TS),Math.floor(q2.y/TS),1);pz.lev=[];pz.st='done';openRaidDoor(inst);}else clockRound(inst);});}else raidState(inst);},
@@ -903,7 +905,7 @@ RAIDX.moon={init(inst){const r=inst.raid;const b=raidBoss(inst,'r_karnas',inst.m
     r.pz={round:0,rounds:r.hard?4:3,ph:[],inp:[],st:'play'};r.alt=[[12,31],[26,31],[12,37],[26,37]].map(([x,y])=>({x:x*TS+8,y:y*TS+8}));for(const a of r.alt)setTile(inst,Math.floor(a.x/TS),Math.floor(a.y/TS),3);moonRound(inst);
     r.ev={done:{}};r.clash=null;r.half=null;r.beat=null;r.ella=false;r.ellaT=12;},
   update(inst,dt){const r=inst.raid;raidAdds(inst,dt,'wraith',5);const b=bossList(inst)[0];if(!b||r.stage!=='boss')return;const hpf=b.hp/b.maxHp;const E=r.ev.done;
-    const trig=(k,cond,f)=>{if(!E[k]&&cond&&!r.clash&&!r.beat&&!r.clones){E[k]=1;f();}};
+    const trig=(k,cond,f)=>{if(!E[k]&&cond&&!r.clash&&!r.beat&&!r.clones&&!(r.cardT>inst.time)){E[k]=1;f();}};trig('p2',hpf<0.5,()=>bossCard(inst,'karnas2'));trig('p3',hpf<0.26,()=>bossCard(inst,'karnas3'));
     trig('c1',hpf<0.85,()=>RAIDX.moon.clash(inst,b,1));trig('k1',hpf<0.7,()=>RAIDX.moon.clones(inst,b));trig('c2',hpf<0.55,()=>RAIDX.moon.clash(inst,b,1));
     if(hpf<0.5&&!r.ella){r.ella=true;fx(inst,{k:'msg',m:'빛의 기사 엘라가 나타났다! "제가 곁에 있을게요!"',c:'#ffe9a8'});fx(inst,{k:'sfx',n:'holy'});raidState(inst);}
     trig('k2',hpf<0.4,()=>RAIDX.moon.clones(inst,b));trig('b1',hpf<0.25,()=>RAIDX.moon.rhythm(inst,b));trig('c3',hpf<0.15,()=>RAIDX.moon.clash(inst,b,1));trig('fin',hpf<0.08,()=>RAIDX.moon.clash(inst,b,3));
