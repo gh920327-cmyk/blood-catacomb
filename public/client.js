@@ -1214,7 +1214,7 @@ function drawChar(){const S=G.S,ch=G.ch;if(!S||!ch)return;const x=6,y=38,w=172,h
   r2('공격력',`${mn} - ${mx}`);r2('치명타',`${S.crit.toFixed(1)}%  x${S.critMul.toFixed(2)}`);r2('공격 속도',`${S.atkRate.toFixed(2)} / 초`);r2('방어력',`${S.armor}  (피해 -${Math.round(SH.dmgReduce(S,Math.max(1,G.floor))*100)}%)`);
   r2('체력',`${G.mev[0]} / ${S.maxHp}`,'#ff7a6a');r2('마나',`${G.mev[2]} / ${S.maxMp}`,'#8fd0ff');r2('주문 피해',`+${Math.round((S.spell-1)*100)}%`);r2('치유력',String(S.healPow),'#7fd05a');r2('생명력 흡수',`${S.ls}%`);
   ly+=1;txt(`처치 ${ch.kills}  ·  최고 기록 지하 ${ch.best}층`,x+w/2,ly,11,'#6b6275','center');}
-function itemSlot(x,y,s,it,click,right,where){const hov=mouse.x>=x&&mouse.x<x+s&&mouse.y>=y&&mouse.y<y+s;pr(x,y,s,s,hov?PAL.y:PAL.k);pr(x+1,y+1,s-2,s-2,it?RAR[it.rar].bg:PAL.D);if(it){pimg(iconFor(it),x+(s-16)/2,y+(s-16)/2);if(!SH.canEquip(it,myCls()))pr(x+1,y+s-3,s-2,2,'#e0574a');}
+function itemSlot(x,y,s,it,click,right,where){const hov=mouse.x>=x&&mouse.x<x+s&&mouse.y>=y&&mouse.y<y+s;pr(x,y,s,s,hov?PAL.y:PAL.k);pr(x+1,y+1,s-2,s-2,it?RAR[it.rar].bg:PAL.D);if(it){if((it.up|0)>=SH.TRANS_MAX){const g=((time*6)|0)%2;pr(x,y,s,1,g?'#ffd35a':'#fff6a0');pr(x,y+s-1,s,1,g?'#ffd35a':'#fff6a0');pr(x,y,1,s,'#ffd35a');pr(x+s-1,y,1,s,'#ffd35a');}else if(it.set){pr(x+1,y+1,s-2,1,'#4ad86a');}pimg(iconFor(it),x+(s-16)/2,y+(s-16)/2);if(it.up>SH.ENH_MAX)txt('+'+it.up,x+s-2,y+s-4,8,'#ffd35a','right','px');if(!SH.canEquip(it,myCls()))pr(x+1,y+s-3,s-2,2,'#e0574a');}
   uiRects.push({x,y,w:s,h:s,block:true,click:it?click:null,right:it?right:null,tip:it?()=>itemTip(it,where):null});}
 function drawInv(){const ch=G.ch;if(!ch)return;const x=294,y=38,w=180,h=194;panel(x,y,w,h,'인벤토리');
   const F=G.fac;const selR=G.bs;
@@ -1425,11 +1425,11 @@ function drawForge(){const ch=G.ch;if(!ch)return;const x=6,y=38,w=282,h=194;pane
   if(!it){txt('오른쪽 인벤토리에서 아이템을 클릭하세요',x+w/2,y+80,12,'#9e937a','center');txt('장착 중인 무기·갑옷·반지도 고를 수 있어요',x+w/2,y+94,11,'#6b6275','center');return;}
   itemSlot(x+10,y+36,24,it,null,null,'forge');txt(SH.itemName(it),x+40,y+42,13,RAR[it.rar].c);txt(`${RAR[it.rar].n} · 아이템 레벨 ${it.L}${G.bs.w==='eq'?' · 장착 중':''}`,x+40,y+53,10,'#9e937a');
   if(tab==='enh'){const up=it.up|0;let ly=y+72;
-    if(up>=SH.ENH_MAX){txt('최대 강화 (+10)',x+w/2,ly+10,13,'#ffd35a','center');return;}
-    txt(`+${up}  →  +${up+1}`,x+12,ly,13,'#f2eadb');txt(`성공 확률 ${SH.ENH_RATE[up]}%`,x+w-12,ly,12,SH.ENH_RATE[up]>=80?'#7fd05a':SH.ENH_RATE[up]>=50?'#ffd35a':'#ff8a5a','right');ly+=13;
+    const emax=SH.enhMax(it);if(up>=emax){txt(up>=SH.TRANS_MAX?'초월 완료 (+15) · 모든 능력치 +5%':'최대 강화 (+10)',x+w/2,ly+10,13,'#ffd35a','center');if(up<SH.TRANS_MAX)txt('초월 강화(+11~+15)는 전설·신화·세트 장비만 할 수 있어요',x+w/2,ly+26,10,'#9e937a','center');return;}
+    const tr=up>=SH.ENH_MAX,rate=SH.enhRate(it);txt(`${tr?'초월 ':''}+${up}  →  +${up+1}`,x+12,ly,13,tr?'#ffd35a':'#f2eadb');txt(`성공 확률 ${rate}%${tr&&it.tp?` (장인의 기운 +${it.tp}%)`:''}`,x+w-12,ly,12,rate>=80?'#7fd05a':rate>=40?'#ffd35a':'#ff8a5a','right');ly+=13;
     for(const k of['dmg','armor'])if(it.base[k]){const a=Math.round(it.base[k]*SH.enhMul(up)),b=Math.round(it.base[k]*SH.enhMul(up+1));txt(`${k==='dmg'?'공격력':'방어력'} ${a} → ${b}`,x+12,ly,12,'#7fd05a');ly+=11;}
     if(it.slot==='ring'){txt(`모든 능력 +${up*5}% → +${(up+1)*5}%`,x+12,ly,12,'#7fd05a');ly+=11;}
-    txt(it.slot==='ring'?'반지는 강화할 때마다 모든 능력 +5%':'강화할 때마다 기본 공격력·방어력 +10%',x+12,ly,10,'#6b6275');ly+=13;
+    txt(tr?`초월: 기본 수치 +15%씩 · 실패해도 단계 유지, 실패마다 확률 +5% · +15 달성 시 모든 능력치 +5%`:it.slot==='ring'?'반지는 강화할 때마다 모든 능력 +5%':'강화할 때마다 기본 공격력·방어력 +10%',x+12,ly,10,tr?'#c9a0e8':'#6b6275');ly+=13;
     txt('비용',x+12,ly,11,'#9e937a');costRow(x+40,ly,SH.enhCost(it));ly+=16;
     button(x+12,ly,w-24,16,`강화하기 (+${up+1})`,()=>net({t:'bs',op:'enh',...bsRef()}),{main:true});ly+=22;
     txt('실패해도 단계는 내려가지 않고 재료만 사라집니다',x+w/2,ly+2,10,'#6b6275','center');return;}

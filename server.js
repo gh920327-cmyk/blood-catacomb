@@ -609,7 +609,7 @@ const SK={
       fx(inst,{k:'dpillar',x:r1(x),y:r1(y),d:0.3});later(inst,0.3,()=>{if(!P.inst||P.inst!==inst)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:26,c:1});fx(inst,{k:'shake',v:3});aoe(inst,P,x,y,26,3*P.S.spell,{kb:3});});});},
 };
 function reviveNear(inst,P,r){for(const q of instPlayers(inst)){if(!q.downed||Math.hypot(q.x-P.x,q.y-P.y)>r)continue;q.downed=false;q.rev=0;q.hp=Math.round(q.S.maxHp*0.6);addMeter(inst,P,'heal',q.hp);fx(inst,{k:'revive',id:q.id});fx(inst,{k:'msg',m:`천사가 ${q.ch.name}님을 일으켰습니다`,c:'#ffe9a8'});}}
-const ULT_OK=new Set(['ragnarok','wargod','aegisdome','judgehammer','skyrain','apocalypse','absolutezero','angel','divinejudge'].concat((process.env.ULT_OK||'').split(',').filter(Boolean)));;/* 사용자 승인된 궁극기 */function ultOk(id){return ULT_OK.has(id)||!!process.env.BC_DEBUG;}
+const ULT_OK=new Set(['ragnarok','wargod','aegisdome','judgehammer','skyrain','dragonarrow','apocalypse','absolutezero','angel','divinejudge'].concat((process.env.ULT_OK||'').split(',').filter(Boolean)));;/* 사용자 승인된 궁극기 */function ultOk(id){return ULT_OK.has(id)||!!process.env.BC_DEBUG;}
 function castSkill(inst,P,i,tx,ty){const sid=P.ch.bar&&P.ch.bar[i];if(!sid)return;const sk=SKILLS[sid];if(!sk||sk.pas||!SK[sid])return;const rank=(P.ch.sk&&P.ch.sk[sid])|0;if(rank<1)return;
   if((P.scd[sid]||0)>0.1)return;if(P.mp<sk.mp){msg(P,'마나가 부족합니다','#7aa2ff');return;}
   P.mp-=sk.mp;P.scd[sid]=sk.cd*(1-(P.S.cdr||0));const a=Math.atan2(ty-P.y,tx-P.x);P.face=Math.cos(a)<0?-1:1;
@@ -930,8 +930,8 @@ function salvageItem(P,i){const it=P.ch.bag[i];if(!it)return null;const y=SH.sal
   const gems=[];for(const g of it.so||[])if(g){P.ch.gems[g]=(P.ch.gems[g]|0)+1;gems.push(g);}if(it.rar>=1&&R()<0.15){const g=SH.randGem(it.L|0);P.ch.gems[g]=(P.ch.gems[g]|0)+1;gems.push(g);}
   P.ch.bag[i]=null;markDirty(P);return{iron:y.iron,dust:y.dust+dust2,ess:y.ess,gems};}
 const BS={
-  enh(P,d){const it=refItem(P,d);if(!it)return;const up=it.up|0;if(up>=SH.ENH_MAX){msg(P,'이미 최대 강화입니다','#9e937a');return;}const c=SH.enhCost(it);if(!pay(P,c))return;
-    const ok=R()*100<SH.ENH_RATE[up];if(ok){it.up=up+1;if(it.up>((P.ch.st&&P.ch.st.maxUp)|0))stInc(P,'maxUp',it.up-((P.ch.st&&P.ch.st.maxUp)|0));msg(P,`강화 성공! ${SH.itemName(it)}`,'#ffd35a');}else msg(P,`강화 실패 · 재료만 사라졌습니다 (+${up} 유지)`,'#ff6a5a');afterItem(P,it);send(P,{t:'bsr',op:'enh',ok,up:it.up|0});},
+  enh(P,d){const it=refItem(P,d);if(!it)return;const up=it.up|0;if(up>=SH.enhMax(it)){msg(P,up>=SH.ENH_MAX&&!SH.canTrans(it)?'초월 강화는 전설·신화·세트 장비만 할 수 있어요':'이미 최대 강화입니다','#9e937a');return;}const c=SH.enhCost(it);if(!pay(P,c))return;
+    const ok=R()*100<SH.enhRate(it);if(!ok&&up>=SH.ENH_MAX)it.tp=(it.tp|0)+5;if(ok){it.up=up+1;it.tp=0;if(it.up===SH.TRANS_MAX)bcast(hub,{t:'msg',m:`${P.ch.name}님이 '${it.name}'을(를) +15 초월했다!`,c:'#ffd35a'});if(it.up>((P.ch.st&&P.ch.st.maxUp)|0))stInc(P,'maxUp',it.up-((P.ch.st&&P.ch.st.maxUp)|0));msg(P,`강화 성공! ${SH.itemName(it)}`,'#ffd35a');}else msg(P,`강화 실패 · 재료만 사라졌습니다 (+${up} 유지)`,'#ff6a5a');afterItem(P,it);send(P,{t:'bsr',op:'enh',ok,up:it.up|0});},
   rr(P,d){const it=refItem(P,d);if(!it)return;const a=d.a|0,cur=it.aff[a];if(!cur)return;if(it.rk!=null&&it.rk!==a){msg(P,`이 장비는 '${SH.AFF[it.aff[it.rk].k].f(it.aff[it.rk].v)}' 능력만 재련할 수 있습니다`,'#ff6a5a');return;}
     const swap=!!d.swap;const c=SH.rerollCost(it,swap);if(!pay(P,c))return;let nw;
     if(swap){const have=new Set(it.aff.map(x=>x.k));const pool=SH.AFF_POOL[it.slot].filter(k=>!have.has(k));if(!pool.length){P.ch.gold+=c.gold|0;for(const k of['iron','dust','ess'])P.ch.mats[k]+=c[k]|0;msg(P,'바꿀 수 있는 능력이 없습니다','#ff6a5a');return;}const k=pick(pool);nw={k,v:SH.rollAff(it,k,R)};}

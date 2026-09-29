@@ -487,13 +487,15 @@ function genMythic(L,fam,R,slot){R=R||Math.random;const it=genItem(L,fam,3,0,R,3
   const keys=Object.keys(MYTH);it.myth=keys[Math.floor(R()*keys.length)];const pool=MYTH_N[it.slot==='weapon'?fam:it.slot];it.name=pool[Math.floor(R()*pool.length)];it.value=Math.round(it.value*2);if(!it.so)it.so=[null];return it;}
 function starterWeapon(fam){const b=WEAPONS[fam][fam==='melee'?1:fam==='bow'?0:1];return{id:rid(),slot:'weapon',rar:0,L:1,fam,kind:b.kind,bn:b.n,name:'낡은 '+b.n,base:{dmg:4},aff:[],value:3};}
 function starterArmor(cls){const k=cls==='mage'||cls==='priest'?ARMORS[3]:ARMORS[0];return{id:rid(),slot:'armor',rar:0,L:1,kind:k.kind,bn:k.n,name:'해진 '+k.n,base:{armor:3},aff:[],value:3};}
-function itemStats(it){const s={};const em=enhMul(it.up|0);for(const k in it.base){const v=it.base[k];s[k]=(s[k]||0)+((k==='dmg'||k==='armor')?Math.round(v*em):v);}const rm=it.slot==='ring'&&it.up?1+0.05*it.up:1;for(const a of it.aff)s[a.k]=(s[a.k]||0)+(rm===1?a.v:Math.round(a.v*rm));
+function itemStats(it){const s={};const em=enhMul(it.up|0);for(const k in it.base){const v=it.base[k];s[k]=(s[k]||0)+((k==='dmg'||k==='armor')?Math.round(v*em):v);}let rm=it.slot==='ring'&&it.up?1+0.05*it.up:1;if((it.up|0)>=TRANS_MAX){rm*=1.05;for(const k in s)s[k]=Math.round(s[k]*1.05);}for(const a of it.aff)s[a.k]=(s[a.k]||0)+(rm===1?a.v:Math.round(a.v*rm));
   if(it.so)for(const g of it.so){const e=gemEff(g,it.slot);if(e)s[e.k]=(s[e.k]||0)+e.v;}return s;}
 
 // ---------- 대장간: 강화 · 재련 · 분해 · 소켓/보석 ----------
-const ENH_MAX=10,ENH_RATE=[100,100,95,90,80,70,60,50,40,30];
-function enhMul(up){return 1+0.1*up;}
-function enhCost(it){const up=it.up|0,L=it.L|0;return{gold:Math.round((20+L*8)*(1+up)*(1+it.rar*0.5)),iron:1+Math.floor(up/2),dust:up>=5?up-3:0,ess:it.rar>=3&&up>=7?1:0,myth:it.rar===4&&up>=5?1+Math.floor((up-5)/2):0};}
+const ENH_MAX=10,ENH_RATE=[100,100,95,90,80,70,60,50,40,30],TRANS_MAX=15,TRANS_RATE=[50,40,30,20,10];
+function canTrans(it){return !!it&&(it.rar>=3||!!it.set);}function enhMax(it){return canTrans(it)?TRANS_MAX:ENH_MAX;}
+function enhRate(it){const up=it.up|0;return up<ENH_MAX?ENH_RATE[up]:Math.min(100,TRANS_RATE[up-ENH_MAX]+(it.tp|0));}
+function enhMul(up){return up<=10?1+0.1*up:2+0.15*(up-10);}
+function enhCost(it){const up=it.up|0,L=it.L|0;if(up>=ENH_MAX){const t=up-ENH_MAX;return{gold:Math.round((20+L*8)*(1+up)*(1+it.rar*0.5)*1.5),iron:3+t,dust:up,ess:2+t,myth:(it.rar===4?2:1)+t};}return{gold:Math.round((20+L*8)*(1+up)*(1+it.rar*0.5)),iron:1+Math.floor(up/2),dust:up>=5?up-3:0,ess:it.rar>=3&&up>=7?1:0,myth:it.rar===4&&up>=5?1+Math.floor((up-5)/2):0};}
 function affScale(it,v){if(it.rar===3)return Math.round(v*1.35)+1;if(it.rar===4)return Math.round((v*1.35+1)*1.25);return v;}
 function affRange(it,k){const L=it.L|0;const lo=AFF[k].r(L,()=>0),hi=AFF[k].r(L,()=>0.999999);return[affScale(it,lo),affScale(it,hi)];}
 function rollAff(it,k,R){R=R||Math.random;return affScale(it,AFF[k].r(it.L|0,R));}
@@ -567,6 +569,6 @@ function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o
 
 const SH={TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
-  THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,affScale,ENH_MAX,ENH_RATE,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
+  THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
 })(typeof self!=='undefined'?self:this);
