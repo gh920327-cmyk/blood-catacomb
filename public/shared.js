@@ -240,6 +240,11 @@ const CLASSES={
     basic:{kind:'melee',mult:1.35},skills:['lslash','flashdash','lmark','crossslash','holyblade','skyfall','bladedance','dawnawaken','dawnward','judgment','lastflash','lightstorm','radiantspear','excalibur','dawnoath'],ults:['dawnblade','heavendance'],
     desc:'엘라에게 새벽의 맹세를 받은 기사. 빛의 검으로 신성력을 모아 한 번에 쏟아내는 최강의 딜러'}
 };
+// 직업별 피해 보정 (허수아비 기준: 원거리 딜러 100 · 전사 115 · 빛의 기사 125 · 수호자 55 · 사제 45)
+// 레벨 10·20·35·50 기준값 사이를 이어서 쓴다 (허수아비 측정으로 맞춤)
+const DK_LV=[10,20,27,35,42,50];
+const CLASS_DK={warrior:[1.14,1.331,1.519,1.62,1.689,1.517],guardian:[1.37,1.193,1.70,1.947,1.863,1.767],archer:[0.936,1.012,1.029,0.983,1.132,1.036],mage:[1.12,1.037,0.899,0.80,0.589,0.488],priest:[1.135,0.914,1.311,1.078,0.834,0.755],knight:[0.747,0.794,0.768,0.871,0.772,0.640]};
+function classDk(cls,lvl){const d=CLASS_DK[cls];if(!d)return 1;lvl=lvl|0;if(lvl<=DK_LV[0])return d[0];for(let i=1;i<DK_LV.length;i++)if(lvl<=DK_LV[i]){const t=(lvl-DK_LV[i-1])/(DK_LV[i]-DK_LV[i-1]);return d[i-1]+(d[i]-d[i-1])*t;}return d[d.length-1];}
 const CLASS_ORDER=['warrior','guardian','archer','mage','priest','knight'];
 const UNLOCK=[1,1,3,5,8,11,14,18,22,26,30,35,38,42,46];const ULT_LVL=50;
 const MAX_RANK=10,BAR_SIZE=6;
@@ -574,7 +579,7 @@ function calcStats(ch){
   S.crit=Math.min(75,5+dex*0.1+(g.crit||0));S.critMul=1.5+(g.critDmg||0)/100;
   S.atkRate=C.atkRate*(1+((g.as||0)+dex*0.3)/100);
   S.armor=Math.round(((g.armor||0)+dex*0.5)*C.armorMul);
-  S.ms=C.ms*(1+(g.ms||0)/100);S.ls=g.ls||0;S.spell=1+ene*0.015;S.mpRegen=1.2+ene*0.06;
+  S.ms=C.ms*(1+(g.ms||0)/100);S.ls=g.ls||0;S.spell=1+ene*0.004;S.mpRegen=1.2+ene*0.06;
   S.healPow=Math.round((8+ch.lvl*2.5+S.dmgBase*1.1)*(1+ene/100));
   const r=k=>(ch.sk&&ch.sk[k])||0;S.dr=0;
   if(r('bloodlust'))S.ls+=1.5*r('bloodlust');
@@ -592,6 +597,7 @@ function calcStats(ch){
   S.holyGain=1+(T.holy||0)/100;S.rad=ch.cls==='knight'?1+str*0.012:1;if(r('holyblade')){S.critMul+=0.06*r('holyblade');S.holyGain+=0.05*r('holyblade');}if(r('dawnward')){S.dmgMul*=1+0.03*r('dawnward');S.dr=(S.dr||0)+0.01*r('dawnward');}if(r('dawnoath')){S.bossDmg=(S.bossDmg||0)+0.02*r('dawnoath');S.crit=Math.min(75,S.crit+r('dawnoath'));}
   if(r('instinct')){S.crit=Math.min(75,S.crit+r('instinct'));S.bossDmg=0.02*r('instinct');}if(r('resonance')){S.spell*=1+0.03*r('resonance');S.cdr=Math.min(0.45,S.cdr+0.01*r('resonance'));}if(r('saint')){S.healPow=Math.round(S.healPow*(1+0.04*r('saint')));S.dr=(S.dr||0)+0.01*r('saint');}
   S.regen=1+(T.regen||0)/100;if(T.mpRegen)S.mpRegen*=1+T.mpRegen/100;
+  S.dmgMul*=classDk(ch.cls,ch.lvl);
   S.set3=[];for(const id in SETS){const n=setCount(ch,id);if(n<2)continue;const b=SETS[id].b2;if(b.hpPct)S.maxHp=Math.round(S.maxHp*(1+b.hpPct/100));if(b.armorPct)S.armor=Math.round(S.armor*(1+b.armorPct/100));if(b.crit)S.crit=Math.min(75,S.crit+b.crit);if(b.as)S.atkRate*=1+b.as/100;if(b.bossDmg)S.bossDmg=(S.bossDmg||0)+b.bossDmg/100;if(n>=3)S.set3.push(id);}
   S.myth=[];for(const s2 of['weapon','armor','ring']){const it=ch.eq[s2];if(it&&it.rar===4&&it.myth&&MYTH[it.myth]&&canEquip(it,ch.cls))S.myth.push(it.myth);}
   if(S.myth.includes('vamp'))S.ls+=4;if(S.myth.includes('haste'))S.cdr=Math.min(0.5,(S.cdr||0)+0.15);
@@ -605,7 +611,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
