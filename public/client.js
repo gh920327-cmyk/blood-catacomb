@@ -587,12 +587,17 @@ function renderSelect(){
     const b3=document.createElement('button');b3.className='warn';b3.textContent=delArm===ch.id?'정말 삭제':'삭제';b3.onclick=()=>{if(delArm===ch.id){saveChars(loadChars().filter(c=>c.id!==ch.id));delArm=null;}else delArm=ch.id;renderSelect();};
     row.append(b1,b2,b3);d.appendChild(row);slots.appendChild(d);});
   const cl=document.getElementById('classes');if(!cl.childElementCount){SH.CLASS_ORDER.forEach(k=>{const C=CLASSES[k];const b=document.createElement('button');b.className='cls';b.type='button';b.dataset.k=k;
-    const cvs=clsPreview(k);b.appendChild(cvs);const n=document.createElement('div');n.innerHTML=`<div class="nm" style="font-size:15px"></div><div class="role"></div><div class="d"></div>`;n.querySelector('.nm').textContent=C.n;n.querySelector('.role').textContent=C.role;n.querySelector('.d').textContent=C.desc;b.appendChild(n);
-    if(C.hidden)b.classList.add('hid');b.onclick=()=>{chosenCls=k;[...cl.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===k?'true':'false'));};cl.appendChild(b);});}
+    const cvs=clsPreview(k);b.appendChild(cvs);const n=document.createElement('div');n.innerHTML=`<div class="nm" style="font-size:15px"></div><div class="role"></div><div class="df"></div><div class="d"></div>`;n.querySelector('.nm').textContent=C.n;n.querySelector('.role').textContent=C.role;n.querySelector('.d').textContent=C.desc;{const I=SH.CLASS_INFO[k];n.querySelector('.df').innerHTML=`조작 난이도 <b>${'★'.repeat(I.diff)}${'☆'.repeat(5-I.diff)}</b>`;}b.appendChild(n);
+    if(C.hidden)b.classList.add('hid');b.onclick=()=>{chosenCls=k;[...cl.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===k?'true':'false'));renderClsDetail();};cl.appendChild(b);});}
   {const un=knightUnlocked();[...cl.children].forEach(x=>{if(CLASSES[x.dataset.k].hidden)x.hidden=!un;});if(!un&&CLASSES[chosenCls]&&CLASSES[chosenCls].hidden)chosenCls='warrior';}
-  renderSyn();
+  renderSyn();renderClsDetail();
   [...cl.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===chosenCls?'true':'false'));
 }
+/* 직업 상세: 추천·장단점·파티 역할·30레벨 전직 갈래 미리보기 */
+function renderClsDetail(){const el=document.getElementById('clsDetail');if(!el)return;const k=chosenCls,C=CLASSES[k],I=SH.CLASS_INFO[k];if(!C||!I){el.textContent='';return;}const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const bars=(v,c)=>'<span class="bars">'+[0,1,2,3,4].map(i=>`<span style="background:${i<v?c:'#2a2330'}"></span>`).join('')+'</span>';
+  const brs=(SH.ADV_OF[k]||[]).map(a=>{const A=SH.ADV[a];return `<span class="br" style="border-color:${A.col}"><b style="color:${A.col}">${esc(A.n)}</b> · ${esc(A.info.role)} · 조작 ${'★'.repeat(A.info.diff)}</span>`;}).join('');
+  el.innerHTML=`<div class="t">${esc(C.n)} · ${esc(C.role)}</div>생존 ${bars(I.bars[0],'#8fd0ff')} 딜 ${bars(I.bars[1],'#ff8a5a')} 지원 ${bars(I.bars[2],'#7fd05a')}<br>이런 분께 추천: ${esc(I.rec)}<br><span class="p">장점</span> ${I.pros.map(esc).join(' · ')}  <span class="c">단점</span> ${I.cons.map(esc).join(' · ')}<br>파티에서: ${esc(I.party)}<br><span style="color:var(--gold)">30레벨 전직</span> ${brs}`;}
 document.getElementById('createBtn').onclick=()=>{const name=document.getElementById('newName').value.trim();const err=document.getElementById('createErr');
   if(!name){err.textContent='이름을 입력하세요';return;}if(loadChars().length>=8){err.textContent='캐릭터는 8개까지 만들 수 있습니다';return;}
   const ch=SH.newChar(name.slice(0,10),chosenCls);const a=loadChars();a.push(ch);if(!saveChars(a)){err.textContent='이 브라우저에 저장할 수 없습니다. 시크릿 창이면 일반 창에서 열어 주세요';return;}err.textContent='';document.getElementById('newName').value='';renderSelect();};

@@ -63,6 +63,10 @@ textarea{width:100%;min-height:60px;resize:vertical;font-weight:400;font-size:12
 .cls.hid{border-color:#b89a4a;background:linear-gradient(160deg,#2a2414 0%,#16121c 70%);box-shadow:0 0 12px rgba(255,220,120,.25);}
 .cls.hid .nm{color:#fff2c0;text-shadow:0 0 8px rgba(255,210,100,.6);}
 .cls[hidden]{display:none;}
+.cls .df{font-size:11px;color:var(--dim);}.cls .df b{color:var(--gold);font-weight:700;letter-spacing:1px;}
+#clsDetail{border:2px solid var(--line);background:#120e17;padding:10px 12px;margin-top:8px;font-size:12px;line-height:1.6;color:var(--dim);}
+#clsDetail .t{color:var(--gold);font-weight:700;font-size:13px;}#clsDetail .p{color:#7fd05a;}#clsDetail .c{color:#ff8a7a;}#clsDetail .br{display:inline-block;margin:4px 8px 0 0;padding:3px 8px;border:1px solid var(--line);}
+#clsDetail .bars span{display:inline-block;width:10px;height:6px;margin-right:2px;background:#2a2330;}
 .syn{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;}
 .syn .it{border:1px solid var(--line);background:#120e17;padding:8px 10px;}
 .syn .it b{color:var(--gold);font-size:14px;}.syn .it .d{color:var(--text);font-size:12px;margin-top:4px;}
@@ -97,6 +101,7 @@ textarea{width:100%;min-height:60px;resize:vertical;font-weight:400;font-size:12
       <h2>새 캐릭터</h2>
       <div class="row" style="margin-bottom:12px"><label for="newName">이름</label><input id="newName" maxlength="10" placeholder="최대 10자"><button class="main" id="createBtn">만들기</button></div>
       <div class="classes" id="classes"></div>
+      <div id="clsDetail"></div>
       <p class="err" id="createErr"></p>
     </div>
     <div class="box">
