@@ -143,7 +143,7 @@ function mercCost(lvl){return 150+(lvl|0)*25;}
 const CTR_SKILL={warrior:{n:'저지 베기',d:'앞으로 짧게 파고들며 베어 180% 피해'},guardian:{n:'방패 밀치기',d:'방패로 밀쳐 140% 피해와 짧은 기절'},archer:{n:'견제 사격',d:'아주 빠른 화살 한 발, 170% 피해'},mage:{n:'마력 충격',d:'순식간에 날아가는 마력탄, 180% 피해'},priest:{n:'신성한 일격',d:'빛의 탄환을 쏘아 160% 피해'}};
 const CTR_CD=6;
 // ---------- 레이드 ----------
-const RAIDS=[{id:'bell',n:'잊힌 종탑',boss:'종지기 그레고르',lvl:20,ready:1},{id:'mirror',n:'거울 미궁',boss:'쌍둥이 마녀 리라와 노라',lvl:30,ready:0},{id:'clock',n:'태엽 심장 공장',boss:'기사단장 발렌',lvl:40,ready:0},{id:'moon',n:'흑월의 왕좌',boss:'흑왕 카르나스',lvl:50,ready:0}];
+const RAIDS=[{id:'bell',n:'잊힌 종탑',boss:'종지기 그레고르',lvl:20,ready:1},{id:'mirror',n:'거울 미궁',boss:'쌍둥이 마녀 리라와 노라',lvl:30,ready:1},{id:'clock',n:'태엽 심장 공장',boss:'기사단장 발렌',lvl:40,ready:1},{id:'moon',n:'흑월의 왕좌',boss:'흑왕 카르나스',lvl:50,ready:1}];
 function genRaid(id,seed){const W=40,H=44,tiles=new Uint8Array(W*H);const map={w:W,h:H,tiles,boss:true,floor:1,raid:id};
   const rect=(x0,y0,x1,y1,v)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)tiles[y*W+x]=v;};
   rect(5,4,34,20,1);rect(18,21,21,27,1);rect(9,28,30,40,1);
@@ -371,9 +371,12 @@ const MT={
   r_golem:{n:'태엽 거인 발렌',hp:520,dmg:14,spd:22,r:15,xp:900,cd:2,rb:1},
   r_karnas:{n:'흑왕 카르나스',hp:520,dmg:14,spd:30,r:14,xp:1200,cd:1.6,rb:1},
   r_ella:{n:'빛의 기사 엘라',hp:520,dmg:0,spd:0,r:10,xp:0,cd:99,rb:1},
-  ghoul:{n:'종탑의 망자',hp:26,dmg:7,spd:32,r:5,xp:10,cd:1.3}
+  ghoul:{n:'종탑의 망자',hp:26,dmg:7,spd:32,r:5,xp:10,cd:1.3},
+  shade:{n:'거울 망령',hp:30,dmg:8,spd:36,r:5,xp:12,cd:1.2},
+  cog:{n:'태엽 사냥개',hp:30,dmg:8,spd:48,r:5,xp:12,cd:1.1},
+  wraith:{n:'흑월 망령',hp:36,dmg:9,spd:36,r:5,xp:14,cd:1.2}
 };
-const MT_LIST=['zombie','skel','hound','boss','egg','tentacle','guard','clone','goblin','r_greg','r_lyra','r_nora','r_valen','r_golem','r_karnas','r_ella','ghoul'];
+const MT_LIST=['zombie','skel','hound','boss','egg','tentacle','guard','clone','goblin','r_greg','r_lyra','r_nora','r_valen','r_golem','r_karnas','r_ella','ghoul','shade','cog','wraith'];
 // 엘리트 특성 (비트)
 const EAFF=[['frost','빙결',1],['split','분열',2],['vamp','흡혈',4],['tele','순간이동',8],['shield','보호막',16],['bomb','자폭',32],['fast','신속',64],['tough','강철',128]];
 function eaffNames(mask){return EAFF.filter(a=>mask&a[2]).map(a=>a[1]);}
