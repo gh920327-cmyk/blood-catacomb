@@ -475,7 +475,7 @@ const CLASS_INFO={warrior:{diff:2,bars:[4,4,1],rec:'앞에서 시원하게 베�
   priest:{diff:3,bars:[3,2,5],rec:'동료를 살리고 지키는 게 즐겁다면',pros:['파티 치유와 보호막','부활이 두 배 빠름'],cons:['혼자 사냥이 느림'],party:'파티의 생명줄'},
   knight:{diff:4,bars:[3,5,2],rec:'신성력을 모아 한 번에 쏟아내는 기사를 원한다면',pros:['최강의 근접 폭딜','빛의 이동기'],cons:['신성력 관리가 필요'],party:'새벽의 맹세를 받은 숨은 기사'}};
 /* 갈래별 피해 보정 (허수아비 측정: 딜 갈래 둘은 ±5% · 기본 직업보다 약 12% 강하게 / 탱커·힐러 갈래는 역할에 맞게) */
-const ADV_DK={berserker:1.17,blademaster:0.87,bulwark:1.25,judicator:0.67,sniper:0.745,trapper:1.035,elementalist:0.94,astrologer:1.2,hierophant:1.2,exorcist:0.67,dawncommander:1.07,sunblade:0.975};
+const ADV_DK={berserker:1.21,blademaster:0.87,bulwark:1.25,judicator:0.67,sniper:0.745,trapper:1.035,elementalist:0.94,astrologer:1.28,hierophant:1.2,exorcist:0.67,dawncommander:1.12,sunblade:0.94};
 function advOf(ch){return ch&&ch.adv&&ADV[ch.adv]&&ADV[ch.adv].cls===ch.cls?ADV[ch.adv]:null;}
 function ultsOf(ch){const C=CLASSES[ch.cls];const a=advOf(ch);return (C.ults||[]).concat(a?[a.ult]:[]);}
 function advChangeCost(lvl){return 20000+lvl*1000;}
