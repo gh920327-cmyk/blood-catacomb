@@ -838,7 +838,6 @@ window.addEventListener('keydown',e=>{
   if(act==='meter'){showMeter=true;return;}
   if(G.stairsAsk&&(act==='act'||c==='Enter'||c==='Space')){net({t:'descend'});G.stairsAsk=null;e.preventDefault();return;}
   if(G.stairsAsk&&c==='Escape'){G.stairsAsk=null;return;}
-  if(G.bintro&&c==='Escape'){G.bintro.t0=time-3.2;return;}
   if(raidSelKey(c)){e.preventDefault();return;}
   if(c==='Escape'&&G.loreView){G.loreView=null;return;}
   if(c==='Escape'&&G.insp){G.insp=null;return;}
@@ -2138,7 +2137,7 @@ function drawBossIntro(){let B=G.bintro;if(!B)return;const T=3.2;if(time-B.t0>T&
   txt(B.top,bx+4,by+10,20,B.topC,null,'serif');const ns=B.name.length>9?38:50;txt(B.name,bx+2,by+32,ns,'#f2eadb',null,'serif');txt(B.q,bx+4,by+56,18,'#c9a0e8',null,'serif');
   ctx.globalAlpha=1;
   if(t>0.6)txt('클릭해서 넘기기',W-8,H-8,13,'#8a7f99','right');
-  uiRects.push({x:0,y:0,w:W,h:H,click:()=>{G.bintro.t0=time-T;}});}
+  uiRects.push({x:0,y:0,w:W,h:H,block:true});}/* 클릭·Esc로 넘기지 않음 (보스가 무적인 3초 동안 그대로 보여줌) */
 function drawRaidStone(icx,icy,ents){const p=G.map&&G.map.raidStone;if(!p||G.kind!=='hub')return;const bx=Math.round(p.x)-icx,by=Math.round(p.y)-icy;if(bx<-40||bx>W+40||by<-60||by>H+30)return;
   ents.push({y:p.y,f:()=>{wx.drawImage(SH_S,bx-6,by-1);wx.fillStyle='#0e0b12';wx.fillRect(bx-13,by-4,26,5);wx.fillStyle='#3a3144';wx.fillRect(bx-12,by-3,24,3);
     const H0=34;for(let j=0;j<H0;j++){const hw=Math.round(8-j*0.08);wx.fillStyle=j===0?'#0e0b12':'#0e0b12';wx.fillRect(bx-hw-1,by-4-j,hw*2+2,1);wx.fillStyle=j%9===0?'#4a4152':'#2e2838';wx.fillRect(bx-hw,by-4-j,hw*2,1);wx.fillStyle='#5a5066';wx.fillRect(bx-hw,by-4-j,2,1);}
