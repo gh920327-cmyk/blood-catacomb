@@ -1246,6 +1246,11 @@ const H={
     for(const q of members){leaveInst(q);q.inst=inst;inst.players.add(q.id);resetCombat(q);q.hp=q.S.maxHp;q.mp=q.S.maxMp;}
     loadFloor(inst,floor);bcastRoster(hub);sendParty(pt);},
   pause(P){const inst=P.inst;if(!inst||inst.type!=='dungeon'||inst.arena||inst.raid){if(inst&&inst.raid)msg(P,'레이드에서는 일시정지할 수 없어요','#9e937a');return;}inst.paused=inst.paused?null:P.ch.name;bcast(inst,{t:'paused',by:inst.paused});},
+  unlearn(P,d){const sid=d.sid;const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.ult)return;if(P.inst!==hub){msg(P,'스킬 포인트 빼기는 마을에서만 할 수 있어요','#9e937a');return;}
+    const r=P.ch.sk[sid]|0;const min=(SH.defaultSkills(P.ch.cls).sk[sid])|0;if(r<=min){msg(P,min?'기본 스킬은 1 아래로 뺄 수 없어요':'뺄 포인트가 없어요','#9e937a');return;}
+    const cost=3*P.ch.lvl;if(P.ch.gold<cost){msg(P,`골드가 부족합니다 (${cost}골드)`,'#ff6a5a');return;}P.ch.gold-=cost;
+    if(r-1<=0){delete P.ch.sk[sid];P.ch.bar=P.ch.bar.map(x=>x===sid?null:x);if(P.ch.rmb===sid)P.ch.rmb=null;}else P.ch.sk[sid]=r-1;
+    P.ch.spts=(P.ch.spts|0)+1;recalc(P);markDirty(P);msg(P,`${sk.n} ${r} → ${r-1} · 스킬 포인트 1 돌려받음 (-${cost}골드)`,'#ffd35a');},
   learn(P,d){const sid=d.sid;const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.ult)return;if(P.ch.lvl<sk.lvl){msg(P,`레벨 ${sk.lvl}에 해금됩니다`,'#ff6a5a');return;}if((P.ch.spts|0)<=0){msg(P,'스킬 포인트가 없습니다','#ff6a5a');return;}
     const r=P.ch.sk[sid]|0;if(r>=SH.MAX_RANK)return;P.ch.sk[sid]=r+1;P.ch.spts--;if(r===0&&!sk.pas&&!P.ch.bar.includes(sid)){const e=P.ch.bar.indexOf(null);if(e>=0)P.ch.bar[e]=sid;}recalc(P);send(P,{t:'fxp',k:'learn'});},
   rmb(P,d){const sid=d.sid||null;if(sid){const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.pas||!(P.ch.sk[sid]>0))return;}P.ch.rmb=sid;markDirty(P);},

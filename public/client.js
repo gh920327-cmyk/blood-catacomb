@@ -1209,6 +1209,7 @@ function drawSkills(){const ch=G.ch;if(!ch)return;const x=40,y=14,w=400,h=228;pa
     for(let k=0;k<SH.MAX_RANK;k++)pr(cx+3+k*7,cy+30,6,2,k<rank?PAL.y:PAL.m);
     const can=!locked&&(ch.spts||0)>0&&rank<SH.MAX_RANK;
     uiRects.push({x:cx,y:cy,w:cw-4,h:chh-4,click:()=>{G.skSel=sid;},right:()=>{if(!sk.pas&&rank>0){const e=ch.bar.indexOf(null);if(e>=0)net({t:'bar',i:e,sid});}},tip:()=>skillTip(sid,null)});
+    {const min=(SH.defaultSkills(ch.cls).sk[sid])|0;if(!locked&&!sk.ult&&rank>min){const bx=cx+cw-28,by=cy+3;const hov=mouse.x>=bx&&mouse.x<bx+10&&mouse.y>=by&&mouse.y<by+10;pr(bx,by,10,10,hov?'#ff8a7a':PAL.g);pr(bx+1,by+1,8,8,PAL.k);pr(bx+2,by+4,6,2,'#ff8a7a');uiRects.push({x:bx,y:by,w:10,h:10,click:()=>net({t:'unlearn',sid}),tip:()=>[['포인트 1 빼기','#ff8a7a',12],[`스킬 포인트 1 돌려받기 · ${3*ch.lvl}골드`,'#e6dcc3',11],[G.kind==='hub'?'마을에서만 가능':'마을에서만 가능 (지금은 안 돼요)','#9e937a',11]]});}}
     if(can){const bx=cx+cw-16,by=cy+3;const hov=mouse.x>=bx&&mouse.x<bx+10&&mouse.y>=by&&mouse.y<by+10;pr(bx,by,10,10,hov?PAL.y:PAL.g);pr(bx+1,by+1,8,8,PAL.k);pr(bx+4,by+2,2,6,'#8fd0ff');pr(bx+2,by+4,6,2,'#8fd0ff');uiRects.push({x:bx,y:by,w:10,h:10,click:()=>net({t:'learn',sid}),tip:()=>[[rank?'등급 올리기':'배우기','#8fd0ff',12],['스킬 포인트 1 사용','#9e937a',11]]});}});
   drawUltPick(x+10,y+138,w-20);
   const by=y+h-34;txt('단축키',x+10,by+10,11,'#9e937a');
@@ -1217,7 +1218,7 @@ function drawSkills(){const ch=G.ch;if(!ch)return;const x=40,y=14,w=400,h=228;pa
   {const sx=x+56+SH.BAR_SIZE*26+10;const sid=ch.rmb;slotBox(sx,by,22,22,false);if(sid)pimg(SKILL_ICON[sid],sx+3,by+3);txt('우클릭',sx+11,by-5,9,'#ffd35a','center');
     uiRects.push({x:sx,y:by,w:22,h:22,click:()=>{const s2=G.skSel;if(s2&&!SKILLS[s2].pas&&(ch.sk[s2]||0)>0)net({t:'rmb',sid:s2});else if(s2&&SKILLS[s2].pas)msg('패시브는 넣을 수 없어요','#9e937a');else msg('먼저 위에서 스킬을 클릭하세요','#9e937a');},right:()=>net({t:'rmb',sid:null}),tip:()=>sid?skillTip(sid,null).concat([['마우스 우클릭으로 사용','#ffd35a',11]]):[['우클릭 스킬 칸','#ffd35a',13],['스킬을 클릭한 뒤 이 칸을 클릭하면 마우스 우클릭에 배치','#e6dcc3',11]]});}
   txt('스킬 클릭 후 칸 클릭: 배치  ·  칸 우클릭: 비우기',x+w-10,by+28,10,'#6b6275','right');
-  txt('+ 버튼: 스킬 포인트로 배우기·강화',x+w-10,by+10,10,'#6b6275','right');}
+  txt('+ 배우기·강화  ·  − 1포인트 빼기(마을·골드)',x+w-10,by+10,10,'#6b6275','right');}
 
 function baseLine(k,v){if(k==='dmg')return`공격력 ${v}`;if(k==='armor')return`방어력 ${v}`;if(k==='as')return`${v>0?'+':''}${v}% 공격 속도`;if(k==='ms')return`${v}% 이동 속도`;if(k==='mp')return`+${v} 마나`;return'';}
 function diffLine(k,d){const lab=SH.AFF[k].f(Math.abs(d)).replace(/^\+/,d>0?'+':'-');return(d>0?'▲ ':'▼ ')+lab;}
