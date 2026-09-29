@@ -2262,7 +2262,7 @@ function onUltFx(o){const k=o.k;
   if(k==='domeburst'){ufx({type:'burst',x:o.x,y:o.y,r:o.r,max:0.6,cs:['#ffffff','#ffe9a8','#ffd35a']});screenFlash=Math.max(screenFlash,0.2);for(let n=0;n<80;n++){const t=R()*Math.PI*2,sp=rf(60,200);part(o.x,o.y-10,Math.cos(t)*sp,Math.sin(t)*sp*0.6,pick(['y','w','g']),rf(.4,1),{z:rf(4,20),vz:rf(20,80),glow:true});}sfx('boom');return true;}
   if(k==='hammer'){ufx({type:'hammer',x:o.x,y:o.y,d:o.d,big:o.big,max:o.d+0.45});ufx({type:'tgt',x:o.x,y:o.y,r:54,max:o.d,c:'#ffe9a8'});return true;}
   if(k==='dcharge'){const p=playerPos(o.id);if(p)ufx({type:'dcharge',pid:o.id,max:o.d});sfx('cast');return true;}
-  if(k==='dragon'){ufx({type:'dragon',x:o.x,y:o.y,a:o.a,len:o.len,sp:o.sp,max:o.len/o.sp+0.35});sfx('boss');return true;}
+  if(k==='dragon'){ufx({type:'dragon',x:o.x,y:o.y,a:o.a,len:o.len,sp:o.sp,max:o.len/o.sp+0.75,seed:Math.random()*9});sfx('boss');return true;}
   if(k==='redsky'){ufx({type:'redsky',max:o.d});sfx('boss');return true;}
   if(k==='bigmeteor'){ufx({type:'bigmeteor',x:o.x,y:o.y,max:o.d});return true;}
   if(k==='freeze'){ufx({type:'freeze',x:o.x,y:o.y,r:o.r,ids:o.ids||[],max:o.d,seed:R()*999});sfx('ice');return true;}
@@ -2282,6 +2282,36 @@ function mkAngel(fl){return pcan(72,56,q=>{const cx=36;const inE=(x,y,ex,ey,a,b,
   for(let j=9;j<17;j++)for(let i=-3;i<=3;i++)if(i*i+(j-13)*(j-13)<=10)q(cx+i,j,j<11?'#ffd35a':'#f2dcc0');q(cx-1,13,'#5a4a3a');q(cx+1,13,'#5a4a3a');
   for(let j=17;j<54;j++){const hw=3+(j-17)*0.3;for(let i=-hw;i<=hw;i++)q(cx+i,j,Math.abs(i)<1.2?'#ffe9a8':i<-hw+1.5?'#cdc6d2':i>hw-1.2?'#e6dcc3':'#ffffff');}for(let i=-14;i<=14;i++)q(cx+i,54,'#ffd35a');for(let j=24;j<34;j++){q(cx-5-((j-24)>>2),j,'#ffd35a');q(cx+5+((j-24)>>2),j,'#ffd35a');}});}
 const ANGEL_F=[mkAngel(0),mkAngel(1)];
+let DRAGON_SKIN=0;
+/* 역동적인 이미지 용: 활에서 튀어나오며 커지고, 몸통 전체에 흐르는 파동 · 잔상 · 발광 맥동 · 비늘 불꽃 · 속도선 · 끝에서 흩어짐 */
+function dragonBodyPts(e,dist,tt,BL,sc){const ca=Math.cos(e.a),sa=Math.sin(e.a);const M=56,out=[];
+  for(let n=0;n<=M;n++){const u=n/M;const s1=dist-BL*(1-u);const amp=(15-u*9)*sc;const w=Math.sin(s1*0.05-tt*11+e.seed)*amp+Math.sin(tt*6+e.seed)*4*u*sc;out.push([e.x+ca*s1-sa*w,e.y+sa*s1+ca*w,s1]);}return out;}
+function drawDragonStrips(img,P,bh,icx,icy,alpha,comp){const iw=img.width,ih=img.height,M=P.length-1;wx.save();wx.globalAlpha=alpha;if(comp)wx.globalCompositeOperation=comp;wx.imageSmoothingEnabled=true;
+  for(let n=0;n<M;n++){const A=P[n],B=P[n+1];if(B[2]<=0)continue;let ax=A[0],ay=A[1],f0=0;if(A[2]<0){f0=-A[2]/(B[2]-A[2]);ax=A[0]+(B[0]-A[0])*f0;ay=A[1]+(B[1]-A[1])*f0;}
+    const ang=Math.atan2(B[1]-ay,B[0]-ax),seg=Math.hypot(B[0]-ax,B[1]-ay);const sx=(n+f0)/M*iw,sw=(1-f0)/M*iw;
+    const taper=0.55+0.45*Math.min(1,n/(M*0.35));wx.save();wx.translate(ax-icx,ay-icy);wx.rotate(ang);wx.drawImage(img,sx,0,Math.max(0.5,sw),ih,0,-bh*taper/2,seg+0.9,bh*taper);wx.restore();}
+  wx.restore();}
+function drawDragonImg(e,img,t,icx,icy){const T=e.len/e.sp;const ca=Math.cos(e.a),sa=Math.sin(e.a);
+  const dist=e.sp*t+22*(1-Math.exp(-t*10));/* 발사 순간 튀어나가는 가속 */
+  const grow=Math.min(1,0.3+t*4.5),out=t>T?Math.min(1,(t-T)/0.6):0;const fade=1-out;if(fade<=0)return;
+  const BL=180*grow*(1+out*0.25),bh=BL*img.height/img.width*(1+0.05*Math.sin(t*30));
+  // 발사 충격파
+  if(t<0.35){const k=t/0.35;const ox=e.x-icx,oy=e.y-icy;wglow(ox,oy,70*(1-k)+10,'#dfffc0',0.7*(1-k));wx.save();wx.globalAlpha=(1-k)*0.9;wx.strokeStyle='#bff5a0';wx.lineWidth=3*(1-k)+1;wx.beginPath();wx.ellipse(ox,oy,10+k*70,(10+k*70)*0.55,e.a,0,Math.PI*2);wx.stroke();wx.strokeStyle='#ffe9a0';wx.lineWidth=1;wx.beginPath();wx.ellipse(ox,oy,6+k*44,(6+k*44)*0.55,e.a,0,Math.PI*2);wx.stroke();wx.restore();}
+  // 속도선
+  wx.save();wx.globalCompositeOperation='lighter';for(let q=0;q<7;q++){const off=((q*37+Math.floor(t*40)*13)%60)-30,back=dist-20-((q*53)%150);if(back<0)continue;const L2=26+(q%3)*14;const bx=e.x+ca*back-sa*off-icx,by=e.y+sa*back+ca*off-icy;wx.globalAlpha=0.35*fade;wx.strokeStyle=q%2?'#eaffd8':'#9fe8b0';wx.lineWidth=1;wx.beginPath();wx.moveTo(bx,by);wx.lineTo(bx-ca*L2,by-sa*L2);wx.stroke();}wx.restore();
+  // 잔상 2겹 → 본체 → 발광 맥동
+  for(const[dt2,al]of[[0.09,0.16],[0.045,0.3]]){const tt=Math.max(0,t-dt2);const d2=e.sp*tt+22*(1-Math.exp(-tt*10));drawDragonStrips(img,dragonBodyPts(e,d2,tt,BL,grow),bh,icx,icy,al*fade,'lighter');}
+  const P=dragonBodyPts(e,dist,t,BL,grow);
+  for(let n=0;n<P.length;n+=6){if(P[n][2]<0)continue;wglow(P[n][0]-icx,P[n][1]-icy,bh*0.75,'#7be89a',0.09*fade);}
+  drawDragonStrips(img,P,bh,icx,icy,fade,null);
+  drawDragonStrips(img,P,bh,icx,icy,(0.18+0.14*Math.sin(t*22))*fade,'lighter');
+  // 머리 앞 기운 · 입김
+  const H=P[P.length-1],H2=P[P.length-4];const ha=Math.atan2(H[1]-H2[1],H[0]-H2[0]);wglow(H[0]-icx+Math.cos(ha)*6,H[1]-icy+Math.sin(ha)*6,22,'#fff6c8',0.28*fade);
+  // 비늘 불꽃·꼬리 흔적 (게임 속도와 무관하게 프레임당)
+  if(fade>0.2){for(let q=0;q<3;q++){const n=Math.floor(R()*P.length);const Q=P[n];if(Q[2]<0)continue;const nx=-Math.sin(ha),ny=Math.cos(ha);const sd=R()<0.5?-1:1;part(Q[0]+nx*sd*bh*0.3,Q[1]+ny*sd*bh*0.3,nx*sd*rf(20,60)-ca*rf(20,70),ny*sd*rf(20,60)-sa*rf(20,70),pick(['y','o','z','w']),rf(.25,.55),{z:0,glow:true});}
+    const Tl=P[0];if(Tl[2]>0)for(let q=0;q<2;q++)part(Tl[0]+rf(-4,4),Tl[1]+rf(-4,4),-ca*rf(10,40)+rf(-15,15),-sa*rf(10,40)+rf(-15,15),pick(['z','Z','y']),rf(.4,.8),{z:0,glow:true});}
+  // 끝: 흩어지며 사라짐
+  if(out>0&&out<0.9){for(let q=0;q<5;q++){const Q=P[Math.floor(R()*P.length)];part(Q[0]+rf(-6,6),Q[1]+rf(-6,6),rf(-70,70)+ca*40,rf(-70,70)+sa*40,pick(['z','y','w','o']),rf(.3,.7),{z:rf(0,6),vz:rf(20,60),glow:true});}}}/* 용의 화살 이미지 번호 (art/dragonN.png) */
 const DRAGON_HEAD=pcan(52,36,q=>{const E=(x,y,cx,cy,a,b)=>((x-cx)/a)**2+((y-cy)/b)**2;
   for(let j=0;j<36;j++)for(let i=0;i<52;i++){const skull=E(i,j,20,15,14,9),snout=E(i,j,36,17,13,5.5),jaw=E(i,j,32,24,15,4);
     if(skull<=1||snout<=1){const top=j<13;q(i,j,skull>0.8&&snout>0.8?'#1f5a3a':top?'#6fd08a':j<18?'#3fa86a':'#2f8a5a');}else if(jaw<=1&&i>18)q(i,j,j<25?'#2f8a5a':'#1f5a3a');}
@@ -2308,7 +2338,7 @@ function drawUltWorld(icx,icy){for(let i=UFX.length-1;i>=0;i--){const e=UFX[i];c
   else if(e.type==='hammer'){if(t<e.d){const kk=t/e.d;const y=sy-190+kk*kk*190;const sc=e.big?1.3:1;wx.globalAlpha=0.35;wglow(sx,sy,18*kk*sc,'#ffe9a8',0.4);wx.globalAlpha=1;drawRot(HAMMER,sx,Math.round(y),0,17,43,sc);}
     else{const kk=(t-e.d)/0.45;wx.globalAlpha=1-kk;drawRot(HAMMER,sx,sy,0,17,43,e.big?1.3:1);wx.globalAlpha=1;wglow(sx,sy,60*(0.5+kk),'#ffe9a8',0.35*(1-kk));for(let j=0;j<200;j+=2){wx.globalAlpha=(1-kk)*0.6;wx.fillStyle='#ffffff';wx.fillRect(sx-2,sy-j,4,2);}wx.globalAlpha=1;if(t-e.d<0.05)screenFlash=Math.max(screenFlash,e.big?0.22:0.12);}}
   else if(e.type==='dcharge'){const p=e.pid===myId?me:G.players.get(e.pid);if(!p)continue;const px=(e.pid===myId?me.x:p.dx)-icx,py=(e.pid===myId?me.y:p.dy)-icy-8;wglow(px,py,10+k*16,'#b8e070',0.3+0.3*k);for(let n=0;n<4;n++){const a=R()*Math.PI*2,d2=rf(20,40);part(px+icx+Math.cos(a)*d2,py+icy+Math.sin(a)*d2,-Math.cos(a)*d2*3,-Math.sin(a)*d2*3,pick(['z','y','w']),0.3,{z:0,glow:true});}}
-  else if(e.type==='dragon'){const dist=t*e.sp;const fade=t>e.len/e.sp?1-(t-e.len/e.sp)/0.35:1;if(fade<=0)continue;const ca=Math.cos(e.a),sa=Math.sin(e.a);const L=Math.min(dist,190);const s0=dist-L;
+  else if(e.type==='dragon'){{const DIMG=artOf(`art/dragon${window.__dskin!=null?window.__dskin:DRAGON_SKIN}.png`);if(DIMG){drawDragonImg(e,DIMG,t,icx,icy);continue;}}const dist=t*e.sp;const fade=t>e.len/e.sp?1-(t-e.len/e.sp)/0.35:1;if(fade<=0)continue;const ca=Math.cos(e.a),sa=Math.sin(e.a);const L=Math.min(dist,190);const s0=dist-L;
     const P=u=>{const s1=s0+u*L;const w=Math.sin(s1*0.045-t*9)*14*(1-u*0.55);return[e.x+ca*s1-sa*w-icx,e.y+sa*s1+ca*w-icy];};const N=40;const pts=[],nrm=[];for(let n=0;n<=N;n++){const u=n/N;pts.push(P(u));}
     for(let n=0;n<=N;n++){const a=pts[Math.max(0,n-1)],b=pts[Math.min(N,n+1)];const dx=b[0]-a[0],dy=b[1]-a[1],d=Math.hypot(dx,dy)||1;nrm.push([-dy/d,dx/d]);}
     const wid=u=>2+11*Math.pow(u,0.65);wx.globalAlpha=fade;
@@ -2432,7 +2462,7 @@ function drawRaid2Marks(icx,icy){const rs=G.raid;if(!rs||!rs.x||!rs.x.marks)retu
 
 // ================= 루프 =================
 let last=performance.now();
-function frame(ts){let dt=Math.min(0.05,(ts-last)/1000)||0;last=ts;
+function frame(ts){let dt=Math.min(0.05,(ts-last)/1000)||0;last=ts;if(window.__tscale)dt*=window.__tscale;
   if(HSTOP>0){HSTOP-=dt;dt*=0.06;}
   try{if(scene==='game'&&G.map){update(dt);tutUpdate(dt);}else time+=dt;render();}catch(err){console.error(err);}
   requestAnimationFrame(frame);}
