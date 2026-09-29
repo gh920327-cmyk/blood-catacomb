@@ -782,7 +782,7 @@ function setMouse(e){mouse.shift=!!e.shiftKey;const r=cv.getBoundingClientRect()
 function uiHit(){for(let i=uiRects.length-1;i>=0;i--){const r=uiRects[i];if(mouse.x>=r.x&&mouse.x<r.x+r.w&&mouse.y>=r.y&&mouse.y<r.y+r.h&&(r.click||r.right||r.block))return r;}return null;}
 function dropUnderMouse(){for(let i=dropLabels.length-1;i>=0;i--){const l=dropLabels[i];if(mouse.x>=l.x&&mouse.x<=l.x+l.w&&mouse.y>=l.y&&mouse.y<=l.y+l.h)return l.d;}for(const d of G.drops.values()){if(d.kind==='item'&&d.t>=0.45&&Math.abs(d.x-mouse.wx)<8&&mouse.wy>d.y-14&&mouse.wy<d.y+3)return d;}return null;}
 function monsterAt(x,y){let b=null,bd=1e9;for(const m of G.monsters.values()){if(m.fl&512)continue;const boss=isBossTc(m.tc)||m.tc===7;const hw=boss?(SPR.ready?18:13):(SPR.ready?9:7),top=boss?(SPR.ready?44:30):(SPR.ready?20:15);if(x>=m.dx-hw&&x<=m.dx+hw&&y>=m.dy-top&&y<=m.dy+3){const d=Math.abs(x-m.dx)+Math.abs(y-(m.dy-top/2));if(d<bd){bd=d;b=m;}}}return b;}
-function playerAt(x,y){const top=SPR.ready?20:15;for(const p of G.players.values()){if(p.id===myId)continue;if(Math.abs(x-p.dx)<8&&y>p.dy-top&&y<p.dy+3)return p;}return null;}
+function playerAt(x,y){const top=SPR.ready?24:18;for(const p of G.players.values()){if(p.id===myId)continue;if(Math.abs(x-p.dx)<10&&y>p.dy-top&&y<p.dy+6)return p;}return null;}
 function interact(){if(G.beats&&beatPress())return;if(G.fishS&&fishPress())return;if(G.emoWheel){G.emoWheel=false;return;}const n=nearNpc();if(n){openNpc(n);return;}const nb=nearBell();if(nb){net({t:'rbell',i:nb.i});return;}const eo=nearEv();if(eo){useEv(eo);return;}let b=null,bd=26;for(const d of G.drops.values()){if(d.kind!=='item'||d.t<0.45)continue;const dd=Math.hypot(d.x-me.x,d.y-me.y);if(dd<bd){bd=dd;b=d;}}if(b)net({t:'pick',id:b.id});}
 function anyPanel(){return showInv||showChar||showShop||showSkills||G.portalMenu||G.escMenu||G.ctxMenu||G.result||G.fac||G.opts||G.talent||G.rec;}
 cv.addEventListener('pointermove',e=>setMouse(e));
@@ -1634,7 +1634,7 @@ function drawPings(icx,icy){const ps=G.pings;if(!ps)return;for(let i=ps.length-1
 
 // ================= 3단계: 결투장 · 낚시 · 감정표현 · 옷장 =================
 // ---- 결투장 ----
-function inArena(){return !!(G.map&&G.map.arena);}
+function inArena(){return !!(G.map&&G.map.arena===true);}
 function arenaFrozen(){return inArena()&&G.arena&&G.arena.cdEnd>time;}
 function teamOf(id){return G.arena&&G.arena.teams?G.arena.teams[id]:undefined;}
 function onArena(d){if(d.st==='cd'){G.arena={teams:d.teams,names:d.names,cdEnd:time+d.t0,start:time+d.t0};G.arenaRes=null;sfx('boss');}
