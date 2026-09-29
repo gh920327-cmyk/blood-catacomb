@@ -619,7 +619,10 @@ function power(ch,eqOver){const c=eqOver?Object.assign({},ch,{eq:Object.assign({
   const crit=1+Math.min(100,S.crit)/100*(S.critMul-1);const main=C.prim==='ene'?S.spell:1;
   const off=S.dmgBase*S.dmgMul*crit*(0.6+0.4*S.atkRate)*main*(S.rad||1)*(1+(S.cdr||0)*0.5)*(1+(S.ls||0)*0.005);
   const lv=Math.max(1,c.lvl|0);const def=S.maxHp/(1-dmgReduce(S,Math.ceil(lv/2)))/(1-Math.min(0.5,S.dr||0));
-  const heal=c.cls==='priest'?S.healPow*4:0;return Math.round(Math.pow(off*10,0.6)*Math.pow(def,0.4)*6+heal+S.maxMp);}/* 공격 60% · 생존 40% 비중(곱) */
+  const heal=c.cls==='priest'?S.healPow*4:0;return Math.round((Math.pow(off*10,0.6)*Math.pow(def,0.4)*6+heal+S.maxMp)*(CP_NORM[c.cls]||1));}/* 공격 60% · 생존 40% 비중(곱) · 직업 보정으로 직업끼리 비교 가능 */
+const CP_NORM={guardian:0.76,warrior:0.91,archer:1.12,priest:1.12,mage:1.78,knight:0.8};
+/* 레이드 권장 전투력 (파티원 1인 기준) */
+const RAID_CP={bell:8000,mirror:14000,clock:20000,moon:30000};function raidCP(id,hard){return Math.round((RAID_CP[id]||0)*(hard?1.4:1)/100)*100;}
 function potPrice(lvl){return 15+lvl*3;}
 
 // ---------- 저장 코드 ----------
@@ -628,7 +631,7 @@ function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
 const SH={ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
-  CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,lvCost,itemLvUp,canEquip,
+  CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,lvCost,itemLvUp,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
 })(typeof self!=='undefined'?self:this);

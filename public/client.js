@@ -2125,6 +2125,7 @@ function drawRaidPanel(){const ch=G.ch;if(!ch)return;const pt=G.party;const lead
   const nm=r.boss,ns=nm.length>9?38:52;txt(nm,tx-1,y0+76,ns,'#f2eadb',null,'serif');
   txt(c.ep,tx,y0+104,22,'#ffd35a',null,'serif');txt(c.q,tx,y0+123,18,'#c9a0e8',null,'serif');
   txt(`1~4인 · 약 ${r.id==='moon'?'15~20':'10~15'}분 · 데스 3 · 단체 기믹 실패 시 전멸 · 파티 ${n}명${r.id==='moon'?' · 절망':''}`,tx,y0+143,17,'#c9c1b2');
+  {const rc=SH.raidCP(r.id,false),rh=SH.raidCP(r.id,true),my=G.cp!=null?G.cp:SH.power(ch);const col=my>=rc?'#7fd05a':my>=rc*0.8?'#ffd35a':'#ff6a5a';txt(`권장 전투력 ${rc.toLocaleString()} (하드 ${rh.toLocaleString()})  ·  내 전투력 ${my.toLocaleString()}`,tx,y0+33,13,col);uiRects.push({x:tx,y:y0+27,w:300,h:13,tip:()=>[['권장 전투력','#ffd35a',12],['파티원 한 명 기준이에요. 이보다 낮으면 보스 공격을 버티기 힘들어요','#e6dcc3',11],['초록: 충분 · 노랑: 빠듯 · 빨강: 부족','#9e937a',11]]});}
   const dis=!lvOk||!lead;
   [['normal','노말'],['hard','하드'],['practice','연습']].forEach(([m,l],k)=>button(tx+k*54,y0+154,50,18,l,()=>{net({t:'raidenter',id:r.id,mode:m});closeFac();},{size:13,main:m==='normal',dis,tip:()=>[[`${r.n} · ${l}`,'#ffd35a',12],[m==='hard'?'보스 체력·피해 증가, 기믹 판정이 엄격함 · 신화 8%':m==='practice'?'데스 카운트 무제한 · 보상과 경매 없음':'기본 난이도 · 신화 5%','#e6dcc3',11],!lvOk?[`레벨 ${r.lvl} 이상 필요`,'#e0574a',11]:!lead?['파티장만 열 수 있어요','#e0574a',11]:['파티원 모두 레벨 조건을 채워야 해요','#9e937a',11]]}));
   txt(!lvOk?`레벨 ${r.lvl}부터 입장`:!lead?'파티장만 열 수 있어요':got?'':'클리어할 때마다 보상',tx+166,y0+163,16,!lvOk||!lead?'#e0574a':got?'#9e937a':'#7fd05a');
