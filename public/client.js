@@ -549,6 +549,8 @@ function toast(t){const el=document.getElementById('toast');el.textContent=t;el.
 
 // ================= 저장 =================
 const SAVE_KEY='bc_chars_v1';
+// 세이브 초기화: 이 값이 바뀌면 모든 브라우저의 캐릭터·창고·히든 해금이 한 번 지워진다
+const SAVE_EPOCH='2';try{if(localStorage.getItem('bc_epoch')!==SAVE_EPOCH){localStorage.removeItem('bc_chars_v1');localStorage.removeItem('bc_stash');localStorage.removeItem('bc_knight');localStorage.setItem('bc_epoch',SAVE_EPOCH);}}catch(e){}
 function loadChars(){try{const a=JSON.parse(localStorage.getItem(SAVE_KEY)||'[]');return Array.isArray(a)?a.filter(SH.validChar):[];}catch(e){return [];}}
 function saveChars(a){try{localStorage.setItem(SAVE_KEY,JSON.stringify(a));return true;}catch(e){return false;}}
 function saveCurrent(ch){const a=loadChars();const i=a.findIndex(c=>c.id===ch.id);if(i>=0)a[i]=ch;else a.push(ch);saveChars(a);}
