@@ -46,6 +46,18 @@ function genFloor(seed,fl){
   map.torches=[];
   for(const r of rooms){const cand=[];for(let i=r.x+1;i<r.x+r.w-1;i++)if(tileAt(map,i,r.y-1)===0&&tileAt(map,i,r.y)>0)cand.push(i);let last=-99;const want=r.w>9?2:1;let placed=0;
     for(let t=0;t<10&&placed<want&&cand.length;t++){const i=pick(cand);if(Math.abs(i-last)<4)continue;last=i;placed++;map.torches.push({x:i*TS+8,y:(r.y-1)*TS+4,ph:R()*6});}}
+  map.secret=null;
+  if(!boss){const R2=mulberry((seed^0x5ec2e7)>>>0);if(R2()<0.22){
+    for(let t=0;t<60&&!map.secret;t++){const r=rooms[Math.floor(R2()*rooms.length)];if(r===start)continue;const dir=Math.floor(R2()*4),w=5,h=4;let dx,dy,sx,sy;
+      if(dir===0){dx=r.x+1+Math.floor(R2()*(r.w-2));dy=r.y-1;sx=dx-2;sy=dy-h;}
+      else if(dir===1){dx=r.x+1+Math.floor(R2()*(r.w-2));dy=r.y+r.h;sx=dx-2;sy=dy+1;}
+      else if(dir===2){dy=r.y+1+Math.floor(R2()*(r.h-2));dx=r.x-1;sx=dx-w;sy=dy-1;}
+      else{dy=r.y+1+Math.floor(R2()*(r.h-2));dx=r.x+r.w;sx=dx+1;sy=dy-1;}
+      if(sx<3||sy<3||sx+w>W-3||sy+h>H-3||tiles[dy*W+dx]!==0)continue;let ok=true;
+      for(let y=sy-1;y<=sy+h&&ok;y++)for(let x=sx-1;x<=sx+w;x++){if(x===dx&&y===dy)continue;const inside=x>=sx&&x<sx+w&&y>=sy&&y<sy+h;if(tiles[y*W+x]!==0&&!(inside&&false)){ok=false;break;}}
+      if(!ok)continue;
+      for(let y=sy;y<sy+h;y++)for(let x=sx;x<sx+w;x++)tiles[y*W+x]=1;tiles[dy*W+dx]=4;
+      map.secret={door:dy*W+dx,room:{x:sx,y:sy,w,h},chests:[{x:(sx+1)*TS+8,y:(sy+1)*TS+8},{x:(sx+w-2)*TS+8,y:(sy+h-2)*TS+8}]};}}}
   return map;
 }
 function openStairs(map){map.tiles[map.stairsIdx]=2;}
@@ -208,9 +220,13 @@ const MT={
   egg:{n:'알',hp:30,dmg:0,spd:0,r:5,xp:4,cd:99,stat:1},
   tentacle:{n:'촉수',hp:60,dmg:8,spd:0,r:6,xp:8,cd:1.8,stat:1},
   guard:{n:'수호 해골',hp:40,dmg:6,spd:32,r:5,xp:6,cd:1.3},
-  clone:{n:'환영',hp:60,dmg:8,spd:30,r:11,xp:0,cd:1.6}
+  clone:{n:'환영',hp:60,dmg:8,spd:30,r:11,xp:0,cd:1.6},
+  goblin:{n:'보물 고블린',hp:55,dmg:0,spd:60,r:5,xp:60,cd:99}
 };
-const MT_LIST=['zombie','skel','hound','boss','egg','tentacle','guard','clone'];
+const MT_LIST=['zombie','skel','hound','boss','egg','tentacle','guard','clone','goblin'];
+// 엘리트 특성 (비트)
+const EAFF=[['frost','빙결',1],['split','분열',2],['vamp','흡혈',4],['tele','순간이동',8],['shield','보호막',16],['bomb','자폭',32],['fast','신속',64],['tough','강철',128]];
+function eaffNames(mask){return EAFF.filter(a=>mask&a[2]).map(a=>a[1]);}
 const WIND_LIST=['','melee','shoot','charge','slam','ring','cast'];
 // 타격음 종류 (서버가 번호로 보냄)
 const EL_LIST=['slash','blunt','heavy','arrow','magic','zap','fire','ice','holy','poison','void','quake'];
@@ -386,7 +402,7 @@ function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
 const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,
-  CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
+  CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
   THEMES,FINAL_BOSS,themeOf,ENH_MAX,ENH_RATE,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
 })(typeof self!=='undefined'?self:this);
