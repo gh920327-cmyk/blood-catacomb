@@ -11,11 +11,20 @@ const MIME={'.html':'text/html; charset=utf-8','.js':'application/javascript; ch
 const server=http.createServer((req,res)=>{
   let u;try{u=decodeURIComponent(req.url.split('?')[0]);}catch(e){res.writeHead(400);res.end();return;}
   if(u==='/health'){res.end('ok');return;}
+  if(u==='/raidlog'){const q=new URLSearchParams(req.url.split('?')[1]||'');if(q.get('k')!==(process.env.RAIDLOG_KEY||'moonless')){res.writeHead(403);res.end();return;}res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(RAIDLOG));return;}
   if(u==='/')u='/index.html';
   const f=path.normalize(path.join(PUB,u));
   if(!f.startsWith(PUB)){res.writeHead(403);res.end();return;}
   fs.readFile(f,(e,d)=>{if(e){res.writeHead(404);res.end('not found');return;}res.writeHead(200,{'Content-Type':MIME[path.extname(f)]||'application/octet-stream','Cache-Control':'no-cache'});res.end(d);});
 });
+/* 레이드 기록: 끝날 때마다 한 줄씩 저장(밸런스 패치 근거). 파일은 재배포 때 초기화될 수 있어 로그에도 남김 */
+const RAIDLOG_F=path.join(__dirname,'data','raidlog.jsonl');const RAIDLOG=[];
+try{for(const l of fs.readFileSync(RAIDLOG_F,'utf8').split('\n'))if(l.trim())RAIDLOG.push(JSON.parse(l));}catch(e){}
+function raidLog(inst,result,why){try{const r=inst.raid;if(!r||r.logged)return;r.logged=1;const boss=inst.monsters.find(m=>m.boss&&!m.add);
+  const rec={ts:new Date().toISOString(),raid:r.id,mode:r.practice?'practice':r.hard?'hard':'normal',result,why:why||null,time:Math.round(inst.time),bossT:Math.round(r.bossT||0),deathsLeft:r.deaths,bossHp:boss?Math.round(Math.max(0,boss.hp)/boss.maxHp*1000)/10:null,hl:r.hl||null,
+    players:instPlayers(inst).map(P=>{const m=inst.meter.get(P.id)||{};const s=rst(inst,P)||{};const an=(r.an&&r.an[P.id])||{};return{name:P.ch.name,cls:P.ch.cls,lvl:P.ch.lvl,cp:SH.power(P.ch),ult:P.ch.ult||null,dmg:Math.round(m.dmg||0),bossDps:Math.round((m.dmg||0)/Math.max(1,r.bossT||inst.time)),heal:Math.round(m.heal||0),shield:Math.round(m.shield||0),taken:Math.round(m.taken||0),deaths:s.deaths|0,ctr:s.ctr|0,gim:s.gim|0,sk:Object.fromEntries(Object.entries(an).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,Math.round(v)]))};})};
+  RAIDLOG.push(rec);if(RAIDLOG.length>2000)RAIDLOG.shift();console.log('[RAIDLOG]'+JSON.stringify(rec));
+  fs.mkdir(path.dirname(RAIDLOG_F),{recursive:true},()=>fs.appendFile(RAIDLOG_F,JSON.stringify(rec)+'\n',()=>{}));}catch(e){console.error('raidlog',e);}}
 const wss=new WebSocketServer({server,path:'/ws',maxPayload:256*1024});
 
 // ================= 밸런스 (이 숫자만 고치면 난이도가 바뀝니다) =================
@@ -413,7 +422,7 @@ function hitMonster(inst,m,P,mult,o){if(m.dead)return;o=o||{};if(m.pvp){pvpHit(i
   const pos=(m.boss||m.ctrable)?bossSide(m,P):0;
   if(m.cwEnd&&inst.time<m.cwEnd&&(o.ctr||inst._ctr)&&!m.hidden){if(pos===1)counterHit(inst,m,P);else if(!P._ctrWarn||inst.time-P._ctrWarn>0.8){P._ctrWarn=inst.time;fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-28),s:'헤드에서 쳐야 해요!',c:'#ffb03a'});}}
   if(inst._um)mult*=inst._um;if(m.grog>inst.time)mult*=1.3;if(m.lmarkT>inst.time)mult*=1.25;if(pos===-1)mult*=1.1;if(m.hidden)return;if(m.invul>0){if(!o.dotHit&&R()<0.3)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-(m.boss?34:18)),s:'무적',c:'#9e937a'});return;}if(m.vuln>0)mult*=2;if(o.exec&&m.hp<m.maxHp*0.3)mult*=2;if(m.boss&&mythOn(P,'wrath'))mult*=1.2;if(m.boss&&P.S.bossDmg)mult*=1+P.S.bossDmg;if(inst.raid&&RAIDX[inst.raid.id].dmgMod)mult*=RAIDX[inst.raid.id].dmgMod(inst,m,P);if(m.brk>inst.time)mult*=1.15;const r=rollDmg(P,mult);let v=r.d;if(m.shV>0&&m.shT>0){const ab=Math.min(m.shV,v);m.shV-=ab;v-=ab;if(v<=0){if(R()<0.4)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-20),s:'보호막',c:'#8fd0ff'});return;}}const real=Math.min(v,m.hp);m.hp-=v;m.flash=0.09;if(!m.alert)alertPack(inst,m);
-  addMeter(inst,P,'dmg',real);anAdd(P,o.src||inst._src||'etc',v,r.crit,o.dotHit);const el=o.el||inst._el||baseEl(P);fx(inst,{k:'dmg',x:r1(m.x),y:r1(m.y-(m.boss?32:17)),v,c:o.dotHit?2:r.crit?1:0,e:SH.EL_LIST.indexOf(el),p:P.id,id:m.id,sk:inst._sk?1:0});
+  addMeter(inst,P,'dmg',real);{const src=o.src||inst._src||'etc';anAdd(P,src,v,r.crit,o.dotHit);if(inst.raid){const A=inst.raid.an||(inst.raid.an={});const a=A[P.id]||(A[P.id]={});a[src]=(a[src]||0)+v;}}const el=o.el||inst._el||baseEl(P);fx(inst,{k:'dmg',x:r1(m.x),y:r1(m.y-(m.boss?32:17)),v,c:o.dotHit?2:r.crit?1:0,e:SH.EL_LIST.indexOf(el),p:P.id,id:m.id,sk:inst._sk?1:0});
   if(o.slow)m.slow=Math.max(m.slow,o.slow);if(o.stun)m.stun=Math.max(m.stun,m.boss?o.stun*0.25:o.stun);
   if(o.dot){m.dots=m.dots||[];m.dots.push({pid:P.id,src:o.src||inst._src||null,per:o.dot.mult/(o.dot.dur*2),n:Math.round(o.dot.dur*2),t:0.5,c:o.dot.c||'r'});}
   if(m.type==='goblin'&&R()<0.3)addDrop(inst,{kind:'gold',owner:P.id,amt:Math.max(1,Math.round(ri(2,5)*inst.floor*BAL.gold))},m.x,m.y);
@@ -791,7 +800,7 @@ function raidPub(inst){const r=inst.raid;const pz=r.pz;return{id:r.id,mode:r.mod
   hl:r.hl||null,x:RAIDX[r.id]&&RAIDX[r.id].pub?RAIDX[r.id].pub(inst):null,pz:(r.id==='bell'&&pz)?{round:pz.round,total:pz.rounds.length,st:pz.st,n:pz.inp.length,len:pz.seq.length}:null,bb:r.bb?{need:r.bb.need,hit:Object.keys(r.bb.hit).map(Number),t:Math.max(0,Math.round(r.bb.t))}:null,door:!!r.doorOpen,elig:r.elig};}
 function raidState(inst){bcast(inst,{t:'raid',st:raidPub(inst)});}
 function openRaidDoor(inst){const r=inst.raid;if(r.doorOpen)return;r.doorOpen=true;for(const i of inst.map.door){inst.map.tiles[i]=1;bcast(inst,{t:'tile',i,v:1});}fx(inst,{k:'msg',m:'문이 열렸다! 보스방으로',c:'#ffd35a'});fx(inst,{k:'shake',v:3});raidState(inst);}
-function raidFail(inst,why){const r=inst.raid;if(r.fail||r.done)return;r.fail=true;r.endT=6;fx(inst,{k:'msg',m:`공략 실패 · ${why}`,c:'#ff4a3a'});fx(inst,{k:'sfx',n:'boss'});raidState(inst);}
+function raidFail(inst,why){const r=inst.raid;if(r.fail||r.done)return;r.fail=true;raidLog(inst,'fail',why);r.endT=6;fx(inst,{k:'msg',m:`공략 실패 · ${why}`,c:'#ff4a3a'});fx(inst,{k:'sfx',n:'boss'});raidState(inst);}
 function updateRaid(inst,dt){const r=inst.raid;inst.time+=dt;
   if(r.fail||(r.done&&!r.auc)){r.endT-=dt;if(r.endT<=0){for(const P of instPlayers(inst)){joinHub(P);if(P.party)sendParty(P.party);}return;}}
   if(r.auc)updateAuction(inst,dt);
@@ -1027,7 +1036,7 @@ function karnasAI(inst,m,T,d,dt,sm){const r=inst.raid;if(m.busy>=90||m.hidden)re
   raidAIcore(inst,m,T,d,dt,sm,{pool:m2=>m2.phase>1?['swipe','lungeFar','sweep','circles','half','half','markSpread']:['swipe','lungeFar','sweep','circles','half'],P:{half:(i,mm)=>RAIDX.moon.half(i,mm)}});}
 
 // ---- 클리어 · 경매 ----
-function raidClear(inst,m){const r=inst.raid;if(r.done)return;r.done=true;r.endT=r.practice?8:30;const def=r.def;
+function raidClear(inst,m){const r=inst.raid;if(r.done)return;r.done=true;raidLog(inst,'clear');r.endT=r.practice?8:30;const def=r.def;
   fx(inst,{k:'bsay',id:m.id,x:r1(m.x),y:r1(m.y),m:(RAID_LINES[r.id]||['',''])[1],dead:1});fx(inst,{k:'shake',v:7});r.rings=[];r.tethers=[];inst.hz=[];r.bb=null;
   {const rows=inst.bossMeter?meterRows(inst.bossMeter):[];const res={title:`${m.bname} 처치 · ${def.n} (${r.hard?'하드':r.practice?'연습':'노말'})`,floor:def.lvl,time:Math.round(r.bossT),rows};(inst.bossHist=inst.bossHist||[]).push(res);bcast(inst,Object.assign({t:'result'},res));inst.bossMeter=null;inst.bossId=null;}
   fx(inst,{k:'msg',m:`${def.n} 클리어!`,c:'#ffd35a'});fx(inst,{k:'sfx',n:'legend'});
