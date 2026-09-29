@@ -2078,7 +2078,7 @@ const BPH={bell2:{img:'art/ph_bell2.jpg',top:'2 페이즈 · 무너지는 종탑
   golem:{img:'art/ph_golem.jpg',top:'2 페이즈 · 태엽 심장과 하나로',n:'태엽 거인 발렌',q:'"태엽 심장이여, 나와 하나가 되어라!"',face:[680,80],z:2.1,spr:['r_golem']},
   karnas2:{img:'art/ph_karnas2.jpg',top:'2 페이즈 · 흑월이 차오른다',n:'흑왕 카르나스',q:'"이제부터가 진짜다."',face:[722,190],z:2.6,spr:['r_karnas']},
   karnas3:{img:'art/ph_karnas3.jpg',top:'마지막 페이즈 · 깨어지는 심장',n:'흑왕 카르나스',q:'"아직… 새벽은… 오지 않는다…!"',face:[739,127],z:2.6,spr:['r_karnas']}};
-const BIMG={};function artOf(src){if(!src)return null;if(!(src in BIMG)){BIMG[src]=null;loadImg(src).then(i=>{BIMG[src]=i||false;});}return BIMG[src]||null;}
+const BIMG={};setTimeout(()=>artOf(`art/dragon${DRAGON_SKIN}.png`),0);function artOf(src){if(!src)return null;if(!(src in BIMG)){BIMG[src]=null;loadImg(src).then(i=>{BIMG[src]=i||false;});}return BIMG[src]||null;}
 function bossArt(id){const c=BCARD[id];return c?artOf(c.img):null;}
 SH.RAIDS.forEach(r=>bossArt(r.id));
 function artDraw(img,sx,sy,sw,sh,dx,dy,dw,dh){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,sx,sy,sw,sh,dx*SC,dy*SC,dw*SC,dh*SC);ctx.imageSmoothingEnabled=false;}
@@ -2261,7 +2261,7 @@ function onUltFx(o){const k=o.k;
   if(k==='dome'){ufx({type:'dome',x:o.x,y:o.y,r:o.r,max:o.d});sfx('holy');return true;}
   if(k==='domeburst'){ufx({type:'burst',x:o.x,y:o.y,r:o.r,max:0.6,cs:['#ffffff','#ffe9a8','#ffd35a']});screenFlash=Math.max(screenFlash,0.2);for(let n=0;n<80;n++){const t=R()*Math.PI*2,sp=rf(60,200);part(o.x,o.y-10,Math.cos(t)*sp,Math.sin(t)*sp*0.6,pick(['y','w','g']),rf(.4,1),{z:rf(4,20),vz:rf(20,80),glow:true});}sfx('boom');return true;}
   if(k==='hammer'){ufx({type:'hammer',x:o.x,y:o.y,d:o.d,big:o.big,max:o.d+0.45});ufx({type:'tgt',x:o.x,y:o.y,r:54,max:o.d,c:'#ffe9a8'});return true;}
-  if(k==='dcharge'){const p=playerPos(o.id);if(p)ufx({type:'dcharge',pid:o.id,max:o.d});sfx('cast');return true;}
+  if(k==='dcharge'){artOf(`art/dragon${DRAGON_SKIN}.png`);const p=playerPos(o.id);if(p)ufx({type:'dcharge',pid:o.id,max:o.d});sfx('cast');return true;}
   if(k==='dragon'){ufx({type:'dragon',x:o.x,y:o.y,a:o.a,len:o.len,sp:o.sp,max:o.len/o.sp+0.75,seed:Math.random()*9});sfx('boss');return true;}
   if(k==='redsky'){ufx({type:'redsky',max:o.d});sfx('boss');return true;}
   if(k==='bigmeteor'){ufx({type:'bigmeteor',x:o.x,y:o.y,max:o.d});return true;}
@@ -2338,7 +2338,7 @@ function drawUltWorld(icx,icy){for(let i=UFX.length-1;i>=0;i--){const e=UFX[i];c
   else if(e.type==='hammer'){if(t<e.d){const kk=t/e.d;const y=sy-190+kk*kk*190;const sc=e.big?1.3:1;wx.globalAlpha=0.35;wglow(sx,sy,18*kk*sc,'#ffe9a8',0.4);wx.globalAlpha=1;drawRot(HAMMER,sx,Math.round(y),0,17,43,sc);}
     else{const kk=(t-e.d)/0.45;wx.globalAlpha=1-kk;drawRot(HAMMER,sx,sy,0,17,43,e.big?1.3:1);wx.globalAlpha=1;wglow(sx,sy,60*(0.5+kk),'#ffe9a8',0.35*(1-kk));for(let j=0;j<200;j+=2){wx.globalAlpha=(1-kk)*0.6;wx.fillStyle='#ffffff';wx.fillRect(sx-2,sy-j,4,2);}wx.globalAlpha=1;if(t-e.d<0.05)screenFlash=Math.max(screenFlash,e.big?0.22:0.12);}}
   else if(e.type==='dcharge'){const p=e.pid===myId?me:G.players.get(e.pid);if(!p)continue;const px=(e.pid===myId?me.x:p.dx)-icx,py=(e.pid===myId?me.y:p.dy)-icy-8;wglow(px,py,10+k*16,'#b8e070',0.3+0.3*k);for(let n=0;n<4;n++){const a=R()*Math.PI*2,d2=rf(20,40);part(px+icx+Math.cos(a)*d2,py+icy+Math.sin(a)*d2,-Math.cos(a)*d2*3,-Math.sin(a)*d2*3,pick(['z','y','w']),0.3,{z:0,glow:true});}}
-  else if(e.type==='dragon'){{const DIMG=artOf(`art/dragon${window.__dskin!=null?window.__dskin:DRAGON_SKIN}.png`);if(DIMG){drawDragonImg(e,DIMG,t,icx,icy);continue;}}const dist=t*e.sp;const fade=t>e.len/e.sp?1-(t-e.len/e.sp)/0.35:1;if(fade<=0)continue;const ca=Math.cos(e.a),sa=Math.sin(e.a);const L=Math.min(dist,190);const s0=dist-L;
+  else if(e.type==='dragon'){{const src=`art/dragon${window.__dskin!=null?window.__dskin:DRAGON_SKIN}.png`;const DIMG=artOf(src);if(DIMG){drawDragonImg(e,DIMG,t,icx,icy);continue;}if(BIMG[src]!==false)continue;/* 아직 불러오는 중이면 예전 용을 그리지 않음 */}const dist=t*e.sp;const fade=t>e.len/e.sp?1-(t-e.len/e.sp)/0.35:1;if(fade<=0)continue;const ca=Math.cos(e.a),sa=Math.sin(e.a);const L=Math.min(dist,190);const s0=dist-L;
     const P=u=>{const s1=s0+u*L;const w=Math.sin(s1*0.045-t*9)*14*(1-u*0.55);return[e.x+ca*s1-sa*w-icx,e.y+sa*s1+ca*w-icy];};const N=40;const pts=[],nrm=[];for(let n=0;n<=N;n++){const u=n/N;pts.push(P(u));}
     for(let n=0;n<=N;n++){const a=pts[Math.max(0,n-1)],b=pts[Math.min(N,n+1)];const dx=b[0]-a[0],dy=b[1]-a[1],d=Math.hypot(dx,dy)||1;nrm.push([-dy/d,dx/d]);}
     const wid=u=>2+11*Math.pow(u,0.65);wx.globalAlpha=fade;
