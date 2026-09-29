@@ -944,7 +944,7 @@ const GM={
       while(shows.length<4)shows.push({id:null,real:0,cls:pick(Object.keys(CLASSES))});
       g.mir=shows.map((s,i)=>{const p=brPt(inst,corners[i][0],corners[i][1]);const P=s.id&&players.get(s.id);return{x:p.x,y:p.y,id:s.id,real:s.real,cls:P?P.ch.cls:s.cls,name:P?P.ch.name:'?',broken:false};});
       g.freed={};for(const id of g.jail){const P=players.get(id);if(P){P.gmLock=inst.time+60;P.rootT=Math.max(P.rootT,60);P.dodgeT=Math.max(P.dodgeT,60);fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-30),s:'거울에 갇힘!',c:'#ffe9a8'});}}
-      g.t=r.hard?15:22;fx(inst,{k:'bsay',id:inst.bossId,m:'거울 속에서 영원히 우리 자매와 함께 살아라…'});},
+      g.t=r.hard?15:22;g.idle=false;g.invul=true;fx(inst,{k:'bsay',id:inst.bossId,m:'거울 속에서 영원히 우리 자매와 함께 살아라…'});},
     act(inst,g,P,i){const q=g.mir[i];if(!q||q.broken||Math.hypot(P.x-q.x,P.y-q.y)>34)return;q.broken=true;fx(inst,{k:'boom',x:r1(q.x),y:r1(q.y),r:22,c:1});fx(inst,{k:'shake',v:3});
       if(q.real){g.freed[q.id]=1;const J=players.get(q.id);if(J){J.gmLock=0;J.rootT=0;J.dodgeT=0.5;fx(inst,{k:'txt',x:r1(J.x),y:r1(J.y-30),s:'풀려남!',c:'#7fd05a'});}}else g.bad=`${P.ch.name}님이 엉뚱한 거울을 깼다`;},
     tick(inst,g){if(g.bad)return g.bad;if(g.jail.every(id=>g.freed[id]||!players.get(id)))return 'ok';return null;},
@@ -983,7 +983,7 @@ const GM={
     onHurt(inst,g,P){if(g.carry[P.id]){delete g.carry[P.id];fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-30),s:'등불이 꺼졌다!',c:'#ff6a5a'});raidState(inst);}},
     tick(inst,g){if(g.pil.every(q=>q.lit))return 'ok';return null;},
     end(inst,g,ok){if(ok)for(const b of bossList(inst)){b.hp=Math.max(1,b.hp-b.maxHp*0.06);b.stun=5;b.grog=inst.time+6;}},noStun:true,
-    pub:(inst,g)=>({pil:g.pil.map(q=>[r1(q.x),r1(q.y),q.lit?1:0]),br:[r1(g.br.x),r1(g.br.y)],carry:Object.keys(g.carry).map(Number)})},
+    pub:(inst,g)=>({pil:g.pil.map(q=>[r1(q.x),r1(q.y),q.lit?1:0]),br:[r1(g.br.x),r1(g.br.y)],carry:Object.keys(g.carry)})},
   // 흑왕: 자기 그림자만 만지기 — 보스는 계속 공격
   shadow:{col:'#9a7ad8',why:'그림자가 뒤바뀌었다',okMsg:'모두 자기 그림자를 되찾았다!',
     start(inst,g){const r=inst.raid;const ps=gmPlayers(inst);if(!ps.length)return false;const br=inst.map.bossRoom;g.sh=[];
@@ -996,7 +996,7 @@ const GM={
 // ================= 레이드 모듈 (공통 훅) =================
 const RAID_DMG=+(process.env.RAID_DMG||1);/* 측정용 추가 배율 */
 /* 레이드별 보스 공격력·체력 배율 (호흡 8~15분, 보통 실력으로는 못 깨는 선) · 흑왕은 절망 난이도 */
-const RAID_TUNE={bell:{dmg:1.35,hp:1.5,enr:780},mirror:{dmg:1.35,hp:1.5,enr:780},clock:{dmg:1.35,hp:1.5,enr:780},moon:{dmg:1.5,hp:2.0,enr:900}};
+const RAID_TUNE={bell:{dmg:1.35,hp:1.35,enr:780},mirror:{dmg:1.35,hp:1.5,enr:780},clock:{dmg:1.35,hp:1.5,enr:780},moon:{dmg:1.5,hp:2.0,enr:900}};
 function raidBoss(inst,type,x,y,share){const r=inst.raid;const b=spawnMonster(inst,type,x,y,false);b.boss=true;b.home={x,y};const TU=RAID_TUNE[r.id]||{dmg:1,hp:1};b.maxHp=b.hp=Math.round(SH.MT[type].hp*raidScale(r.def.lvl,r.n,r.hard)*(share||1)*TU.hp);
   b.dmg*=(r.hard?2.6:1.8)*[0,0.55,0.78,0.9,1][clamp(r.n,1,4)]*(r.id==='moon'?1.6:r.id==='clock'?1.15:1)*RAID_DMG*TU.dmg;b.baseDmg=b.dmg;b.r=SH.MT[type].r;b.raidAI=RAID_AI[type];b.bname=SH.MT[type].n;b.tf=r.hard?0.85:1;b.phase=1;b.fightT=0;b.patCd=2.5;b.spdMul=1;return b;}
 function raidAdds(inst,dt,type,cap){const r=inst.raid;if(r.stage!=='gate')return;r.gT-=dt;if(r.gT>0)return;r.gT=r.hard?6:8;const alive=inst.monsters.filter(m=>!m.dead&&m.type===type).length;if(alive>=(r.hard?cap+2:cap))return;const map=inst.map;
