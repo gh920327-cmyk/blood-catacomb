@@ -64,13 +64,14 @@ function openStairs(map){map.tiles[map.stairsIdx]=2;}
 
 // ---------- 마을 (던전 입구 광장) ----------
 // ---------- 특성 나무 (직업마다 3갈래 × 3단계) ----------
-const TN={dmgPct:v=>`공격력 +${v}%`,crit:v=>`치명타 확률 +${v}%`,critDmg:v=>`치명타 피해 +${v}%`,as:v=>`공격 속도 +${v}%`,ms:v=>`이동 속도 +${v}%`,ls:v=>`생명력 흡수 +${v}%`,hpPct:v=>`최대 체력 +${v}%`,mpPct:v=>`최대 마나 +${v}%`,armorPct:v=>`방어력 +${v}%`,dr:v=>`받는 피해 -${v}%`,cdr:v=>`스킬 재사용 대기 -${v}%`,healPct:v=>`치유력 +${v}%`,spellPct:v=>`주문 피해 +${v}%`,regen:v=>`체력 재생 +${v}%`,mpRegen:v=>`마나 재생 +${v}%`};
+const TN={dmgPct:v=>`공격력 +${v}%`,crit:v=>`치명타 확률 +${v}%`,critDmg:v=>`치명타 피해 +${v}%`,as:v=>`공격 속도 +${v}%`,ms:v=>`이동 속도 +${v}%`,ls:v=>`생명력 흡수 +${v}%`,hpPct:v=>`최대 체력 +${v}%`,mpPct:v=>`최대 마나 +${v}%`,armorPct:v=>`방어력 +${v}%`,dr:v=>`받는 피해 -${v}%`,cdr:v=>`스킬 재사용 대기 -${v}%`,healPct:v=>`치유력 +${v}%`,spellPct:v=>`주문 피해 +${v}%`,regen:v=>`체력 재생 +${v}%`,holy:v=>`신성력 획득 +${v}%`,mpRegen:v=>`마나 재생 +${v}%`};
 const tn=(id,n,k,v)=>({id,n,k,v,max:5});
 const TALENTS={
   warrior:[{b:'학살자',n:[tn('w1','무기 숙련','dmgPct',3),tn('w2','처형자의 눈','critDmg',8),tn('w3','광란의 칼날','as',3)]},{b:'불굴',n:[tn('w4','강철 피부','hpPct',4),tn('w5','버티기','dr',2),tn('w6','피의 갈증','ls',0.5)]},{b:'돌격대장',n:[tn('w7','질주','ms',2),tn('w8','전투 감각','cdr',3),tn('w9','급소 찌르기','crit',1.5)]}],
   guardian:[{b:'성벽',n:[tn('g1','두꺼운 갑옷','armorPct',6),tn('g2','굳건함','dr',2),tn('g3','거인의 체력','hpPct',4)]},{b:'응징',n:[tn('g4','방패 강타','dmgPct',4),tn('g5','약점 간파','critDmg',8),tn('g6','연속 타격','as',3)]},{b:'수호 서약',n:[tn('g7','회복의 맹세','regen',15),tn('g8','숙련된 방어','cdr',3),tn('g9','신성한 보호','healPct',5)]}],
   archer:[{b:'저격수',n:[tn('a1','정밀 사격','critDmg',10),tn('a2','매의 눈','crit',1.5),tn('a3','관통 화살','dmgPct',3)]},{b:'사냥꾼',n:[tn('a4','속사','as',3),tn('a5','바람 걸음','ms',2),tn('a6','포식자','ls',0.5)]},{b:'생존술',n:[tn('a7','질긴 몸','hpPct',4),tn('a8','몸 낮추기','dr',2),tn('a9','사냥 본능','cdr',3)]}],
   mage:[{b:'파괴',n:[tn('m1','화염 친화','spellPct',4),tn('m2','불안정한 마력','critDmg',8),tn('m3','집중','crit',1.5)]},{b:'비전',n:[tn('m4','마력 저장소','mpPct',6),tn('m5','시간 왜곡','cdr',3),tn('m6','마나 순환','mpRegen',10)]},{b:'마법 방벽',n:[tn('m7','비전 갑옷','armorPct',8),tn('m8','마력 보호막','dr',2),tn('m9','생명 흡수술','hpPct',4)]}],
+  knight:[{b:'성검',n:[tn('k1','성검 숙련','dmgPct',4),tn('k2','빛의 일격','critDmg',10),tn('k3','검무','as',3)]},{b:'신성력',n:[tn('k4','깊은 신앙','holy',10),tn('k5','빛의 권능','crit',1.5),tn('k6','찬란한 심판','cdr',3)]},{b:'섬광',n:[tn('k7','섬광 걸음','ms',2),tn('k8','잔광','ls',0.6),tn('k9','빛의 보호','dr',2)]}],
   priest:[{b:'신성',n:[tn('p1','축복의 손','healPct',5),tn('p2','빛의 권능','spellPct',3),tn('p3','기도의 시간','cdr',3)]},{b:'응징자',n:[tn('p4','심판','dmgPct',4),tn('p5','성스러운 분노','crit',1.5),tn('p6','천벌','critDmg',8)]},{b:'인내',n:[tn('p7','순교자의 몸','hpPct',4),tn('p8','깊은 신앙','mpPct',6),tn('p9','고행','dr',2)]}]};
 const TAL_NEED=[0,5,10];
 const LVL_CAP=50;
@@ -140,7 +141,7 @@ const FINAL_LINES=['왔구나… 여기까지. 이리 와, 여기 따뜻해.','�
 const MERCS={w:{n:'방패병',cls:'guardian',hp:1.0,mult:0.5,d:'적의 공격을 대신 받아 주는 근접 용병'},a:{n:'궁수',cls:'archer',hp:0.6,mult:0.42,d:'멀리서 화살을 쏘는 원거리 용병'},p:{n:'사제',cls:'priest',hp:0.7,mult:0.22,d:'체력이 줄면 치유해 주는 용병'}};
 function mercCost(lvl){return 150+(lvl|0)*25;}
 // ---------- 카운터 전용 스킬 (1레벨부터, R키) ----------
-const CTR_SKILL={warrior:{n:'저지 베기',d:'앞으로 짧게 파고들며 베어 180% 피해'},guardian:{n:'방패 밀치기',d:'방패로 밀쳐 140% 피해와 짧은 기절'},archer:{n:'견제 사격',d:'아주 빠른 화살 한 발, 170% 피해'},mage:{n:'마력 충격',d:'순식간에 날아가는 마력탄, 180% 피해'},priest:{n:'신성한 일격',d:'빛의 탄환을 쏘아 160% 피해'}};
+const CTR_SKILL={warrior:{n:'저지 베기',d:'앞으로 짧게 파고들며 베어 180% 피해'},guardian:{n:'방패 밀치기',d:'방패로 밀쳐 140% 피해와 짧은 기절'},archer:{n:'견제 사격',d:'아주 빠른 화살 한 발, 170% 피해'},mage:{n:'마력 충격',d:'순식간에 날아가는 마력탄, 180% 피해'},priest:{n:'신성한 일격',d:'빛의 탄환을 쏘아 160% 피해'},knight:{n:'섬광 반격',d:'빛처럼 파고들며 베어 220% 피해 · 신성력 +15'}};
 const CTR_CD=6;
 // ---------- 레이드 ----------
 const RAIDS=[{id:'bell',n:'잊힌 종탑',boss:'종지기 그레고르',lvl:20,ready:1},{id:'mirror',n:'거울 미궁',boss:'쌍둥이 마녀 리라와 노라',lvl:30,ready:1},{id:'clock',n:'태엽 심장 공장',boss:'기사단장 발렌',lvl:40,ready:1},{id:'moon',n:'흑월의 왕좌',boss:'흑왕 카르나스',lvl:50,ready:1}];
@@ -234,9 +235,12 @@ const CLASSES={
     desc:'화염과 얼음, 번개로 적 무리를 쓸어버리는 광역 딜러'},
   priest:{n:'사제',role:'힐러',fam:'staff',prim:'ene',range:'ranged',base:{str:6,dex:9,vit:13,ene:18},hpMul:0.95,armorMul:1,atkRate:1.1,ms:78,
     basic:{kind:'shot',proj:3,speed:230,mult:0.7},skills:['heal','smite','shield','sanctuary','devotion','renew','purify','holyfire','grace','blessing','lightpillar','miracle','lightchain','holyburst','saint'],ults:['angel','divinejudge'],
-    desc:'파티를 치유하고 보호막을 씌운다. 쓰러진 동료를 두 배 빨리 일으킨다'}
+    desc:'파티를 치유하고 보호막을 씌운다. 쓰러진 동료를 두 배 빨리 일으킨다'},
+  knight:{n:'빛의 기사',role:'근거리 딜러 · 히든',fam:'melee',prim:'str',range:'melee',base:{str:17,dex:12,vit:12,ene:7},hpMul:1.15,armorMul:1.05,atkRate:1.45,ms:84,hidden:1,
+    basic:{kind:'melee',mult:1.35},skills:['lslash','flashdash','lmark','crossslash','holyblade','skyfall','bladedance','dawnawaken','dawnward','judgment','lastflash','lightstorm','radiantspear','excalibur','dawnoath'],ults:['dawnblade','heavendance'],
+    desc:'엘라에게 새벽의 맹세를 받은 기사. 빛의 검으로 신성력을 모아 한 번에 쏟아내는 최강의 딜러'}
 };
-const CLASS_ORDER=['warrior','guardian','archer','mage','priest'];
+const CLASS_ORDER=['warrior','guardian','archer','mage','priest','knight'];
 const UNLOCK=[1,1,3,5,8,11,14,18,22,26,30,35,38,42,46];const ULT_LVL=50;
 const MAX_RANK=10,BAR_SIZE=6;
 // lvl: 해금 레벨, pas: 패시브, per: 등급당 효과 설명
@@ -322,6 +326,22 @@ const SKILLS={
   lightchain:{n:'빛의 사슬',mp:18,cd:6,desc:'가장 다친 파티원부터 최대 4명에게 튀는 치유'},
   holyburst:{n:'신성 폭발',mp:24,cd:10,desc:'주변 적에게 250% 피해와 밀치기, 주변 파티원에게 보호막'},
   saint:{n:'성인의 가호',pas:1,desc:'치유력 증가와 받는 피해 감소',per:'등급당 치유력 +4%, 받는 피해 -1%'},
+  // ----- 빛의 기사 (히든) -----
+  lslash:{n:'빛의 참격',mp:8,cd:1,desc:'앞을 넓게 베는 빛의 검격, 190% 피해 · 신성력 +8'},
+  flashdash:{ctr:1,n:'섬광 돌진',mp:10,cd:4,desc:'빛처럼 커서 방향으로 돌진, 경로의 적에게 210% 피해 · 신성력 +10'},
+  lmark:{n:'빛의 표식',mp:12,cd:8,desc:'커서 위치에 빛의 표식. 120% 피해, 8초간 표식된 적이 받는 피해 +25%'},
+  crossslash:{n:'십자 베기',mp:14,cd:5,desc:'십자로 두 번 베어 각 170% 피해와 짧은 기절 · 신성력 +12'},
+  holyblade:{n:'신성한 칼날',pas:1,desc:'치명타 피해와 신성력 획득 증가',per:'등급당 치명타 피해 +6%, 신성력 획득 +5%'},
+  skyfall:{ctr:1,n:'천공의 낙하',mp:16,cd:7,desc:'커서 위치로 뛰어올라 빛기둥과 함께 내려찍는다. 260% 피해와 1초 기절'},
+  bladedance:{n:'빛의 검무',mp:22,cd:12,desc:'3초간 빛의 칼날이 몸을 감싸며 주변 적에게 초당 200%'},
+  dawnawaken:{n:'새벽의 각성',mp:20,cd:24,desc:'10초간 피해 +30%, 공격 속도 +25%, 신성력 획득 두 배'},
+  dawnward:{n:'여명의 가호',pas:1,desc:'피해 증가와 받는 피해 감소',per:'등급당 피해 +3%, 받는 피해 -1%'},
+  judgment:{n:'심판의 검',mp:18,cd:9,desc:'신성력을 모두 쏟아 거대한 빛의 검을 내려친다. 300% + 신성력 1당 3.5% (최대 650%)'},
+  lastflash:{ctr:1,n:'최후의 일섬',mp:16,cd:10,desc:'앞의 적에게 순식간에 파고들어 420% 피해. 체력 35% 이하의 적에게는 1.5배'},
+  lightstorm:{n:'빛의 폭풍',mp:30,cd:16,desc:'주변을 빛으로 뒤덮어 400% 피해와 1.5초 기절 · 신성력 +20'},
+  radiantspear:{n:'광휘의 창',mp:20,cd:8,desc:'빛의 창을 던져 경로의 모든 적에게 320% 피해'},
+  excalibur:{n:'성검 해방',mp:30,cd:30,desc:'8초간 피해 +20%, 기본 공격마다 빛의 파동이 뻗어 나간다 (100%)'},
+  dawnoath:{n:'새벽의 맹세',pas:1,desc:'보스 피해와 치명타 확률 증가',per:'등급당 보스 피해 +2%, 치명타 +1%'},
   // ----- 50레벨 궁극기 (V) -----
   ragnarok:{ult:1,n:'라그나로크',mp:0,cd:100,desc:'하늘로 도약해 불꽃 대검을 내려찍는다(600%). 땅이 세 번 갈라지며 폭발(각 300%)하고 불길이 남는다'},
   wargod:{ult:1,n:'전쟁신 강림',mp:0,cd:110,desc:'12초간 거대해진다. 피해 +30%, 모든 공격이 충격파를 일으키고 속박·둔화 면역'},
@@ -332,7 +352,9 @@ const SKILLS={
   apocalypse:{ult:1,n:'아마겟돈',mp:0,cd:110,desc:'하늘이 붉게 물들며 운석 12개가 적을 노려 떨어지고(각 400%), 마지막에 거대 운석(1000%)'},
   absolutezero:{ult:1,n:'절대 영도',mp:0,cd:100,desc:'주변을 3초간 얼린다(보스는 둔화). 얼음이 산산조각 나며 700% 폭발'},
   angel:{ult:1,n:'천사 강림',mp:0,cd:120,desc:'10초간 천사가 내려와 주변 파티원을 계속 치유하고, 쓰러진 동료를 즉시 일으킨다'},
-  divinejudge:{ult:1,n:'신의 심판',mp:0,cd:100,desc:'빛기둥 10개가 적을 쫓아 떨어진다(각 300%). 주변 파티원에게 최대 체력 20% 보호막'}
+  divinejudge:{ult:1,n:'신의 심판',mp:0,cd:100,desc:'빛기둥 10개가 적을 쫓아 떨어진다(각 300%). 주변 파티원에게 최대 체력 20% 보호막'},
+  dawnblade:{ult:1,n:'여명의 성검',mp:0,cd:100,desc:'하늘에서 거대한 빛의 성검을 내려꽂는다(700%, 2초 기절). 이어서 빛의 파동이 세 번 퍼진다(각 300%)'},
+  heavendance:{ult:1,n:'천상의 검무',mp:0,cd:100,desc:'3초간 빛이 되어 주변 적 사이를 12번 오가며 벤다(각 250%). 마지막에 빛이 폭발한다(500%). 그동안 무적'}
 };
 for(const c in CLASSES){CLASSES[c].skills.forEach((s,i)=>{SKILLS[s].lvl=UNLOCK[i];SKILLS[s].cls=c;});(CLASSES[c].ults||[]).forEach(s=>{SKILLS[s].lvl=ULT_LVL;SKILLS[s].cls=c;});}
 function skillMul(rank){return 1+0.12*Math.max(0,rank-1);}
@@ -565,6 +587,7 @@ function calcStats(ch){
   if(T.hpPct)S.maxHp=Math.round(S.maxHp*(1+T.hpPct/100));if(T.mpPct)S.maxMp=Math.round(S.maxMp*(1+T.mpPct/100));if(T.armorPct)S.armor=Math.round(S.armor*(1+T.armorPct/100));
   if(T.dr)S.dr=(S.dr||0)+T.dr/100;S.cdr=Math.min(0.4,(T.cdr||0)/100);if(T.healPct)S.healPow=Math.round(S.healPow*(1+T.healPct/100));if(T.spellPct)S.spell*=1+T.spellPct/100;
   if(r('endless')){S.dmgMul*=1+0.02*r('endless');S.ls+=0.5*r('endless');}if(r('willpower')){S.maxHp=Math.round(S.maxHp*(1+0.03*r('willpower')));S.dr=(S.dr||0)+0.01*r('willpower');}
+  S.holyGain=1+(T.holy||0)/100;S.rad=ch.cls==='knight'?1+str*0.012:1;if(r('holyblade')){S.critMul+=0.06*r('holyblade');S.holyGain+=0.05*r('holyblade');}if(r('dawnward')){S.dmgMul*=1+0.03*r('dawnward');S.dr=(S.dr||0)+0.01*r('dawnward');}if(r('dawnoath')){S.bossDmg=(S.bossDmg||0)+0.02*r('dawnoath');S.crit=Math.min(75,S.crit+r('dawnoath'));}
   if(r('instinct')){S.crit=Math.min(75,S.crit+r('instinct'));S.bossDmg=0.02*r('instinct');}if(r('resonance')){S.spell*=1+0.03*r('resonance');S.cdr=Math.min(0.45,S.cdr+0.01*r('resonance'));}if(r('saint')){S.healPow=Math.round(S.healPow*(1+0.04*r('saint')));S.dr=(S.dr||0)+0.01*r('saint');}
   S.regen=1+(T.regen||0)/100;if(T.mpRegen)S.mpRegen*=1+T.mpRegen/100;
   S.set3=[];for(const id in SETS){const n=setCount(ch,id);if(n<2)continue;const b=SETS[id].b2;if(b.hpPct)S.maxHp=Math.round(S.maxHp*(1+b.hpPct/100));if(b.armorPct)S.armor=Math.round(S.armor*(1+b.armorPct/100));if(b.crit)S.crit=Math.min(75,S.crit+b.crit);if(b.as)S.atkRate*=1+b.as/100;if(b.bossDmg)S.bossDmg=(S.bossDmg||0)+b.bossDmg/100;if(n>=3)S.set3.push(id);}
