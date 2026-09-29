@@ -1573,7 +1573,7 @@ function affTxt(a){return SH.AFF[a.k].f(a.v);}
 function bsItem(){const r=G.bs;if(!r||!G.ch)return null;return r.w==='eq'?G.ch.eq[r.s]:G.ch.bag[r.i];}
 function bsRef(){const r=G.bs;return r.w==='eq'?{w:'eq',s:r.s}:{w:'bag',i:r.i};}
 function drawForge(){const ch=G.ch;if(!ch)return;const x=6,y=38,w=282,h=194;panel(x,y,w,h,'대장간');
-  const tabs=[['enh','강화'],['rr','재련'],['gem','보석'],['salv','분해']];tabs.forEach(([k,l],i)=>{const bx=x+8+i*67;button(bx,y+17,64,13,l,()=>{G.bsTab=k;G.bsArm=null;},{size:11,main:G.bsTab===k});});
+  const tabs=[['enh','강화'],['lv','레벨'],['rr','재련'],['gem','보석'],['salv','분해']];tabs.forEach(([k,l],i)=>{const bx=x+8+i*54;button(bx,y+17,51,13,l,()=>{G.bsTab=k;G.bsArm=null;},{size:11,main:G.bsTab===k});});
   const it=bsItem();const tab=G.bsTab||'enh';const m=ch.mats||{iron:0,dust:0,ess:0};
   // 아래: 재료
   const fy=y+h-12;pr(x+6,fy-7,w-12,1,PAL.m);let cx=x+10;pimg(GOLD,cx,fy-4);txt(String(ch.gold),cx+10,fy,11,'#ffd35a');cx+=tw(String(ch.gold),11)+18;
@@ -1582,6 +1582,16 @@ function drawForge(){const ch=G.ch;if(!ch)return;const x=6,y=38,w=282,h=194;pane
   if(tab==='salv'){drawSalvTab(x,y,w,h,it);return;}
   if(!it){txt('오른쪽 인벤토리에서 아이템을 클릭하세요',x+w/2,y+80,12,'#9e937a','center');txt('장착 중인 무기·갑옷·반지도 고를 수 있어요',x+w/2,y+94,11,'#6b6275','center');return;}
   itemSlot(x+10,y+36,24,it,null,null,'forge');txt(SH.itemName(it),x+40,y+42,13,itemCol(it));txt(`${RAR[it.rar].n} · 아이템 레벨 ${it.L}${G.bs.w==='eq'?' · 장착 중':''}`,x+40,y+53,10,'#9e937a');
+  if(tab==='lv'){let ly=y+72;const cap=Math.min(SH.LVL_CAP,ch.lvl);const L=it.L|0;
+    if(L>=cap){txt(L>=SH.LVL_CAP?'최고 레벨 아이템이에요':`캐릭터 레벨(${cap})까지 올렸어요`,x+w/2,ly+10,13,'#ffd35a','center');txt('아이템 레벨은 캐릭터 레벨까지 올릴 수 있어요',x+w/2,ly+26,10,'#9e937a','center');return;}
+    const n1=1,nm=cap-L;const nx=JSON.parse(JSON.stringify(it));SH.itemLvUp(nx,nm);
+    txt(`아이템 레벨 ${L}  →  최대 ${cap}`,x+12,ly,13,'#f2eadb');ly+=13;
+    for(const k of['dmg','armor'])if(it.base[k]){txt(`${k==='dmg'?'공격력':'방어력'} ${it.base[k]} → ${nx.base[k]}  (레벨 ${cap} 기준)`,x+12,ly,11,'#7fd05a');ly+=11;}
+    it.aff.forEach((a,i)=>{if(nx.aff[i].v!==a.v){txt(`${affTxt(a)} → ${affTxt(nx.aff[i])}`,x+12,ly,10,'#8fb8ff');ly+=10;}});
+    txt('등급·능력 종류는 그대로, 수치만 새 레벨에 맞게 올라가요',x+12,ly+1,10,'#6b6275');ly+=12;
+    const c1=SH.lvCost(it,n1),cm=SH.lvCost(it,nm);const hw=(w-30)/2;
+    txt('+1',x+12,ly+4,11,'#9e937a');costRow(x+30,ly+4,c1);ly+=13;if(nm>1){txt(`+${nm}`,x+12,ly+4,11,'#9e937a');costRow(x+30,ly+4,cm);}ly+=14;
+    button(x+12,ly,hw,16,`레벨 +1 (→ ${L+1})`,()=>net({t:'bs',op:'lvup',n:1,...bsRef()}),{main:true,size:11});if(nm>1)button(x+18+hw,ly,hw,16,`최대로 (→ ${cap})`,()=>net({t:'bs',op:'lvup',max:1,...bsRef()}),{size:11});return;}
   if(tab==='enh'){const up=it.up|0;let ly=y+72;
     const emax=SH.enhMax(it);if(up>=emax){txt(up>=SH.TRANS_MAX?'초월 완료 (+15) · 모든 능력치 +5%':'최대 강화 (+10)',x+w/2,ly+10,13,'#ffd35a','center');if(up<SH.TRANS_MAX)txt('초월 강화(+11~+15)는 전설·신화·세트 장비만 할 수 있어요',x+w/2,ly+26,10,'#9e937a','center');return;}
     const tr=up>=SH.ENH_MAX,rate=SH.enhRate(it);txt(`${tr?'초월 ':''}+${up}  →  +${up+1}`,x+12,ly,13,tr?'#ffd35a':'#f2eadb');txt(`성공 확률 ${rate}%${tr&&it.tp?` (장인의 기운 +${it.tp}%)`:''}`,x+w-12,ly,12,rate>=80?'#7fd05a':rate>=40?'#ffd35a':'#ff8a5a','right');ly+=13;
