@@ -821,6 +821,7 @@ window.addEventListener('keydown',e=>{
   if(G.stairsAsk&&c==='Escape'){G.stairsAsk=null;return;}
   if(G.bintro&&c==='Escape'){G.bintro.t0=time-3.2;return;}
   if(raidSelKey(c)){e.preventDefault();return;}
+  if(c==='Escape'&&G.loreView){G.loreView=null;return;}
   if(c==='Escape'){
     if(G.opts){G.opts=false;return;}if(G.emoWheel){G.emoWheel=false;return;}if(G.chronD!=null&&G.chron){G.chronD=null;return;}if(G.talent||G.rec||G.chron){G.talent=false;G.rec=false;G.chron=false;return;}if(G.fishS){G.fishS=null;return;}
     if(G.ctxMenu){G.ctxMenu=null;return;}if(G.result){G.result=null;return;}
@@ -1782,7 +1783,7 @@ function drawLoreObj(icx,icy,ents){const e=G.ev;if(!e||!e.lore||G.kind!=='dungeo
   ents.push({y:l.y-6,f:()=>{wx.drawImage(LORE_IMG,sx-6,sy-6);if(!read&&R()<0.08)part(l.x+rf(-4,4),l.y-4,0,0,'y',0.6,{z:rf(0,4),vz:10,glow:true});}});}
 function drawLoreView(){const V=G.loreView;if(!V)return;const pg=SH.LORE[V.i];if(!pg)return;const x=100,y=40,w=280,h=150;pr(x,y,w,h,'#2a2014');pr(x+2,y+2,w-4,h-4,'#e8d8b0');pr(x+5,y+5,w-10,h-10,'#f2e6c8');
   txt(`알드릭의 일지 · ${pg[0]}`,x+w/2,y+18,13,'#5a2a14','center');pr(x+30,y+28,w-60,1,'#b89a6a');for(let k=1;k<pg.length;k++)txt(pg[k],x+w/2,y+42+(k-1)*22,11,'#2a1e14','center');
-  txt(`${V.i+1} / ${SH.LORE.length}  ·  지하 ${SH.loreFloor(V.i)}층${V.first?'  ·  새로 기록됨':''}`,x+w/2,y+h-22,10,'#8a6a4a','center');button(x+w/2-30,y+h-16,60,12,'닫기',()=>{G.loreView=null;},{size:10});uiRects.push({x,y,w,h,block:true});}
+  txt(`${V.i+1} / ${SH.LORE.length}  ·  지하 ${SH.loreFloor(V.i)}층${V.first?'  ·  새로 기록됨':''}`,x+w/2,y+h-22,10,'#8a6a4a','center');uiRects.push({x,y,w,h,block:true});button(x+w/2-30,y+h-16,60,12,'닫기',()=>{G.loreView=null;},{size:10});}
 function drawLoreTab(x,y,w,h){const read=new Set((G.ch&&G.ch.lore)||[]);txt(`읽은 일지 ${read.size}/${SH.LORE.length}  ·  테마마다 3번째 층(3·8·13…98층)에 떨어져 있어요`,x+w/2,y+38,10,'#9e937a','center');
   SH.LORE.forEach((pg,i)=>{const c=i%4,r=(i/4)|0,bx=x+10+c*86,by=y+48+r*32;const ok=read.has(i);pr(bx,by,82,28,ok?'#3a2e1a':'#1c1622');txt(ok?pg[0]:'???',bx+41,by+10,10,ok?'#f2e6c8':'#4a4452','center');txt(`${SH.loreFloor(i)}층`,bx+41,by+21,9,'#6b6275','center');
     if(ok)uiRects.push({x:bx,y:by,w:82,h:28,click:()=>{G.loreView={i,first:false};}});});}
