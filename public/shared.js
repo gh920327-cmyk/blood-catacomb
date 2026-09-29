@@ -51,18 +51,43 @@ function genFloor(seed,fl){
 function openStairs(map){map.tiles[map.stairsIdx]=2;}
 
 // ---------- 마을 (던전 입구 광장) ----------
+// 로비 그림 크기 [폭, 높이] — 발밑(아래 가운데)이 좌표. 발자국(fp)=[반폭 여백, 깊이]만큼 못 지나간다
+const LOBBY_SZ={forge:[100,91],vault:[94,84],tent:[80,81],stall:[84,78],gate:[92,74],tree:[30,50],lamp:[14,42],board:[23,36],well:[24,36],dummy:[17,30],cart:[23,22],grave:[13,22],bench:[20,20],logs:[14,18],planter:[15,16],fire:[13,16]};
+const LOBBY_FP={forge:[8,40],vault:[8,38],tent:[8,34],stall:[6,32],gate:[4,44],tree:[11,8],lamp:[5,5],board:[8,6],well:[9,14],cart:[8,8],grave:[5,6],bench:[7,6],logs:[5,6],planter:[5,6],fire:[5,6]};
 function genHub(){
-  const W=44,H=32,tiles=new Uint8Array(W*H);const map={w:W,h:H,tiles,hub:true,floor:0};
+  const W=60,H=42,tiles=new Uint8Array(W*H);const map={w:W,h:H,tiles,hub:true,floor:0};
   const rect=(x0,y0,x1,y1,v)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)tiles[y*W+x]=v;};
-  rect(4,7,39,27,1);rect(18,3,25,6,1);
-  for(const[x,y]of[[10,11],[33,11],[10,22],[33,22]])rect(x,y,x+1,y+1,0);
-  rect(21,12,22,13,3);
-  map.props=[{t:'fountain',x:22*TS,y:13*TS+8},{t:'barrel',x:5*TS+8,y:13*TS+8},{t:'barrel',x:5*TS+8,y:16*TS+8},{t:'crate',x:6*TS+8,y:17*TS+8},{t:'crate',x:38*TS+8,y:25*TS+8},{t:'barrel',x:37*TS+8,y:25*TS+8},{t:'banner',x:12*TS+8,y:6*TS+2},{t:'banner',x:31*TS+8,y:6*TS+2}];
-  for(const p of map.props)if(p.t==='barrel'||p.t==='crate'){const tx=Math.floor(p.x/TS),ty=Math.floor(p.y/TS);tiles[ty*W+tx]=3;}
-  map.portal={x:22*TS,y:4*TS+4};map.merchant={x:8*TS,y:15*TS};map.spawn={x:22*TS,y:19*TS};map.board={x:36*TS,y:15*TS};
-  map.torches=[];for(const x of[6,9,13,16,27,30,34,37])map.torches.push({x:x*TS+8,y:6*TS+4,ph:x});
-  for(const x of[18,25])map.torches.push({x:x*TS+8,y:2*TS+4,ph:x*3});
-  map.stairsIdx=-1;map.start={cx:22,cy:19};
+  rect(2,8,57,39,1);rect(26,2,33,7,1);
+  const P=[],add=(t,x,y)=>{P.push({t,x,y});};
+  add('gate',480,112);
+  add('forge',150,178);add('vault',812,178);add('stall',150,322);add('tent',812,322);
+  add('board',392,244);
+  add('fountain',480,272);
+  // 훈련장(남동): 허수아비는 서버 몬스터로 그린다
+  add('logs',700,510);add('logs',870,600);add('planter',720,600);add('bench',860,500);
+  // 쉼터(남서)
+  add('well',180,520);add('fire',260,560);add('bench',230,590);add('bench',290,590);add('logs',120,600);
+  // 묘지(북동 구석)
+  add('grave',900,230);add('grave',924,244);add('grave',900,262);add('tree',940,220);
+  // 나무·가로등·수레
+  add('tree',60,190);add('tree',50,600);add('tree',930,420);add('tree',620,640);add('tree',330,640);
+  for(const[x,y]of[[400,130],[560,130],[300,300],[660,300],[300,470],[660,470],[480,450]])add('lamp',x,y);
+  add('cart',236,300);add('planter',92,322);add('planter',256,190);add('planter',706,190);add('logs',236,160);
+  map.props=P;
+  for(const p of P){const fp=LOBBY_FP[p.t],sz=LOBBY_SZ[p.t];if(p.t==='fountain'){rect(29,16,30,16,3);continue;}if(!fp||!sz)continue;
+    const x0=Math.floor((p.x-sz[0]/2+fp[0])/TS),x1=Math.floor((p.x+sz[0]/2-fp[0]-1)/TS),y0=Math.floor((p.y-fp[1])/TS),y1=Math.floor((p.y-2)/TS);
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(x>=0&&y>=0&&x<W&&y<H&&tiles[y*W+x]!==0)tiles[y*W+x]=3;}
+  // 문 위쪽은 막힌 벽 대신 돌바닥처럼 보이게(못 지나감)
+  for(let y=2;y<=6;y++)for(let x=26;x<=33;x++)tiles[y*W+x]=3;
+  // 바닥 종류: 0 돌길, 1 흙 (그림만)
+  const g=new Uint8Array(W*H);for(let y=0;y<H;y++)for(let x=0;x<W;x++){const h=((x*73856093)^(y*19349663))>>>0;const n=(h%7)/7;
+    const road=Math.abs(x-30)<=4+n*1.5||Math.abs(y-20)<=3+n*1.5||(y<=13&&(Math.abs(x-9)<=6+n||Math.abs(x-51)<=6+n))||(y>=14&&y<=22&&(Math.abs(x-9)<=6+n||Math.abs(x-51)<=6+n))||Math.hypot(x-30,y-17)<9+n*2;
+    g[y*W+x]=road?0:1;}
+  map.ground=g;
+  map.portal={x:480,y:100};map.merchant={x:206,y:330};map.spawn={x:480,y:356};map.board={x:392,y:252};
+  map.forge={x:150,y:190};map.vault={x:812,y:190};map.tent={x:812,y:334};map.dummies=[{x:760,y:548},{x:820,y:548}];
+  map.torches=[];
+  map.stairsIdx=-1;map.start={cx:30,cy:22};
   return map;
 }
 
@@ -273,9 +298,9 @@ const ARMORS=[{n:'가죽 갑옷',a:0.8,kind:'leather'},{n:'사슬 갑옷',a:1,ki
 const GEMS=['r','c','z','p','y'];
 // 등급: 0 일반, 1 마법, 2 희귀(영웅), 3 전설 — 전설은 maxR=3일 때(보스)만 나온다
 function rollRarity(R,bonus,maxR){const x=R()*100-bonus;const r=x<2?3:x<7?2:x<35?1:0;return Math.min(maxR==null?2:maxR,r);}
-function genItem(L,fam,minR,bonus,R,maxR){
+function genItem(L,fam,minR,bonus,R,maxR,fslot){
   R=R||Math.random;minR=minR||0;bonus=bonus||0;
-  const slot=pk(R,['weapon','weapon','armor','armor','ring']);
+  const slot=fslot||pk(R,['weapon','weapon','armor','armor','ring']);
   let rar=Math.max(minR,rollRarity(R,bonus,maxR));if(slot==='ring'&&rar===0)rar=1;
   const it={id:rid(),slot,rar,L,base:{},aff:[]};
   if(slot==='weapon'){const b=pk(R,WEAPONS[fam]);it.fam=fam;it.kind=b.kind;it.bn=b.n;it.base.dmg=Math.max(1,Math.round((3+L*1.6)*b.d*(0.85+R()*0.3)));if(b.as)it.base.as=b.as;if(b.mp)it.base.mp=b.mp;}
@@ -286,17 +311,47 @@ function genItem(L,fam,minR,bonus,R,maxR){
   for(let i=0;i<n&&pool.length;i++){const k=pool.splice(Math.floor(R()*pool.length),1)[0];let v=AFF[k].r(L,R);if(rar===3)v=Math.round(v*1.35)+1;it.aff.push({k,v});}
   it.name=rar===0?it.bn:rar===1?PREFIX[it.aff[0].k]+' '+it.bn:rar===2?pk(R,RN1)+'의 '+pk(R,RN2[slot]):pk(R,LEG[slot==='weapon'?fam:slot]);
   it.value=Math.round((5+L*3)*(1+rar*rar*1.5));
+  const x=R();let ns=rar===1?(x<0.15?1:0):rar===2?(x<0.1?2:x<0.4?1:0):rar===3?(x<0.3?2:1):0;ns=Math.min(ns,SOCK_MAX[slot]);if(ns)it.so=new Array(ns).fill(null);
   return it;
 }
 function starterWeapon(fam){const b=WEAPONS[fam][fam==='melee'?1:fam==='bow'?0:1];return{id:rid(),slot:'weapon',rar:0,L:1,fam,kind:b.kind,bn:b.n,name:'낡은 '+b.n,base:{dmg:4},aff:[],value:3};}
 function starterArmor(cls){const k=cls==='mage'||cls==='priest'?ARMORS[3]:ARMORS[0];return{id:rid(),slot:'armor',rar:0,L:1,kind:k.kind,bn:k.n,name:'해진 '+k.n,base:{armor:3},aff:[],value:3};}
-function itemStats(it){const s={};for(const k in it.base)s[k]=(s[k]||0)+it.base[k];for(const a of it.aff)s[a.k]=(s[a.k]||0)+a.v;return s;}
+function itemStats(it){const s={};const em=enhMul(it.up|0);for(const k in it.base){const v=it.base[k];s[k]=(s[k]||0)+((k==='dmg'||k==='armor')?Math.round(v*em):v);}const rm=it.slot==='ring'&&it.up?1+0.05*it.up:1;for(const a of it.aff)s[a.k]=(s[a.k]||0)+(rm===1?a.v:Math.round(a.v*rm));
+  if(it.so)for(const g of it.so){const e=gemEff(g,it.slot);if(e)s[e.k]=(s[e.k]||0)+e.v;}return s;}
+
+// ---------- 대장간: 강화 · 재련 · 분해 · 소켓/보석 ----------
+const ENH_MAX=10,ENH_RATE=[100,100,95,90,80,70,60,50,40,30];
+function enhMul(up){return 1+0.1*up;}
+function enhCost(it){const up=it.up|0,L=it.L|0;return{gold:Math.round((20+L*8)*(1+up)*(1+it.rar*0.5)),iron:1+Math.floor(up/2),dust:up>=5?up-3:0,ess:it.rar===3&&up>=7?1:0};}
+function affRange(it,k){const L=it.L|0;const lo=AFF[k].r(L,()=>0),hi=AFF[k].r(L,()=>0.999999);return it.rar===3?[Math.round(lo*1.35)+1,Math.round(hi*1.35)+1]:[lo,hi];}
+function rollAff(it,k,R){R=R||Math.random;let v=AFF[k].r(it.L|0,R);if(it.rar===3)v=Math.round(v*1.35)+1;return v;}
+function rerollCost(it,swap){const n=it.rc|0,L=it.L|0,leg=it.rar===3;const g=Math.round((15+L*6)*(1+n*0.5)*(swap?2:1)*(leg?2:1));
+  if(swap)return leg?{gold:g,dust:2,ess:2+n}:{gold:g,dust:2+Math.floor(n/3)};return{gold:g,dust:(leg?2:1)+Math.floor(n/3)};}
+function salvageOf(it){const r=it.rar,up=it.up|0;const o={iron:[1,2,3,1][r]+up,dust:[0,0,2,4][r],ess:r===3?1:0,dustP:r===1?0.3:0};return o;}
+// 보석: r 루비, s 사파이어, t 토파즈, e 에메랄드, a 자수정, d 다이아몬드 · 등급 1~5
+const GEM_T=['r','s','t','e','a','d'];
+const GEM_N={r:'루비',s:'사파이어',t:'토파즈',e:'에메랄드',a:'자수정',d:'다이아몬드'};
+const GEM_TIER=['','조각난','흠 있는','','완벽한','황실'];
+const GEM_COL={r:'#e0574a',s:'#4a8aff',t:'#ffd35a',e:'#4ad07a',a:'#b35ae0',d:'#eaf2ff'};
+const GEM_FX={r:{w:['dmgPct',[4,7,11,16,24]],o:['str',[3,6,11,18,28]]},s:{w:['critDmg',[8,14,22,32,45]],o:['ene',[3,6,11,18,28]]},t:{w:['as',[2,4,6,8,11]],o:['dex',[3,6,11,18,28]]},
+  e:{w:['crit',[1,2,3,4,6]],o:['vit',[3,6,11,18,28]]},a:{w:['ls',[1,1,2,2,3]],o:['hp',[15,35,70,130,220]]},d:{w:['dmg',[3,7,14,26,42]],o:['armor',[8,20,40,75,125]]}};
+function gemOk(g){return typeof g==='string'&&g.length===2&&GEM_FX[g[0]]&&+g[1]>=1&&+g[1]<=5;}
+function gemEff(g,slot){if(!gemOk(g))return null;const f=GEM_FX[g[0]][slot==='weapon'?'w':'o'];return{k:f[0],v:f[1][+g[1]-1]};}
+function gemName(g){if(!gemOk(g))return '?';const t=GEM_TIER[+g[1]];return (t?t+' ':'')+GEM_N[g[0]];}
+function gemTierFor(floor,R){R=R||Math.random;let t=1+Math.floor((Math.max(1,floor)-1)/20);if(R()<0.2)t++;return Math.max(1,Math.min(5,t));}
+function randGem(floor,R){R=R||Math.random;return GEM_T[Math.floor(R()*GEM_T.length)]+gemTierFor(floor,R);}
+const SOCK_MAX={weapon:2,armor:2,ring:1};
+function socketCost(it){const n=(it.so||[]).length,L=it.L|0;return{gold:Math.round((30+L*10)*(n+1)),dust:2*(n+1)};}
+function combineCost(t){return 50*t*t;}
+function unsocketCost(g){return 20*(+g[1])*(+g[1]);}
+function gambleCost(slot,lvl){return slot==='ring'?90+lvl*20:60+lvl*15;}
+function itemName(it){return (it.up?`+${it.up} `:'')+it.name;}
 function canEquip(it,cls){if(!it)return false;if(it.slot!=='weapon')return true;return CLASSES[cls].fam===it.fam;}
 
 // ---------- 캐릭터 ----------
 function xpFor(l){return Math.floor(35*Math.pow(l,1.55));}
 function newChar(name,cls){const C=CLASSES[cls];return{v:1,id:rid(),name,cls,lvl:1,xp:0,pts:0,str:C.base.str,dex:C.base.dex,vit:C.base.vit,ene:C.base.ene,gold:20,pots:{hp:3,mp:2},
-  eq:{weapon:starterWeapon(C.fam),armor:starterArmor(cls),ring:null},bag:new Array(20).fill(null),cps:[1],best:0,kills:0,created:Date.now(),...defaultSkills(cls),spts:0};}
+  eq:{weapon:starterWeapon(C.fam),armor:starterArmor(cls),ring:null},bag:new Array(20).fill(null),cps:[1],best:0,kills:0,created:Date.now(),...defaultSkills(cls),spts:0,mats:{iron:0,dust:0,ess:0},gems:{}};}
 function calcStats(ch){
   const C=CLASSES[ch.cls],g={};
   for(const s of['weapon','armor','ring']){const it=ch.eq[s];if(!it||!canEquip(it,ch.cls))continue;const st=itemStats(it);for(const k in st)g[k]=(g[k]||0)+st[k];}
@@ -330,8 +385,8 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,
+const SH={TS,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
-  THEMES,FINAL_BOSS,themeOf,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
+  THEMES,FINAL_BOSS,themeOf,ENH_MAX,ENH_RATE,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
 })(typeof self!=='undefined'?self:this);
