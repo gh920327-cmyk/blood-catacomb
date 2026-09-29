@@ -1185,7 +1185,7 @@ function salvageItem(P,i){const it=P.ch.bag[i];if(!it)return null;const y=SH.sal
 const BS={
   enh(P,d){const it=refItem(P,d);if(!it)return;const up=it.up|0;if(up>=SH.enhMax(it)){msg(P,up>=SH.ENH_MAX&&!SH.canTrans(it)?'초월 강화는 전설·신화·세트 장비만 할 수 있어요':'이미 최대 강화입니다','#9e937a');return;}const c=SH.enhCost(it);if(!pay(P,c))return;
     const ok=R()*100<SH.enhRate(it);if(!ok&&up>=SH.ENH_MAX)it.tp=(it.tp|0)+5;if(ok){it.up=up+1;it.tp=0;if(it.up===SH.TRANS_MAX)bcast(hub,{t:'msg',m:`${P.ch.name}님이 '${it.name}'을(를) +15 초월했다!`,c:'#ffd35a'});if(it.up>((P.ch.st&&P.ch.st.maxUp)|0))stInc(P,'maxUp',it.up-((P.ch.st&&P.ch.st.maxUp)|0));msg(P,`강화 성공! ${SH.itemName(it)}`,'#ffd35a');}else msg(P,`강화 실패 · 재료만 사라졌습니다 (+${up} 유지)`,'#ff6a5a');afterItem(P,it);send(P,{t:'bsr',op:'enh',ok,up:it.up|0});},
-  rr(P,d){const it=refItem(P,d);if(!it)return;const a=d.a|0,cur=it.aff[a];if(!cur)return;if(it.rk!=null&&it.rk!==a){msg(P,`이 장비는 '${SH.AFF[it.aff[it.rk].k].f(it.aff[it.rk].v)}' 능력만 재련할 수 있습니다`,'#ff6a5a');return;}
+  rr(P,d){const it=refItem(P,d);if(!it)return;const a=d.a|0,cur=it.aff[a];if(!cur)return;/* 재련 능력 제한 없음: 어느 능력이든 매번 고를 수 있음 */
     const swap=!!d.swap;const c=SH.rerollCost(it,swap);if(!pay(P,c))return;let nw;
     if(swap){const have=new Set(it.aff.map(x=>x.k));const pool=SH.AFF_POOL[it.slot].filter(k=>!have.has(k));if(!pool.length){P.ch.gold+=c.gold|0;for(const k of['iron','dust','ess'])P.ch.mats[k]+=c[k]|0;msg(P,'바꿀 수 있는 능력이 없습니다','#ff6a5a');return;}const k=pick(pool);nw={k,v:SH.rollAff(it,k,R)};}
     else nw={k:cur.k,v:SH.rollAff(it,cur.k,R)};

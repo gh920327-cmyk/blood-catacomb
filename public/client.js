@@ -1596,8 +1596,8 @@ function drawForge(){const ch=G.ch;if(!ch)return;const x=6,y=38,w=282,h=194;pane
       pr(x+12,ly-6,w-24,34,'rgba(10,7,14,0.7)');txt('기존',x+18,ly+1,10,'#9e937a');txt(affTxt(pd.old),x+50,ly+1,12,'#e6dcc3');txt('새로',x+18,ly+15,10,'#9e937a');txt(affTxt(pd.nw),x+50,ly+15,12,'#7fd05a');ly+=34;
       button(x+12,ly,(w-30)/2,16,'새 능력 적용',()=>{net({t:'bs',op:'pick',keep:false});G.pend=null;},{main:true});button(x+18+(w-30)/2,ly,(w-30)/2,16,'기존 유지',()=>{net({t:'bs',op:'pick',keep:true});G.pend=null;});return;}
     if(!it.aff.length){txt('재련할 능력이 없는 아이템입니다 (일반 등급)',x+w/2,ly+14,11,'#9e937a','center');return;}
-    txt(it.rk!=null?'처음 재련한 능력만 계속 바꿀 수 있어요':'능력 하나를 고르면 그 능력만 계속 재련할 수 있어요',x+12,ly,10,'#6b6275');ly+=11;
-    it.aff.forEach((a,i)=>{const lock=it.rk!=null&&it.rk!==i;const rg=SH.affRange(it,a.k);pr(x+10,ly-5,w-20,14,i===it.rk?'rgba(90,60,20,0.45)':'rgba(10,7,14,0.5)');
+    txt('바꾸고 싶은 능력을 골라 재련하세요 (◆ 마지막으로 재련한 능력)',x+12,ly,10,'#6b6275');ly+=11;
+    it.aff.forEach((a,i)=>{const lock=false;const rg=SH.affRange(it,a.k);pr(x+10,ly-5,w-20,14,i===it.rk?'rgba(90,60,20,0.45)':'rgba(10,7,14,0.5)');
       txt(affTxt(a),x+14,ly+2,11,lock?'#6b6275':'#8fb8ff');txt(`${rg[0]}~${rg[1]}`,x+150,ly+2,10,'#6b6275');
       if(!lock){button(x+w-86,ly-4,36,12,'수치',()=>net({t:'bs',op:'rr',a:i,swap:false,...bsRef()}),{size:10,tip:()=>[['수치 재련','#ffd35a',12],['같은 능력의 수치만 다시 굴립니다','#e6dcc3',11],['결과를 보고 적용/유지를 고를 수 있어요','#9e937a',11]]});
         button(x+w-48,ly-4,36,12,'교체',()=>net({t:'bs',op:'rr',a:i,swap:true,...bsRef()}),{size:10,tip:()=>[['능력 교체','#ffd35a',12],['다른 능력으로 무작위 교체합니다','#e6dcc3',11],it.rar===3?['전설: 핏빛 정수가 필요해요','#ff6a7a',11]:['결과를 보고 적용/유지를 고를 수 있어요','#9e937a',11]]});}
