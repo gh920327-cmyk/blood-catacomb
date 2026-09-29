@@ -996,7 +996,7 @@ const GM={
 // ================= 레이드 모듈 (공통 훅) =================
 const RAID_DMG=+(process.env.RAID_DMG||1);/* 측정용 추가 배율 */
 /* 레이드별 보스 공격력·체력 배율 (호흡 8~15분, 보통 실력으로는 못 깨는 선) · 흑왕은 절망 난이도 */
-const RAID_TUNE={bell:{dmg:1.35,hp:1.35,enr:780},mirror:{dmg:1.35,hp:1.5,enr:780},clock:{dmg:1.35,hp:1.5,enr:780},moon:{dmg:1.5,hp:2.0,enr:900}};
+const RAID_TUNE={bell:{dmg:1.35,hp:1.35,enr:780},mirror:{dmg:1.35,hp:1.5,enr:780},clock:{dmg:1.35,hp:1.9,enr:780},moon:{dmg:1.5,hp:2.0,enr:900}};
 function raidBoss(inst,type,x,y,share){const r=inst.raid;const b=spawnMonster(inst,type,x,y,false);b.boss=true;b.home={x,y};const TU=RAID_TUNE[r.id]||{dmg:1,hp:1};b.maxHp=b.hp=Math.round(SH.MT[type].hp*raidScale(r.def.lvl,r.n,r.hard)*(share||1)*TU.hp);
   b.dmg*=(r.hard?2.6:1.8)*[0,0.55,0.78,0.9,1][clamp(r.n,1,4)]*(r.id==='moon'?1.6:r.id==='clock'?1.15:1)*RAID_DMG*TU.dmg;b.baseDmg=b.dmg;b.r=SH.MT[type].r;b.raidAI=RAID_AI[type];b.bname=SH.MT[type].n;b.tf=r.hard?0.85:1;b.phase=1;b.fightT=0;b.patCd=2.5;b.spdMul=1;return b;}
 function raidAdds(inst,dt,type,cap){const r=inst.raid;if(r.stage!=='gate')return;r.gT-=dt;if(r.gT>0)return;r.gT=r.hard?6:8;const alive=inst.monsters.filter(m=>!m.dead&&m.type===type).length;if(alive>=(r.hard?cap+2:cap))return;const map=inst.map;
