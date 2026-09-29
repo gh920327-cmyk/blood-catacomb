@@ -465,7 +465,7 @@ function sfx(n){if(!AC||soundMode===2)return;const now=AC.currentTime;if(lastS[n
   case'gold':tone('triangle',1300,1300,0.05,0.05);tone('triangle',1750,1750,0.07,0.05,0.05);break;
   case'lvl':[523,659,784,1046].forEach((f,i)=>tone('square',f,f,0.14,0.05,i*0.08));break;
   case'potion':tone('sine',400,800,0.18,0.08);break;
-  case'bow':tone('triangle',700,300,0.08,0.04);break;
+  case'bow':tone('triangle',rf(650,760),280,0.09,0.045);nzF(0.05,0.05,'bandpass',rf(1800,2400),2);tone('sine',180,120,0.05,0.04);break;
   case'cast':tone('sine',500,900,0.12,0.04);break;
   case'dash':noise(0.2,0.08,1200);tone('sawtooth',100,220,0.2,0.04);break;
   case'stairs':tone('sine',220,70,0.7,0.1);break;
@@ -695,7 +695,7 @@ function onSnap(d){
 function playerPos(id){if(id===myId)return me;return G.players.get(id);}
 function onFx(o){const k=o.k;if(onUltFx(o))return;if(onKnightFx(o))return;
   if(k==='dmg'){if(o.c===2){ftext(o.x+rf(-4,4),o.y+4,String(o.v),'#c9a0e8',12,'px');return;}onHitJuice(o);}
-  else if(k==='pdmg'){const p=playerPos(o.id);if(p&&!(o.q&&o.id!==myId)){ftext(p.x,p.y-18,String(o.v),'#ff5a4a',16,'px');}if(o.id===myId){me.flash=0.1;shake=Math.max(shake,2);sfx('hurt');}else{const q=G.players.get(o.id);if(q)q.flash=0.1;}}
+  else if(k==='pdmg'){const p=playerPos(o.id);if(p&&!(o.q&&o.id!==myId)){ftext(p.x,p.y-18,String(o.v),'#ff5a4a',16,'px');}if(o.id===myId){me.flash=0.1;shake=Math.max(shake,2);sfx('hurt');G.hurtT=time;G.hurtK=Math.min(0.55,0.2+(G.mev&&G.mev[1]?o.v/G.mev[1]*2:0));}else{const q=G.players.get(o.id);if(q)q.flash=0.1;}}
   else if(k==='heal'){ftext(o.x,o.y,'+'+o.v,'#7fd05a',16,'px');for(let n=0;n<6;n++)part(o.x+rf(-5,5),o.y+18,0,0,pick(['z','w']),rf(.4,.8),{z:rf(0,10),vz:rf(20,40),glow:true});}
   else if(k==='txt')ftext(o.x,o.y,o.s,o.c,14,'kr');
   else if(k==='mdie'){const m=G.monsters.get(o.id);const LB=G.lastBoss&&G.lastBoss.id===o.id?G.lastBoss:null;if(m){if(m.kt&&time-m.kt<0.35&&Math.hypot(m.dx-me.x,m.dy-me.y)<120){HSTOP=Math.max(HSTOP,isBossTc(m.tc)?0.25:0.06);shake=Math.max(shake,isBossTc(m.tc)?8:2.2);sfx('mdie');}deathBurst({x:m.dx,y:m.dy},m._s,isBossTc(m.tc));if(Math.hypot(m.dx-me.x,m.dy-me.y)<260)monSfx(m.tc,'die');G.monsters.delete(o.id);}else if(LB)deathBurst({x:LB.x,y:LB.y},LB.s,true);
@@ -1142,6 +1142,7 @@ function renderWorld(){const shk=shake*OPT.shake;const sx=shk>0.5?Math.round(rf(
   for(const d of G.drops.values())drawBeam(d,icx,icy);for(const p of G.projs.values())drawProj(p,icx,icy,true);drawParts(icx,icy,true);drawUltWorld(icx,icy);drawKnightFx(icx,icy);drawHitFx(icx,icy);drawUltStreaks(icx,icy);drawRaid2World(icx,icy);drawRaid2Marks(icx,icy);
   for(const t of torches){const x=t.x-icx-3,y=t.y-icy-4;if(x<-10||y<-14||x>W||y>H)continue;wx.drawImage(curTorch()[(Math.floor(time*8+t.ph))&1],0,0,7,5,x,y,7,5);}
   if(screenFlash>0){wx.fillStyle=`rgba(255,246,234,${Math.min(0.6,screenFlash)})`;wx.fillRect(0,0,W,H);screenFlash-=1/60;}
+  if(G.hurtT&&time-G.hurtT<0.3){const a=(1-(time-G.hurtT)/0.3)*(G.hurtK||0.35);const g=wx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,W*0.62);g.addColorStop(0,'rgba(180,20,20,0)');g.addColorStop(1,`rgba(180,20,20,${a})`);wx.fillStyle=g;wx.fillRect(0,0,W,H);}
   ctx.drawImage(wc,0,0,W*SC,H*SC);return[icx,icy];}
 // 보스 사망: 몸이 한 줄씩 흩어지며 위로 사라짐
 function drawBossFx(icx,icy){for(let i=bossFx.length-1;i>=0;i--){const f=bossFx[i],a=time-f.t0,D=1.6;if(a>D){bossFx.splice(i,1);continue;}const s=f.s,k=a/D;
