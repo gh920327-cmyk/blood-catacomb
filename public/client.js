@@ -645,7 +645,7 @@ function handle(d){switch(d.t){
   case 'dadd':for(const o of d.d)addDropC(o,false);break;
   case 'drem':G.drops.delete(d.id);break;
   case 'msg':msg(d.m,d.c||'#e6dcc3');break;
-  case 'chat':{G.chatLog.push({name:d.name,m:d.m,t:time});if(G.chatLog.length>40)G.chatLog.shift();G.bubbles.set(d.id,{m:d.m,t:time});sfx('chat');break;}
+  case 'chat':{G.chatLog.push({name:d.name,m:d.m,t:time});if(G.chatLog.length>200)G.chatLog.shift();if(G.chatOff)G.chatOff++;G.bubbles.set(d.id,{m:d.m,t:time});sfx('chat');break;}
   case 'invite':G.invite={from:d.from,name:d.name,t:time};sfx('chat');break;
   case 'an':G.anD=d;break;
 case 'who':G.who=d.list;G.whoT=time;break;
@@ -828,6 +828,7 @@ window.addEventListener('keyup',e=>{keys.delete(e.code);if(e.code===kbCode('mete
 window.addEventListener('keydown',e=>{
   if(scene!=='game')return;
   if(document.activeElement===numBox){if(e.key==='Enter'){closeNum(true);e.preventDefault();}else if(e.key==='Escape'){numCb=null;closeNum(false);e.preventDefault();}return;}
+  if(document.activeElement===chatBox&&(e.key==='PageUp'||e.key==='PageDown')){chatScroll(e.key==='PageUp'?4:-4);e.preventDefault();return;}
   if(document.activeElement===chatBox){if(e.key==='Enter'){const m=chatBox.value.trim();if(m)net({t:'chat',m});chatBox.value='';chatBox.style.display='none';cv.focus();e.preventDefault();}else if(e.key==='Escape'){chatBox.value='';chatBox.style.display='none';cv.focus();e.preventDefault();}return;}
   const c=e.code;initAudio();
   if(G.rebind){rebindKey(c);e.preventDefault();return;}
@@ -1416,9 +1417,16 @@ function drawCtxMenu(){const c=G.ctxMenu;const p=G.players.get(c.id);if(!p){G.ct
   items.forEach(([l,f],i)=>button(x+4,y+14+i*16,w-8,14,l,()=>{f();G.ctxMenu=null;},{size:11}));}
 function drawInvite(){const iv=G.invite;if(!iv)return;if(time-iv.t>30){net({t:'ians',from:iv.from,ok:false});G.invite=null;return;}const w=200,h=40,x=240-w/2,y=30;panel(x,y,w,h);
   txt(`${iv.name}님이 파티에 초대했습니다`,x+w/2,y+10,12,'#ffd35a','center');button(x+30,y+20,64,15,'수락 (Y)',()=>{net({t:'ians',from:iv.from,ok:true});G.invite=null;},{main:true});button(x+106,y+20,64,15,'거절 (N)',()=>{net({t:'ians',from:iv.from,ok:false});G.invite=null;});}
-function drawChat(){const open=document.activeElement===chatBox;const lines=G.chatLog.filter(l=>open||time-l.t<12).slice(-6);let y=200-lines.length*10;
-  if(open)pr(4,y-6,176,lines.length*10+8,'rgba(8,6,12,0.7)');
-  for(const l of lines){ctx.globalAlpha=open?1:Math.min(1,(12-(time-l.t))/2);const nw=txt(l.name+':',8,y,11,'#ffd35a');txt(l.m,10+nw,y,11,'#e6dcc3');y+=10;}ctx.globalAlpha=1;}
+/* 채팅: 열려 있거나(Enter) 채팅 영역에서 휠을 굴리면 이전 글을 스크롤해서 볼 수 있음 */
+function chatRows(){const rows=[];for(const l of G.chatLog){const nw=tw(l.name+':',11);const ws=wrapTxt(l.m,11,168-nw);ws.forEach((m,k)=>rows.push({l,name:k===0?l.name+':':null,m,ind:k===0?0:nw+2}));}return rows;}
+function chatOpenView(){return document.activeElement===chatBox||time-(G.chatPeek||-99)<6;}
+function chatScroll(d){const n=chatRows().length;G.chatOff=Math.max(0,Math.min(Math.max(0,n-8),(G.chatOff|0)+d));G.chatPeek=time;}
+function drawChat(){const open=chatOpenView();if(!open)G.chatOff=0;const rows=chatRows();let lines;
+  if(open){const end=rows.length-(G.chatOff|0);lines=rows.slice(Math.max(0,end-8),end);}else lines=rows.filter(r=>time-r.l.t<12).slice(-6);
+  let y=200-lines.length*10;if(open){pr(4,y-6,178,lines.length*10+8,'rgba(8,6,12,0.72)');uiRects.push({x:4,y:y-6,w:178,h:lines.length*10+8,block:true});
+    const above=Math.max(0,rows.length-(G.chatOff|0)-lines.length);if(above>0)txt(`▲ 이전 글 ${above}줄 · 휠/PgUp`,178,y-11,9,'#9e937a','right');if(G.chatOff>0)txt(`▼ 최신 글 ${G.chatOff}줄 · 휠/PgDn`,178,y+lines.length*10-2,9,'#8fd0ff','right');}
+  for(const r of lines){ctx.globalAlpha=open?1:Math.min(1,(12-(time-r.l.t))/2);let nw=r.ind;if(r.name)nw=txt(r.name,8,y,11,'#ffd35a')+2;txt(r.m,8+nw,y,11,'#e6dcc3');y+=10;}ctx.globalAlpha=1;}
+cv.addEventListener('wheel',e=>{if(scene!=='game')return;const r=cv.getBoundingClientRect();const lx=(e.clientX-r.left)/r.width*W,ly=(e.clientY-r.top)/r.height*H;if(chatOpenView()||(lx<185&&ly>110&&ly<210)){chatScroll(e.deltaY<0?1:-1);e.preventDefault();}},{passive:false});
 function drawWorldUI(icx,icy){
   for(const m of G.monsters.values()){if(!(m.ea&255)||Math.hypot(m.dx-me.x,m.dy-me.y)>150||lit(m.dx-icx,m.dy-8-icy)<0.2)continue;txt(SH.eaffNames(m.ea).join(' · '),m.dx-icx,m.dy-icy-(SPR.ready?30:25),9,'#8fd0ff','center');}
   for(const m of G.monsters.values()){if(m.hp>=m.maxHp||isBossTc(m.tc))continue;if(lit(m.dx-icx,m.dy-8-icy)<0.2)continue;const bx=Math.round(m.dx-icx)-6,by=Math.round(m.dy-icy)-(SPR.ready?24:19);pr(bx,by,12,2,PAL.k);pr(bx,by,Math.max(1,Math.round(12*m.hp/m.maxHp)),2,PAL.e);}
