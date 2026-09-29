@@ -1,4 +1,4 @@
-// 핏빛 카타콤 — 클라이언트 (렌더링 · 입력 · 네트워크 · UI)
+// 달 없는 밤: 등불을 든 자 — 클라이언트 (렌더링 · 입력 · 네트워크 · UI)
 'use strict';
 (()=>{
 const W=480,H=270,TS=16;let SC=2; // SC: 화면 해상도에 맞춰 2~4 (글자를 선명하게)
@@ -560,7 +560,7 @@ document.getElementById('importBtn').onclick=()=>{const e=document.getElementByI
   const a=loadChars();const i=a.findIndex(c=>c.id===ch.id);if(i>=0)a[i]=ch;else a.push(ch);saveChars(a);e.textContent='';document.getElementById('importCode').value='';toast(`${ch.name} 캐릭터를 불러왔습니다`);renderSelect();};
 
 let conn={t0:0,recon:false,tries:0};
-function startGame(id){const ch=loadChars().find(c=>c.id===id);if(!ch)return;curSlot=id;initAudio();selEl.hidden=true;scene='connecting';cv.focus();conn={t0:performance.now(),recon:false,tries:0};openWs();}
+function startGame(id){const ch=loadChars().find(c=>c.id===id);if(!ch)return;if(CINE.on)cineStop(true);curSlot=id;initAudio();selEl.hidden=true;scene='connecting';cv.focus();conn={t0:performance.now(),recon:false,tries:0};openWs();}
 function openWs(){const ch=loadChars().find(c=>c.id===curSlot);if(!ch){backToSelect('캐릭터를 찾을 수 없습니다');return;}
   const proto=location.protocol==='https:'?'wss':'ws';let s2;try{s2=new WebSocket(`${proto}://${location.host}/ws`);}catch(e){retryWs();return;}ws=s2;let opened=false;
   s2.onopen=()=>{opened=true;conn.tries=0;const j={t:'join',ch,stash:loadStash()};if(conn.prevParty)j.prev=conn.prevParty;net(j);};
@@ -2158,11 +2158,44 @@ function frame(ts){const dt=Math.min(0.05,(ts-last)/1000)||0;last=ts;
 function fit(){const vw=window.innerWidth,vh=window.innerHeight;let s=Math.min(vw/W,vh/H);if(s>=1&&Math.floor(s)/s>=0.8)s=Math.floor(s);cv.style.width=Math.floor(W*s)+'px';cv.style.height=Math.floor(H*s)+'px';
   const ns=Math.max(2,Math.min(4,Math.round(s*(window.devicePixelRatio||1))));if(ns!==SC||cv.width!==W*ns){SC=ns;cv.width=W*SC;cv.height=H*SC;ctx.imageSmoothingEnabled=false;TXT.clear();}}
 window.addEventListener('resize',fit);fit();
+// ================= 이야기 장면 (인트로·엔딩) =================
+const CINE_INTRO=[
+  {img:'art/intro1.jpg',t:'하렌 왕국에는 매일 아침 새벽의 종이 울렸다.\n새벽 기사단이 성문을 나서면, 사람들은 그 빛을 믿고 하루를 시작했다.'},
+  {img:'art/intro2.jpg',t:'그러던 어느 날, 검은 달이 해를 삼켰다.\n흑월이 뜬 뒤로 아침은 다시 오지 않았고,\n사람들은 작은 등불에 기대어 끝나지 않는 밤을 버텼다.'},
+  {img:'art/intro3.jpg',t:'밤을 끝내겠다던 새벽 기사단장 카르나스는\n가장 아끼던 기사 엘라를 제단에 바쳤다.\n그 희생으로 빚어진 것은 새벽이 아닌, 심연의 심장이었다.'},
+  {img:'art/intro4.jpg',t:'카르나스는 흑왕이 되었고, 왕국을 지키던 이들도 차례로 무너졌다.\n경고의 종을 끝내 울리지 않은 종지기 그레고르,\n별을 읽던 쌍둥이 마녀 리라와 노라, 태엽이 되어 버린 기사 발렌.'},
+  {img:'art/intro5.jpg',t:'엘라의 오빠 알드릭은 동생을 찾아 지하묘지로 내려갔다.\n돌아온 것은 그가 남긴 일지뿐.\n마지막 장에는 한 줄이 적혀 있었다. "등불을 꺼뜨리지 마라."'},
+  {img:'art/intro6.jpg',t:'이제 그 일지를 주운 당신이 등불을 든다.\n심장이 뛰는 가장 깊은 곳까지,\n달 없는 밤을 지나.'}];
+const CINE={on:false};
+function cineEl(id){return document.getElementById(id);}
+function playCine(list,opt){opt=opt||{};const root=cineEl('cine');if(!root)return;cineStop(true);
+  for(const sc of list){const im=new Image();im.src=sc.img;}
+  Object.assign(CINE,{on:true,list,opt,i:-1,typing:null,auto:null,lay:0,end:false});root.classList.add('on');cineEl('cineTitle').classList.remove('show');
+  const dots=cineEl('cineDots');dots.innerHTML=list.map(()=>'<span></span>').join('');cineNext();}
+function cineShow(i){const sc=CINE.list[i];const A=cineEl(CINE.lay?'cineB':'cineA'),B=cineEl(CINE.lay?'cineA':'cineB');CINE.lay^=1;
+  A.style.backgroundImage=`url("${sc.img}")`;A.classList.remove('kb');void A.offsetWidth;A.classList.add('show','kb');B.classList.remove('show');
+  [...cineEl('cineDots').children].forEach((d,k)=>d.classList.toggle('on',k<=i));
+  const T=cineEl('cineTxt');T.textContent='';cineEl('cineHint').classList.remove('on');let n=0;clearInterval(CINE.typing);clearTimeout(CINE.auto);
+  CINE.typing=setInterval(()=>{n++;T.textContent=sc.t.slice(0,n);if(n>=sc.t.length)cineTyped();},45);}
+function cineTyped(){clearInterval(CINE.typing);CINE.typing=null;const sc=CINE.list[CINE.i];cineEl('cineTxt').textContent=sc.t;cineEl('cineHint').classList.add('on');clearTimeout(CINE.auto);CINE.auto=setTimeout(cineNext,4500);}
+function cineNext(){if(!CINE.on)return;if(CINE.typing){cineTyped();return;}if(CINE.end){cineStop();return;}
+  CINE.i++;if(CINE.i<CINE.list.length){cineShow(CINE.i);return;}
+  // 마지막: 제목 카드
+  CINE.end=true;clearTimeout(CINE.auto);cineEl('cineA').classList.remove('show');cineEl('cineB').classList.remove('show');cineEl('cineTxt').textContent='';cineEl('cineHint').classList.remove('on');
+  const tt=cineEl('cineTitle');if(CINE.opt.title!==false){if(CINE.opt.title){tt.querySelector('b').textContent=CINE.opt.title[0];tt.querySelector('i').textContent=CINE.opt.title[1];}else{tt.querySelector('b').textContent='달 없는 밤';tt.querySelector('i').textContent='등불을 든 자';}tt.classList.add('show');CINE.auto=setTimeout(cineStop,4200);}else cineStop();}
+function cineStop(silent){const was=CINE.on;CINE.on=false;clearInterval(CINE.typing);clearTimeout(CINE.auto);const root=cineEl('cine');if(root)root.classList.remove('on');
+  ['cineA','cineB'].forEach(k=>{const e=cineEl(k);if(e)e.classList.remove('show','kb');});const tt=cineEl('cineTitle');if(tt)tt.classList.remove('show');
+  if(was&&!silent){if(CINE.opt&&CINE.opt.key)try{localStorage.setItem(CINE.opt.key,'1');}catch(e){}if(CINE.opt&&CINE.opt.done)CINE.opt.done();}}
+function playIntro(){playCine(CINE_INTRO,{key:'bc_intro'});}
+(()=>{const root=cineEl('cine');if(!root)return;root.addEventListener('click',e=>{if(e.target.id==='cineSkip'){cineStop();return;}cineNext();});
+  window.addEventListener('keydown',e=>{if(!CINE.on)return;if(e.code==='Escape'){cineStop();}else if(e.code==='Space'||e.code==='Enter'||e.code==='ArrowRight'){cineNext();}e.preventDefault();e.stopImmediatePropagation();},true);
+  const b=cineEl('introBtn');if(b)b.addEventListener('click',playIntro);
+  let seen=false;try{seen=!!localStorage.getItem('bc_intro');}catch(e){}if(!seen)setTimeout(()=>{if(scene==='select')playIntro();},300);})();
 renderSelect();
 Promise.all([loadImg('sprites/heroes_anim.png'),loadImg('sprites/bosses_anim.png'),loadImg('sprites/heroes_bare.png'),loadImg('sprites/weapons.png'),loadImg('sprites/mons_anim.png')]).then(([h,b,hb,wp,ma])=>{if(h)SPR.heroAnim=sliceAnim(h,40,24);if(ma)SPR.monAnim=sliceAnim(ma,36,24);if(hb&&wp){SPR.heroBare=sliceBare(hb,40,24);SPR.weap=wp;ICONS.clear();}if(b)SPR.bossAnim=sliceAnim(b,72,48);for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
 Promise.all([loadImg('sprites/lobby.png'),loadImg('sprites/hubtiles.png'),loadImg('sprites/npcs.png'),loadImg('sprites/pets.png')]).then(([a,b,c,d])=>{LOB.img=a;LOB.tiles=b;LOB.npc=c;LOB.pets=d;LOB.ftex=null;NPC_FR=null;PET_FR=null;});
 loadImg('sprites/tiles.png').then(t=>{if(!t)return;SPR.tiles=t;for(const k in THEME_CACHE)delete THEME_CACHE[k];});
 Promise.all([loadImg('sprites/heroes.png'),loadImg('sprites/mons.png'),loadImg('sprites/bosses.png')]).then(([h,m,b])=>{if(!h||!m||!b)return;SPR.heroes=sliceAtlas(h,24);SPR.mons=sliceAtlas(m,24);SPR.bosses=sliceAtlas(b,48);SPR.ready=true;for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
 requestAnimationFrame(frame);
-window.__BC={G,me,net,get time(){return time;},get myId(){return myId;},startGame,loadChars,saveChars,get scene(){return scene;},get mus(){return MUS?{mode:MUS.mode,prof:MUS.prof,err:!!MUS.err,state:AC&&AC.state}:null;}};
+window.__BC={G,me,net,playCine,playIntro,cineStop,get time(){return time;},get myId(){return myId;},startGame,loadChars,saveChars,get scene(){return scene;},get mus(){return MUS?{mode:MUS.mode,prof:MUS.prof,err:!!MUS.err,state:AC&&AC.state}:null;}};
 })();

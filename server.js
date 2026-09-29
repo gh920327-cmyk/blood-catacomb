@@ -1,4 +1,4 @@
-// 핏빛 카타콤 — 멀티플레이 서버
+// 달 없는 밤: 등불을 든 자 — 멀티플레이 서버
 'use strict';
 const http=require('http'),fs=require('fs'),path=require('path');
 const {WebSocketServer}=require('./wslite.js');
@@ -1259,4 +1259,4 @@ setInterval(()=>{
   flushT-=DT;if(flushT<=0){flushT=0.5;for(const P of players.values())if(P.dirty){P.dirty=false;checkAch(P);send(P,{t:'ch',ch:P.ch,S:P.S});}}
 },DT*1000);
 
-server.listen(PORT,()=>console.log('핏빛 카타콤 서버 실행 중 · 포트 '+PORT));
+server.listen(PORT,()=>console.log('달 없는 밤: 등불을 든 자 서버 실행 중 · 포트 '+PORT));
