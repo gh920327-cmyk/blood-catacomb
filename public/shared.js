@@ -243,10 +243,12 @@ const CLASSES={
 // 직업별 피해 보정 (허수아비 기준: 원거리 딜러 100 · 전사 115 · 빛의 기사 125 · 수호자 55 · 사제 45)
 // 레벨 10·20·35·50 기준값 사이를 이어서 쓴다 (허수아비 측정으로 맞춤)
 const DK_LV=[10,20,27,35,42,50];
-const CLASS_DK={warrior:[1.14,1.331,1.519,1.62,1.689,1.517],guardian:[1.37,1.193,1.70,1.947,1.863,1.767],archer:[0.936,1.012,1.029,0.983,1.132,1.036],mage:[1.12,1.037,0.899,0.80,0.589,0.488],priest:[1.135,0.914,1.311,1.078,0.834,0.755],knight:[0.747,0.794,0.768,0.871,0.772,0.640]};
+const CLASS_DK={warrior:[1.14,1.331,1.519,1.62,1.689,1.565],guardian:[1.37,1.193,1.70,1.947,1.863,1.767],archer:[0.936,1.012,1.029,0.983,1.132,1.036],mage:[1.12,1.037,0.899,0.80,0.589,0.488],priest:[1.135,0.914,1.311,1.078,0.834,0.755],knight:[0.747,0.794,0.768,0.871,0.772,0.672]};
 function classDk(cls,lvl){const d=CLASS_DK[cls];if(!d)return 1;lvl=lvl|0;if(lvl<=DK_LV[0])return d[0];for(let i=1;i<DK_LV.length;i++)if(lvl<=DK_LV[i]){const t=(lvl-DK_LV[i-1])/(DK_LV[i]-DK_LV[i-1]);return d[i-1]+(d[i]-d[i-1])*t;}return d[d.length-1];}
 const CLASS_ORDER=['warrior','guardian','archer','mage','priest','knight'];
-const UNLOCK=[1,1,3,5,8,11,14,18,22,26,30,35,38,42,46];const ULT_LVL=50;
+const UNLOCK=[1,1,3,5,8,11,14,18,22,26,30,35,38,42,46];const ULT_LVL=20;
+// 궁극기 위력: 20레벨 55% → 50레벨 100%
+function ultPow(lvl){return Math.min(1,0.55+0.45*Math.max(0,(lvl|0)-20)/30);}
 const MAX_RANK=10,BAR_SIZE=6;
 // lvl: 해금 레벨, pas: 패시브, per: 등급당 효과 설명
 const SKILLS={
@@ -347,7 +349,7 @@ const SKILLS={
   radiantspear:{n:'광휘의 창',mp:20,cd:8,desc:'빛의 창을 던져 경로의 모든 적에게 320% 피해'},
   excalibur:{n:'성검 해방',mp:30,cd:30,desc:'8초간 피해 +20%, 기본 공격마다 빛의 파동이 뻗어 나간다 (100%)'},
   dawnoath:{n:'새벽의 맹세',pas:1,desc:'보스 피해와 치명타 확률 증가',per:'등급당 보스 피해 +2%, 치명타 +1%'},
-  // ----- 50레벨 궁극기 (V) -----
+  // ----- 20레벨 궁극기 (V) -----
   ragnarok:{ult:1,n:'라그나로크',mp:0,cd:100,desc:'하늘로 도약해 불꽃 대검을 내려찍는다(600%). 땅이 세 번 갈라지며 폭발(각 300%)하고 불길이 남는다'},
   wargod:{ult:1,n:'전쟁신 강림',mp:0,cd:110,desc:'12초간 거대해진다. 피해 +30%, 모든 공격이 충격파를 일으키고 속박·둔화 면역'},
   aegisdome:{ult:1,n:'천상의 방벽',mp:0,cd:110,desc:'8초간 황금 방패 돔. 안의 파티원 받는 피해 -60%, 끝날 때 폭발(400%)해 적을 밀어낸다'},
@@ -611,7 +613,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
