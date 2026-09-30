@@ -86,7 +86,7 @@ function bcastRoster(inst){if(inst.type==='dungeon'){inst.syn=SH.synergies(instP
 function visibleDrops(inst,P){return inst.drops.filter(d=>d.owner==null||d.owner===P.id);}
 function sendMap(P){const inst=P.inst;
   if(inst.type==='hub')send(P,{t:'map',kind:'hub',x:P.x,y:P.y,drops:visibleDrops(inst,P)});
-  else send(P,{t:'map',kind:'dungeon',seed:inst.seed,floor:inst.floor,stairs:inst.stairsOpen,x:P.x,y:P.y,drops:visibleDrops(inst,P),paused:inst.paused,ev:evPub(inst),arena:inst.arena?1:0,raid:inst.raid?{id:inst.raid.id,mode:inst.raid.mode,tf:RAID_TF[inst.raid.id]||1,door:!!inst.raid.doorOpen,st:raidPub(inst)}:0});}
+  else send(P,{t:'map',kind:'dungeon',seed:inst.seed,floor:inst.floor,stairs:inst.stairsOpen,x:P.x,y:P.y,drops:visibleDrops(inst,P),paused:inst.paused,ev:evPub(inst),arena:inst.arena?1:0,trial:inst.trial?inst.trial.adv:0,raid:inst.raid?{id:inst.raid.id,mode:inst.raid.mode,tf:RAID_TF[inst.raid.id]||1,door:!!inst.raid.doorOpen,st:raidPub(inst)}:0});}
 function resetCombat(P){P.burn=0;P.rootT=0;P.slowT=0;P.slowV=0;P.downed=false;P.rev=0;P.shield=0;P.shieldT=0;P.dodgeT=0;P.buffs={};P.scd={};P.atkCd=0;}
 function leaveInst(P){if(P.trade)cancelTrade(P,'상대가 마을을 떠나 거래가 취소되었습니다');const inst=P.inst;if(!inst)return;inst.players.delete(P.id);P.inst=null;
   if(inst.type==='dungeon'){inst.flows.delete(P.id);
@@ -353,7 +353,7 @@ function updateTraps(inst,dt){if(!inst.traps||!inst.traps.length)return;const ba
     else if(t.k===1){const c=(inst.time+t.ph)%4;const st=c<2.4?0:c<3?1:2;t.st=st;if(st===2){t.tk=(t.tk||0)-dt;if(t.tk<=0){t.tk=0.25;for(const P of ps)if(Math.hypot(P.x-t.x,P.y-t.y)<18)hurtPlayer(inst,P,base*0.35,null,{what:'화염 분사구',quiet:true});}}}
     else{t.x+=t.v*dt;if(t.x<t.x0){t.x=t.x0;t.v=-t.v;}if(t.x>t.x1){t.x=t.x1;t.v=-t.v;}for(const P of ps){if(Math.hypot(P.x-t.x,P.y-t.y)<10&&(t.cd[P.id]||0)<inst.time){t.cd[P.id]=inst.time+0.9;hurtPlayer(inst,P,base*1.2,null,{what:'굴러오는 돌'});if(!P.downed){P.slowT=Math.max(P.slowT||0,0.8);P.slowV=Math.max(P.slowV||0,0.4);}}}}}}
 // ================= 용병 (혼자일 때만) =================
-function syncAllies(inst){const ps=instPlayers(inst);inst.allies=inst.allies||[];const want=ps.length===1&&ps[0].ch.merc&&!inst.arena?ps[0]:null;
+function syncAllies(inst){const ps=instPlayers(inst);inst.allies=inst.allies||[];const want=ps.length===1&&ps[0].ch.merc&&!inst.arena&&!inst.trial?ps[0]:null;
   inst.allies=inst.allies.filter(a=>want&&a.owner===want.id&&a.type===want.ch.merc);
   if(want&&!inst.allies.length){const P=want,M=SH.MERCS[P.ch.merc];const hp=Math.round(P.S.maxHp*M.hp);inst.allies.push({id:'m'+(nextId++),ally:true,owner:P.id,type:P.ch.merc,ch:{cls:M.cls,name:'용병 '+M.n},x:P.x-10,y:P.y+6,r:4,hp,maxHp:hp,downed:false,revT:0,face:1,cd:0,hcd:2,inst,atk:0,mv:false});}
   for(const a of inst.allies){a.inst=inst;const P=players.get(a.owner);if(P){const hp=Math.round(P.S.maxHp*SH.MERCS[a.type].hp);if(hp!==a.maxHp){a.hp=Math.min(hp,a.hp*hp/a.maxHp);a.maxHp=hp;}}}}
@@ -480,6 +480,7 @@ function killMonster(inst,m,killer){if(m.dummy)return;m.dead=true;m.hp=0;fx(inst
   if(m.altar&&inst.ev)bcastEv(inst);
   if(m.ea&2){for(let i=0;i<2;i++){const x=m.x+rf(-8,8),y=m.y+rf(-8,8);if(SH.blocked(inst.map,x,y,5))continue;const c=spawnMonster(inst,m.type,x,y,false);c.maxHp=c.hp=Math.round(m.maxHp*0.3);c.xp=Math.round(m.xp*0.1);c.summ=true;c.alert=true;fx(inst,{k:'blink',x:r1(x),y:r1(y)});}}
   if(m.ea&32){const x=m.x,y=m.y,dm=m.dmg*2.2;fx(inst,{k:'tele',x:r1(x),y:r1(y),r:42,d:1});later(inst,1,()=>{fx(inst,{k:'boom',x:r1(x),y:r1(y),r:42});fx(inst,{k:'shake',v:3});hitCircle(inst,x,y,42,dm,null,{what:'자폭 정예의 폭발'});});}
+  if(m.boss&&inst.trial){trialWin(inst);return;}
   if(m.boss){{const th=SH.themeOf(inst.floor);fx(inst,{k:'bsay',id:m.id,x:r1(m.x),y:r1(m.y),m:th.final?SH.FINAL_LINES[1]:SH.BOSS_LINES[th.idx][1],dead:1});}inst.stairsOpen=true;SH.openStairs(inst.map);bcast(inst,{t:'stairs'});fx(inst,{k:'shake',v:7});fx(inst,{k:'msg',m:'보스를 쓰러뜨렸다! 아래로 가는 계단이 열렸다',c:'#ffd35a'});
     const rows=inst.bossMeter?meterRows(inst.bossMeter):[];const res={title:`${m.bname||SH.bossOf(f).n} 처치`,floor:f,time:Math.round(inst.time-inst.bossStart),rows};(inst.bossHist=inst.bossHist||[]).push(res);if(inst.bossHist.length>20)inst.bossHist.shift();bcast(inst,Object.assign({t:'result'},res));inst.bossMeter=null;inst.bossId=null;}}
 
@@ -793,10 +794,31 @@ function reviveNear(inst,P,r){for(const q of instPlayers(inst)){if(!q.downed||Ma
 const ULT_OK=new Set(['ragnarok','wargod','aegisdome','judgehammer','skyrain','dragonarrow','apocalypse','absolutezero','angel','divinejudge','dawnblade','heavendance','redmoon','thousandcuts','fortress','finaljudge','deadeye','killzone','cataclysm','supernova','sanctum','purgatory','dawnlegion','eclipsebreak'].concat((process.env.ULT_OK||'').split(',').filter(Boolean)));;/* 사용자 승인된 궁극기 */function ultOk(id){return ULT_OK.has(id)||!!process.env.BC_DEBUG;}
 function castSkill(inst,P,i,tx,ty){const sid=i===SH.BAR_SIZE?P.ch.rmb:(P.ch.bar&&P.ch.bar[i]);if(!sid)return;const sk=SKILLS[sid];if(!sk||sk.pas||!SK[sid])return;const rank=(P.ch.sk&&P.ch.sk[sid])|0;if(rank<1)return;
   if((P.scd[sid]||0)>0.1)return;if(P.mp<sk.mp){msg(P,'마나가 부족합니다','#7aa2ff');return;}
-  P.mp-=sk.mp;P.scd[sid]=sk.cd*(1-(P.S.cdr||0))*(bOn(P,'clock')?0.5:1);const s3=P.S.set3||[];let kk=SH.skillMul(rank)*(P.S.rad||1);if(s3.includes('twins')&&P.lastSk&&P.lastSk!==sid)kk*=1.4;P.lastSk=sid;
+  P.mp-=sk.mp;P.scd[sid]=sk.cd*(1-(P.S.cdr||0))*(bOn(P,'clock')?0.5:1);const VR=SH.advVar(P.ch,sid);if(VR&&VR.cd)P.scd[sid]*=VR.cd;const s3=P.S.set3||[];let kk=SH.skillMul(rank)*(P.S.rad||1)*(VR&&VR.mul||1);if(s3.includes('twins')&&P.lastSk&&P.lastSk!==sid)kk*=1.4;P.lastSk=sid;
   if(s3.includes('clock')){P.clockN=(P.clockN|0)+1;if(P.clockN>=10){P.clockN=0;buff(P,'clock',1,6);fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-30),s:'태엽 폭주!',c:'#ffd35a'});fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:36,c:'y',c2:'o'});}}const a=Math.atan2(ty-P.y,tx-P.x);P.face=Math.cos(a)<0?-1:1;
-  inst._el=SKILL_EL[sid]||null;inst._ctr=sk.ctr?1:null;inst._sk=1;inst._src=sid;CUR_CASTER=P;let ok;try{ok=withFoes(inst,P,()=>SK[sid](inst,P,a,tx,ty,kk,rank));}finally{inst._el=null;inst._ctr=null;inst._sk=null;inst._src=null;CUR_CASTER=null;}if(ok!==false&&P.S.adv==='blademaster'){if(P.comboEat){P.comboEat=0;P.combo=0;}else{P.combo=Math.min(5,(P.comboT>inst.time?P.combo|0:0)+(sid==='parry'?2:1));}P.comboT=inst.time+3.5;send(P,{t:'combo',n:P.combo,t2:3.5});}if(ok===false){P.mp+=sk.mp;P.scd[sid]=0;send(P,{t:'cdr',sid});}}
+  inst._el=SKILL_EL[sid]||null;inst._ctr=sk.ctr?1:null;inst._sk=1;inst._src=sid;CUR_CASTER=P;let ok;try{ok=withFoes(inst,P,()=>SK[sid](inst,P,a,tx,ty,kk,rank));}finally{inst._el=null;inst._ctr=null;inst._sk=null;inst._src=null;CUR_CASTER=null;}if(ok!==false&&P.S.adv==='blademaster'){if(P.comboEat){P.comboEat=0;P.combo=0;}else{P.combo=Math.min(5,(P.comboT>inst.time?P.combo|0:0)+(sid==='parry'?2:1));}P.comboT=inst.time+3.5;send(P,{t:'combo',n:P.combo,t2:3.5});}if(ok===false){P.mp+=sk.mp;P.scd[sid]=0;send(P,{t:'cdr',sid});}else if(VR&&VR.post)varPost(inst,P,VR.post,tx,ty,kk);}
+function varPost(inst,P,o,tx,ty,kk){if(o.selfHeal)healPlayer(inst,P,P.S.maxHp*o.selfHeal,P);if(o.selfShield){P.shield=Math.max(P.shield,Math.round(P.S.maxHp*o.selfShield));P.shieldT=5;fx(inst,{k:'shieldfx',x:r1(P.x),y:r1(P.y)});}if(o.buff)buff(P,o.buff[0],o.buff[1],o.buff[2]);if(o.partyBuff){const[k,v,t,r]=o.partyBuff;for(const q of partyNear(inst,P,r))buff(q,k,v,t);fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:r*0.6,c:'y',c2:'w'});}if(o.burst){const[r,m]=o.burst;[tx,ty]=clampTarget(P,tx,ty,220);later(inst,0.25,()=>{if(P.inst!==inst)return;fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r});aoe(inst,P,tx,ty,r,m*kk);});}if(o.healLow){let lo=null;for(const q of partyNear(inst,P,220))if(!lo||q.hp/q.S.maxHp<lo.hp/lo.S.maxHp)lo=q;if(lo)healPlayer(inst,lo,(P.S.healPow||P.S.maxHp*0.05)*o.healLow*kk,P);}}
 
+
+// ================= 전직 적용 · 전직 시험 =================
+function applyAdv(P,id){const A=SH.ADV[id];P.ch.adv=id;recalc(P);markDirty(P);if(P.inst)bcastRoster(P.inst);fx(P.inst,{k:'burst',x:r1(P.x),y:r1(P.y),r:70,cs:['#ffffff',A.col,'#ffd35a']});fx(P.inst,{k:'sfx',n:'ult'});msg(P,`${A.n}(으)로 전직했습니다! 스킬 창(K)의 [전직] 탭에서 새 스킬을 배우세요`,'#ffd35a');
+  for(const q of players.values())if(q.ch&&q!==P)msg(q,`${P.ch.name}님이 ${A.n}(으)로 전직했습니다`,'#c9a0e8');}
+function startTrial(P,id){const A=SH.ADV[id],pt=P.party;
+  if(pt.members.size>1){msg(P,'전직 시험은 혼자서만 도전할 수 있어요 · 파티를 떠난 뒤 다시 시도하세요','#ff6a5a');return;}
+  if(pt.inst){msg(P,'이미 던전에 있어요','#ff6a5a');return;}
+  const inst=createDungeon(pt);inst.trial={adv:id,pid:P.id};
+  leaveInst(P);P.inst=inst;inst.players.add(P.id);resetCombat(P);P.hp=P.S.maxHp;P.mp=P.S.maxMp;
+  const fl=clamp(5*Math.floor(Math.min(P.ch.best||10,P.ch.lvl+5)/5),10,95);
+  loadFloor(inst,fl);
+  // 시험장: 잡몹은 치우고 보스(시험관)만 남김 · 혼자 상대하므로 체력 80%
+  inst.monsters=inst.monsters.filter(m=>m.boss);for(const m of inst.monsters){m.maxHp=m.hp=Math.round(m.maxHp*0.8);m.bname=`${A.n}의 시험관`;}
+  fx(inst,{k:'msg',m:`전직 시험 · ${A.n} — 시험관을 쓰러뜨려 자격을 증명하세요`,c:A.col});
+  msg(P,`「${A.idn}」의 길을 걷고 싶다면 힘을 보여라. 쓰러지면 시험은 실패한다.`,'#e6dcc3');
+  bcastRoster(hub);sendParty(pt);}
+function trialWin(inst){const T=inst.trial;if(!T||T.done)return;T.done=1;const P=players.get(T.pid);
+  fx(inst,{k:'shake',v:6});fx(inst,{k:'msg',m:'시험 통과! 잠시 후 마을로 돌아갑니다',c:'#ffd35a'});
+  if(P&&P.inst===inst)applyAdv(P,T.adv);inst.trans={t:4,by:'trial'};}
+function trialFail(inst){for(const P of instPlayers(inst)){joinHub(P);msg(P,'전직 시험에 실패했습니다 · 준비를 갖춘 뒤 한스에게 다시 도전하세요','#ff6a5a');if(P.party)sendParty(P.party);}}
 // ================= 인스턴스 업데이트 =================
 function updatePlayers(inst,dt){
   for(const P of instPlayers(inst)){
@@ -850,11 +872,11 @@ function updateDungeon(inst,dt){
   if(inst.raid){updateRaid(inst,dt);return;}
   if(inst.paused)return;
   inst.time+=dt;
-  if(inst.trans){inst.trans.t-=dt;if(inst.trans.t<=0){if(inst.floor>=100){victory(inst);return;}loadFloor(inst,inst.floor+1);return;}}
+  if(inst.trans){inst.trans.t-=dt;if(inst.trans.t<=0){if(inst.trial){for(const P of instPlayers(inst)){joinHub(P);if(P.party)sendParty(P.party);}return;}if(inst.floor>=100){victory(inst);return;}loadFloor(inst,inst.floor+1);return;}}
   if(inst.dark>0)inst.dark-=dt;
   updatePlayers(inst,dt);updateMonsters(inst,dt);bossRoomRules(inst);updateEvents(inst,dt);updateDots(inst,dt);updateProjs(inst,dt);updateZones(inst,dt);updateHazards(inst,dt);updateTimers(inst,dt);
   const all=instPlayers(inst);
-  if(all.length&&all.every(p=>p.downed)){inst.wipeT+=dt;if(inst.wipeT>=3){inst.wipeT=0;wipe(inst);}}else inst.wipeT=0;
+  if(all.length&&all.every(p=>p.downed)){inst.wipeT+=dt;if(inst.wipeT>=3){inst.wipeT=0;if(inst.trial){trialFail(inst);return;}wipe(inst);}}else inst.wipeT=0;
   inst.meterT-=dt;if(inst.meterT<=0){inst.meterT=1;const bm=inst.bossMeter&&inst.bossId?{name:SH.bossOf(inst.floor).n,floor:inst.floor,time:Math.round(inst.time-inst.bossStart),rows:meterRows(inst.bossMeter)}:null;bcast(inst,{t:'meter',rows:meterRows(inst.meter),boss:bm,hist:inst.bossHist||[]});}
 }
 function victory(inst){const ps=instPlayers(inst);for(const P of ps){P.ch.cleared=(P.ch.cleared|0)+1;markDirty(P);}for(const P of ps){joinHub(P);send(P,{t:'victory'});msg(P,'지하 100층 정복! 심연의 심장이 멈췄다','#ffd35a');if(P.party)sendParty(P.party);}}
@@ -1460,9 +1482,9 @@ const H={
     if(r-1<=0){delete P.ch.sk[sid];P.ch.bar=P.ch.bar.map(x=>x===sid?null:x);if(P.ch.rmb===sid)P.ch.rmb=null;}else P.ch.sk[sid]=r-1;
     P.ch.spts=(P.ch.spts|0)+1;recalc(P);markDirty(P);msg(P,`${sk.n} ${r} → ${r-1} · 스킬 포인트 1 돌려받음 (-${cost}골드)`,'#ffd35a');},
   advsel(P,d){if(P.inst!==hub||!near(P,hub.map.merc,60)){msg(P,'용병 대장 한스 곁에서 전직할 수 있어요','#9e937a');return;}const A=SH.ADV[d.id];if(!A||A.cls!==P.ch.cls)return;if(P.ch.lvl<SH.ADV_LVL){msg(P,`${SH.ADV_LVL}레벨부터 전직할 수 있어요`,'#ff6a5a');return;}if(P.ch.adv===d.id)return;
+    if(!P.ch.adv){startTrial(P,d.id);return;}
     if(P.ch.adv){const cost=SH.advChangeCost(P.ch.lvl);if(P.ch.gold<cost){msg(P,`갈래를 바꾸려면 ${cost.toLocaleString()}골드가 필요해요`,'#ff6a5a');return;}P.ch.gold-=cost;const old=SH.ADV[P.ch.adv];let back=0;for(const s of old.sk){back+=P.ch.sk[s]|0;delete P.ch.sk[s];}P.ch.spts=(P.ch.spts|0)+back;P.ch.bar=P.ch.bar.map(x=>old.sk.includes(x)?null:x);if(old.sk.includes(P.ch.rmb))P.ch.rmb=null;if(P.ch.ult===old.ult)P.ch.ult=null;}
-    P.ch.adv=d.id;recalc(P);markDirty(P);if(P.inst)bcastRoster(P.inst);fx(P.inst,{k:'burst',x:r1(P.x),y:r1(P.y),r:70,cs:['#ffffff',A.col,'#ffd35a']});fx(P.inst,{k:'sfx',n:'ult'});msg(P,`${A.n}(으)로 전직했습니다! 스킬 창(K)의 [전직] 탭에서 새 스킬을 배우세요`,'#ffd35a');
-    for(const q of players.values())if(q.ch&&q!==P)msg(q,`${P.ch.name}님이 ${A.n}(으)로 전직했습니다`,'#c9a0e8');},
+    applyAdv(P,d.id);},
   learn(P,d){const sid=d.sid;const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.ult)return;if(sk.adv&&sk.adv!==P.ch.adv){msg(P,`${SH.ADV[sk.adv].n}으로 전직해야 배울 수 있어요`,'#ff6a5a');return;}if(P.ch.lvl<sk.lvl){msg(P,`레벨 ${sk.lvl}에 해금됩니다`,'#ff6a5a');return;}if((P.ch.spts|0)<=0){msg(P,'스킬 포인트가 없습니다','#ff6a5a');return;}
     const r=P.ch.sk[sid]|0;if(r>=SH.MAX_RANK)return;P.ch.sk[sid]=r+1;P.ch.spts--;if(r===0&&!sk.pas&&!P.ch.bar.includes(sid)){const e=P.ch.bar.indexOf(null);if(e>=0)P.ch.bar[e]=sid;}recalc(P);send(P,{t:'fxp',k:'learn'});},
   rmb(P,d){const sid=d.sid||null;if(sid){const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.pas||!(P.ch.sk[sid]>0))return;}P.ch.rmb=sid;markDirty(P);},
@@ -1473,7 +1495,7 @@ const H={
     const copy=Object.assign({},it);delete copy.price;if(!addBag(P,copy)){msg(P,'가방이 가득 찼습니다','#ff6a5a');return;}P.ch.gold-=it.price;P.stock.splice(i,1);markDirty(P);msg(P,`${it.name} 구입`,'#ffd35a');send(P,{t:'fxp',k:'gold'});H.shop(P);},
   respec(P){if(P.inst!==hub||!near(P,hub.map.merchant,48))return;const cost=30*P.ch.lvl;if(P.ch.gold<cost){msg(P,'골드가 부족합니다','#ff6a5a');return;}const def=SH.defaultSkills(P.ch.cls);P.ch.gold-=cost;P.ch.sk=def.sk;P.ch.bar=def.bar.slice();P.ch.rmb=null;P.ch.spts=SH.skillPointsTotal(P.ch.lvl);recalc(P);msg(P,'스킬을 초기화했습니다','#ffd35a');H.shop(P);},
   srespec(P){if(P.inst!==hub||!near(P,hub.map.merchant,48))return;const cost=30*P.ch.lvl;if(P.ch.gold<cost){msg(P,'골드가 부족합니다','#ff6a5a');return;}const C0=CLASSES[P.ch.cls];let back=P.ch.pts|0;for(const k of['str','dex','vit','ene']){back+=Math.max(0,(P.ch[k]|0)-C0.base[k]);P.ch[k]=C0.base[k];}P.ch.gold-=cost;P.ch.pts=back;recalc(P);markDirty(P);msg(P,`능력치를 초기화했습니다 · ${back}포인트 돌려받음`,'#ffd35a');H.shop(P);},
-  dbg(P,d){if(!process.env.BC_DEBUG)return;const inst=P.inst;if(d.gm&&inst&&inst.raid){if(inst.raid.gm)gmEnd(inst,true);inst.raid.stage='boss';inst.raid.cardT=0;const ok=gmStart(inst,d.gm);send(P,{t:'msg',m:'gm '+d.gm+' '+ok,c:'#fff'});}if(d.raiddoor&&inst&&inst.raid){if(inst.raid.pz)inst.raid.pz.st='done';openRaidDoor(inst);}if(d.tp){P.x=d.tp[0];P.y=d.tp[1];send(P,{t:'tp',x:P.x,y:P.y});}if(d.bosshp&&inst&&inst.monsters){for(const m of inst.monsters)if(m.boss)m.hp=Math.min(m.hp,d.bosshp);}if(d.god){P.S.maxHp=99999;P.hp=99999;}if(d.ultcd)P.ucdEnd=0;if(d.lvl){P.ch.lvl=clamp(d.lvl|0,1,SH.LVL_CAP);P.ch.spts=(P.ch.spts|0)+d.lvl;recalc(P);}if(d.gold){P.ch.gold+=d.gold;markDirty(P);}if(d.floor&&inst&&inst.type==='dungeon')loadFloor(inst,d.floor);if(d.bossfrac&&inst&&inst.monsters){for(const m of inst.monsters)if(m.boss)m.hp=Math.round(m.maxHp*d.bossfrac);}if(d.fullhp){P.hp=P.S.maxHp;}if(d.sethp){P.hp=d.sethp;}if(d.kills){P.ch.kills=d.kills;markDirty(P);}if(d.pets){P.ch.pets=SH.PETS.map(p=>p.id);markDirty(P);}if(d.mats){P.ch.mats.iron+=500;P.ch.mats.dust+=200;P.ch.mats.ess+=20;for(const g of['r1','s2','t3','e1','a1','d4'])P.ch.gems[g]=(P.ch.gems[g]|0)+4;markDirty(P);}if(d.ev&&inst&&inst.type==='dungeon'){const e=inst.ev;if(d.ev==='altar')e.altar={x:P.x+40,y:P.y,st:0,wave:0,t:0,ids:[]};if(d.ev==='trader')e.trader={x:P.x+30,y:P.y,stock:{}};if(d.ev==='goblin'){spawnMonster(inst,'goblin',P.x+60,P.y,false);}bcastEv(inst);}
+  dbg(P,d){if(!process.env.BC_DEBUG)return;const inst=P.inst;if(d.gm&&inst&&inst.raid){if(inst.raid.gm)gmEnd(inst,true);inst.raid.stage='boss';inst.raid.cardT=0;const ok=gmStart(inst,d.gm);send(P,{t:'msg',m:'gm '+d.gm+' '+ok,c:'#fff'});}if(d.raiddoor&&inst&&inst.raid){if(inst.raid.pz)inst.raid.pz.st='done';openRaidDoor(inst);}if(d.tp){P.x=d.tp[0];P.y=d.tp[1];send(P,{t:'tp',x:P.x,y:P.y});}if(d.bosshp&&inst&&inst.monsters){for(const m of inst.monsters)if(m.boss)m.hp=Math.min(m.hp,d.bosshp);}if(d.god){P.S.maxHp=99999;P.hp=99999;}if(d.ultcd)P.ucdEnd=0;if(d.lvl){P.ch.lvl=clamp(d.lvl|0,1,SH.LVL_CAP);P.ch.spts=(P.ch.spts|0)+d.lvl;recalc(P);}if(d.gold){P.ch.gold+=d.gold;markDirty(P);}if(d.floor&&inst&&inst.type==='dungeon')loadFloor(inst,d.floor);if(d.bossfrac&&inst&&inst.monsters){for(const m of inst.monsters)if(m.boss)m.hp=Math.round(m.maxHp*d.bossfrac);}if(d.fullhp){P.hp=P.S.maxHp;}if(d.killboss&&inst&&inst.monsters){const m=inst.monsters.find(m=>m.boss&&!m.dead);if(m){m.hp=0;killMonster(inst,m,P);}}if(d.down){P.hp=0;P.downed=true;}if(d.probe)send(P,{t:'probe',v:{scd:P.scd,b:P.buffs,sh:P.shield,hp:P.hp,max:P.S.maxHp}});if(d.sethp){P.hp=d.sethp;}if(d.kills){P.ch.kills=d.kills;markDirty(P);}if(d.pets){P.ch.pets=SH.PETS.map(p=>p.id);markDirty(P);}if(d.mats){P.ch.mats.iron+=500;P.ch.mats.dust+=200;P.ch.mats.ess+=20;for(const g of['r1','s2','t3','e1','a1','d4'])P.ch.gems[g]=(P.ch.gems[g]|0)+4;markDirty(P);}if(d.ev&&inst&&inst.type==='dungeon'){const e=inst.ev;if(d.ev==='altar')e.altar={x:P.x+40,y:P.y,st:0,wave:0,t:0,ids:[]};if(d.ev==='trader')e.trader={x:P.x+30,y:P.y,stock:{}};if(d.ev==='goblin'){spawnMonster(inst,'goblin',P.x+60,P.y,false);}bcastEv(inst);}
     if(d.killboss&&inst&&inst.monsters){for(const m of inst.monsters.slice())if(!m.dead&&m.boss){m.hp=0;killMonster(inst,m,P);}}
     if(d.killall&&inst&&inst.type==='dungeon'){for(const m of inst.monsters.slice())if(!m.dead&&!m.boss)killMonster(inst,m,P);}
     if(d.elite&&inst&&inst.type==='dungeon'){const m=spawnMonster(inst,'zombie',P.x+50,P.y,true);m.ea=d.elite;m.alert=true;}

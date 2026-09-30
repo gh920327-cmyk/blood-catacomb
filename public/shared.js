@@ -476,6 +476,21 @@ const CLASS_INFO={warrior:{diff:2,bars:[4,4,1],rec:'앞에서 시원하게 베�
   knight:{diff:4,bars:[3,5,2],rec:'신성력을 모아 한 번에 쏟아내는 기사를 원한다면',pros:['최강의 근접 폭딜','빛의 이동기'],cons:['신성력 관리가 필요'],party:'새벽의 맹세를 받은 숨은 기사'}};
 /* 갈래별 피해 보정 (허수아비 측정: 딜 갈래 둘은 ±5% · 기본 직업보다 약 12% 강하게 / 탱커·힐러 갈래는 역할에 맞게) */
 const ADV_DK={berserker:1.21,blademaster:0.87,bulwark:1.25,judicator:0.67,sniper:0.745,trapper:1.035,elementalist:0.94,astrologer:1.28,hierophant:1.2,exorcist:0.67,dawncommander:1.12,sunblade:0.94};
+/* 갈래별 기본 스킬 변형: mul=피해·효과 배율, cd=재사용 배율, post=시전 후 추가 효과 */
+const ADV_VAR={
+  berserker:{whirl:{n:'피의 회전베기',d:'피해 +25% · 사용하면 최대 체력 3% 회복',mul:1.25,post:{selfHeal:0.03}},warcry:{n:'광기의 함성',d:'재사용 -30% · 6초간 공격 속도 +20%',cd:0.7,post:{buff:['as',0.2,6]}}},
+  blademaster:{charge:{n:'섬광 돌진 베기',d:'재사용 -35%',cd:0.65},cleave:{n:'검기 가르기',d:'피해 +35%',mul:1.35}},
+  bulwark:{taunt:{n:'성벽의 도발',d:'사용하면 최대 체력 12% 보호막',post:{selfShield:0.12}},bash:{n:'수호의 강타',d:'주변 파티원 받는 피해 -10% (4초)',post:{partyBuff:['red',0.1,4,110]}}},
+  judicator:{bash:{n:'심판의 강타',d:'피해 +40%',mul:1.4},consecrate:{n:'심판의 땅',d:'재사용 -25% · 6초간 피해 +10%',cd:0.75,post:{buff:['dmg',0.1,6]}}},
+  sniper:{pierce:{n:'관통 저격',d:'피해 +45%',mul:1.45},vault:{n:'후퇴 조준',d:'사용 후 5초간 피해 +15%',post:{buff:['dmg',0.15,5]}}},
+  trapper:{trap:{n:'개량 폭발 덫',d:'피해 +30% · 재사용 -20%',mul:1.3,cd:0.8},poison:{n:'맹독 화살',d:'피해 +40%',mul:1.4}},
+  elementalist:{fireball:{n:'작열 화염구',d:'조준한 곳에 작은 폭발이 한 번 더 일어남',post:{burst:[30,0.9]}},nova:{n:'빙결 폭발',d:'재사용 -30%',cd:0.7}},
+  astrologer:{chain:{n:'별빛 연쇄',d:'피해 +30%',mul:1.3},blink:{n:'성간 도약',d:'순간이동 후 4초간 피해 +15%',post:{buff:['dmg',0.15,4]}}},
+  hierophant:{heal:{n:'대치유의 빛',d:'치유량 +35%',mul:1.35},shield:{n:'빛의 축복',d:'재사용 -30%',cd:0.7}},
+  exorcist:{smite:{n:'퇴마의 심판',d:'피해 +40% · 체력이 가장 낮은 파티원 치유',mul:1.4,post:{healLow:0.8}},purify:{n:'정화의 파동',d:'피해 +30%',mul:1.3}},
+  dawncommander:{lslash:{n:'기사단의 참격',d:'주변 파티원 피해 +8% (5초)',post:{partyBuff:['dmg',0.08,5,120]}},flashdash:{n:'돌격 명령',d:'재사용 -30%',cd:0.7}},
+  sunblade:{lslash:{n:'태양 참격',d:'피해 +35%',mul:1.35},crossslash:{n:'작열 십자',d:'조준한 곳에 태양 폭발이 한 번 더 일어남',post:{burst:[34,1.0]}}}};
+function advVar(ch,sid){const a=advOf(ch);return a&&ADV_VAR[ch.adv]&&ADV_VAR[ch.adv][sid]||null;}
 function advOf(ch){return ch&&ch.adv&&ADV[ch.adv]&&ADV[ch.adv].cls===ch.cls?ADV[ch.adv]:null;}
 function ultsOf(ch){const C=CLASSES[ch.cls];const a=advOf(ch);return (C.ults||[]).concat(a?[a.ult]:[]);}
 function advChangeCost(lvl){return 20000+lvl*1000;}
@@ -761,7 +776,7 @@ function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
 const SH={ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
-  CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,ADV,ADV_OF,ADV_LVL,CLASS_INFO,advOf,ultsOf,advChangeCost,lvCost,itemLvUp,canEquip,
+  CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,ADV,ADV_OF,ADV_LVL,ADV_VAR,advVar,CLASS_INFO,advOf,ultsOf,advChangeCost,lvCost,itemLvUp,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
 })(typeof self!=='undefined'?self:this);

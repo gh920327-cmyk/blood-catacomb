@@ -627,11 +627,11 @@ function handle(d){switch(d.t){
   case 'ucd':ultEnd=time+d.left;break;
   case 'ctrReset':ctrCdEnd=0;break;
   case 'err':toast(d.m);break;
-  case 'map':{if(G.pendEnd&&d.kind==='hub'){const pe=G.pendEnd;G.pendEnd=null;setTimeout(()=>playEnding(pe,()=>{if(pe==='end2')onFirstDawn();}),1200);}closeFac();G.raid=null;G.rvote=null;G.mvp=null;G.auc=null;G.bseq=null;G.rings=[];G.tethers=[];G.block=null;me.inBoss=false;G.bossLive=null;G.kind=d.kind;G.paused=d.paused||null;G.trans=0;G.monsters.clear();G.deadM.clear();G.projs.clear();G.drops.clear();G.zones=[];parts=[];effects=[];texts=[];G.portalMenu=false;showShop=false;
+  case 'map':{if(G.pendEnd&&d.kind==='hub'){const pe=G.pendEnd;G.pendEnd=null;setTimeout(()=>playEnding(pe,()=>{if(pe==='end2')onFirstDawn();}),1200);}closeFac();G.raid=null;G.rvote=null;G.mvp=null;G.auc=null;G.bseq=null;G.rings=[];G.tethers=[];G.block=null;me.inBoss=false;G.bossLive=null;G.kind=d.kind;G.trial=d.trial||null;G.paused=d.paused||null;G.trans=0;G.monsters.clear();G.deadM.clear();G.projs.clear();G.drops.clear();G.zones=[];parts=[];effects=[];texts=[];G.portalMenu=false;showShop=false;
     if(d.kind==='hub'){G.arena=null;G.arenaRes=null;G.fishS=null;G.map=SH.genHub();G.floor=0;banner={t:0,a:'던전 입구 광장',b:'동료를 모아 포탈로 들어가세요'};}
     else if(d.raid){G.arena=null;G.arenaRes=null;G.map=SH.genRaid(d.raid.id,d.seed);G.floor=d.raid.tf;G.stairsOpen=false;G.raid=d.raid.st;G.auc=null;if(d.raid.door)for(const i of G.map.door)G.map.tiles[i]=1;const rd=SH.RAIDS.find(r=>r.id===d.raid.id);for(const k in BPH)artOf(BPH[k].img);G.halfN=0;banner={t:0,a:`${rd.n} · ${RAID_MODE_N[d.raid.mode]}`,b:`${rd.boss}이(가) 기다린다`};}
     else if(d.arena){G.map=SH.genArena(d.seed);G.floor=d.floor;G.stairsOpen=false;banner={t:0,a:'결투장',b:'상대 팀을 모두 쓰러뜨리세요'};}
-    else{G.arena=null;G.arenaRes=null;G.map=SH.genFloor(d.seed,d.floor);G.floor=d.floor;G.stairsOpen=!!d.stairs;if(d.stairs)SH.openStairs(G.map);const th=SH.themeOf(d.floor);banner={t:0,a:`지하 ${d.floor}층 · ${th.corrupt?'타락한 ':''}${th.t.n}`,b:G.map.boss?`${SH.bossOf(d.floor).n}이(가) 기다린다`:pick(th.t.lines)};}
+    else{G.arena=null;G.arenaRes=null;G.map=SH.genFloor(d.seed,d.floor);G.floor=d.floor;G.stairsOpen=!!d.stairs;if(d.stairs)SH.openStairs(G.map);const th=SH.themeOf(d.floor);banner=d.trial&&SH.ADV[d.trial]?{t:0,a:`전직 시험 · ${SH.ADV[d.trial].n}`,b:`${SH.ADV[d.trial].n}의 시험관이 기다린다 · 쓰러지면 실패`}:{t:0,a:`지하 ${d.floor}층 · ${th.corrupt?'타락한 ':''}${th.t.n}`,b:G.map.boss?`${SH.bossOf(d.floor).n}이(가) 기다린다`:pick(th.t.lines)};}
     torches=G.map.torches;G.explored=new Uint8Array(G.map.w*G.map.h);me.x=d.x;me.y=d.y;me.path=null;me.pickTarget=null;me.goal=null;me.dodgeT=0;
     G.ev=d.ev||null;G.pings=[];if(G.ev&&G.ev.secret&&G.ev.secret.open&&G.map.secret)G.map.tiles[G.map.secret.door]=1;
     for(const o of d.drops||[])addDropC(o,true);
@@ -1194,6 +1194,7 @@ function drawOrb(cx,cy,frac,img,label){ctx.drawImage(ORB_FRAME,(cx-24)*SC,(cy-24
   if(sy>0&&sy<41){const yy=cy-20+sy,half=Math.sqrt(Math.max(0,420-(sy-20)**2));for(let x=-Math.floor(half)+1;x<half-1;x++)if(((x+Math.floor(time*6))&3)===0)pr(cx+x,yy,1,1,'rgba(255,255,255,0.4)');}
   ctx.drawImage(ORB_GLASS,(cx-20)*SC,(cy-20)*SC,41*SC,41*SC);txt(label,cx,cy+1,12,'#f2eadb','center');}
 function skillTip(sid,i){const s=SKILLS[sid];const rank=(G.ch&&G.ch.sk&&G.ch.sk[sid])||0;const L=[[s.n+(rank?`  ${rank}/${SH.MAX_RANK}`:''),'#ffd35a',14],[s.pas?'패시브':`마나 ${s.mp}  ·  재사용 ${s.cd}초`,s.pas?'#c77ad8':'#7aa2ff',12],[s.desc,'#e6dcc3',12]];if(s.ctr)L.push(['◆ 카운터 가능 · 파랗게 빛나는 보스를 저지','#8fd0ff',11]);
+  {const V=G.ch&&SH.advVar(G.ch,sid);if(V)L.push([`◈ ${V.n} (${SH.ADV[G.ch.adv].n} 변형): ${V.d}`,SH.ADV[G.ch.adv].col,11]);}
   if(s.pas)L.push([s.per,'#9e937a',11]);else L.push([`등급마다 효과 +12%${rank?` (현재 +${Math.round((SH.skillMul(rank)-1)*100)}%)`:''}`,'#9e937a',11]);
   if(G.ch&&G.ch.lvl<s.lvl)L.push([`레벨 ${s.lvl}에 해금`,'#e0574a',11]);if(i!=null)L.push([`${i+1} 키로 사용  ·  클릭하면 우클릭 스킬로 선택`,'#6b6275',11]);return L;}
 // 화면 밖 파티원 방향 화살표 (가장자리에 이름·거리)
@@ -1279,7 +1280,7 @@ function drawHUD(){const mv=G.mev,cls=myCls(),skills=CLASSES[cls].skills;
   // 버프
   let bx=150;if(mv[5]>0){txt(`피해 증가 ${Math.ceil(mv[5])}초`,bx,226,11,'#ff9a6a');bx+=70;}if(mv[6]>0){txt(`피해 감소 ${Math.ceil(mv[6])}초`,bx,226,11,'#8fd0ff');}
   // 왼쪽 위 정보
-  pr(4,4,124,32,'rgba(8,6,12,0.72)');txt(G.kind==='hub'?'던전 입구 광장':G.map&&G.map.raid?`레이드 · ${(SH.RAIDS.find(r=>r.id===G.map.raid)||{}).n}`:inArena()?'결투장':`지하 ${G.floor}층 · ${SH.themeOf(G.floor).t.n}`,8,11,13,SH.themeOf(G.floor).corrupt&&G.kind!=='hub'&&!(G.map&&G.map.raid)?'#ff8a7a':G.map&&G.map.raid?'#ffd35a':'#e6dcc3');if(G.ch){txt(`${G.ch.name} · ${CLASSES[cls].n} ${G.ch.lvl}`,8,21,12,'#9e937a');pimg(GOLD,8,27);txt(String(G.ch.gold),19,30,12,'#ffd35a');
+  pr(4,4,124,32,'rgba(8,6,12,0.72)');txt(G.kind==='hub'?'던전 입구 광장':G.map&&G.map.raid?`레이드 · ${(SH.RAIDS.find(r=>r.id===G.map.raid)||{}).n}`:inArena()?'결투장':G.trial&&SH.ADV[G.trial]?`전직 시험 · ${SH.ADV[G.trial].n}`:`지하 ${G.floor}층 · ${SH.themeOf(G.floor).t.n}`,8,11,13,SH.themeOf(G.floor).corrupt&&G.kind!=='hub'&&!(G.map&&G.map.raid)?'#ff8a7a':G.map&&G.map.raid?'#ffd35a':'#e6dcc3');if(G.ch){txt(`${G.ch.name} · ${CLASSES[cls].n} ${G.ch.lvl}`,8,21,12,'#9e937a');pimg(GOLD,8,27);txt(String(G.ch.gold),19,30,12,'#ffd35a');
     if(G.ch.pts>0){const bl=(time*3|0)%2===0;pr(52,221,38,10,bl?PAL.y:PAL.g);pr(53,222,36,8,PAL.k);txt(`+${G.ch.pts} 스탯`,71,226,11,'#ffd35a','center');uiRects.push({x:52,y:221,w:38,h:10,click:()=>{showChar=true;}});}}
   drawPartyFrames();
   if(G.kind==='dungeon'){pr(412,4,64,64,PAL.k);pr(413,5,62,62,'rgba(12,9,16,0.85)');ctx.drawImage(miniC,414*SC,6*SC,60*SC,60*SC);
@@ -2003,7 +2004,7 @@ function advPortrait(k){if(ADV_PORT[k])return ADV_PORT[k];const im=SPR.advPort;i
   return ADV_PORT[k]=c;}
 function drawAdvPanel(){const ch=G.ch;if(!ch)return;const x=14,y=12,w=452,h=232;panel(x,y,w,h,`전직 · ${CLASSES[ch.cls].n}`);uiRects.push({x,y,w,h,block:true});button(x+w-40,y+3,34,12,'닫기',()=>{G.advOpen=false;},{size:10});
   const brs=SH.ADV_OF[ch.cls]||[];const cur=ch.adv;const lvOk=ch.lvl>=SH.ADV_LVL;
-  txt(lvOk?(cur?'다른 갈래로 바꾸려면 골드가 들어요 (배운 전직 스킬 포인트는 돌려받아요)':'두 갈래 중 하나를 고르세요. 30레벨 이후 새 스킬 4개와 전용 궁극기를 얻어요'):`${SH.ADV_LVL}레벨부터 전직할 수 있어요 (지금 ${ch.lvl}레벨)`,x+w/2,y+18,10,lvOk?'#e6dcc3':'#ff8a5a','center');
+  txt(lvOk?(cur?'다른 갈래로 바꾸려면 골드가 들어요 (배운 전직 스킬 포인트는 돌려받아요)':'갈래를 골라 시험 던전에 도전하세요 · 시험관을 쓰러뜨리면 전직 (혼자 입장)'):`${SH.ADV_LVL}레벨부터 전직할 수 있어요 (지금 ${ch.lvl}레벨)`,x+w/2,y+18,10,lvOk?'#e6dcc3':'#ff8a5a','center');
   brs.forEach((k,ci)=>{const A=SH.ADV[k],I=A.info;const cx=x+8+ci*(w/2-4),cw=w/2-12,cy=y+26;const mine=cur===k;pr(cx,cy,cw,h-34,mine?'rgba(90,64,16,0.45)':'rgba(10,7,14,0.55)');pr(cx,cy,cw,1,A.col);
     {const pc=advPortrait(k);if(pc){ctx.save();ctx.globalAlpha=mine||G.advPick===k?0.72:0.5;ctx.drawImage(pc,Math.round((cx+cw-100)*SC),Math.round((cy+36)*SC),Math.round(96*SC),Math.round(128*SC));ctx.restore();}}
     bigTxt(A.n,cx+cw/2,cy+12,15,A.col,1.3);txt(I.role,cx+cw/2,cy+27,10,'#e6dcc3','center');
@@ -2012,10 +2013,10 @@ function drawAdvPanel(){const ch=G.ch;if(!ch)return;const x=14,y=12,w=452,h=232;
     txt('장점',cx+8,cy+92,9,'#7fd05a');I.pros.forEach((l,i)=>txt('· '+l,cx+8,cy+101+i*9,9,'#d2c7ab'));
     txt('단점',cx+8,cy+122,9,'#ff8a7a');I.cons.forEach((l,i)=>txt('· '+l,cx+8,cy+131+i*9,9,'#d2c7ab'));
     txt('파티에서',cx+8,cy+152,9,'#8fd0ff');wrapTxt(I.party,9,cw-16).slice(0,1).forEach((l,i)=>txt(l,cx+8,cy+161,9,'#d2c7ab'));
-    txt(`고유: ${A.idn}`,cx+8,cy+173,9,A.col);uiRects.push({x:cx+6,y:cy+168,w:cw-12,h:10,tip:()=>[[A.idn,A.col,12],...wrapTxt(A.idd,11,220).map(l=>[l,'#e6dcc3',11])]});
+    txt(`고유: ${A.idn} · 스킬 변형 ${Object.keys(SH.ADV_VAR[k]||{}).length}종 ▸`,cx+8,cy+173,9,A.col);uiRects.push({x:cx+6,y:cy+168,w:cw-12,h:10,tip:()=>{const L=[[A.idn,A.col,12],...wrapTxt(A.idd,11,220).map(l=>[l,'#e6dcc3',11])];const V=SH.ADV_VAR[k]||{};const ks=Object.keys(V);if(ks.length){L.push(['기본 스킬 변형','#ffd35a',12]);for(const sid of ks)L.push([`${SKILLS[sid].n} → ${V[sid].n}: ${V[sid].d}`,'#d2c7ab',11]);}return L;}});
     A.sk.concat([A.ult]).forEach((sid,i)=>{const ix=cx+8+i*20,iy=cy+180;const sk=SKILLS[sid];pr(ix-1,iy-1,18,18,sk.ult?'#ffd35a':PAL.k);pimg(SKILL_ICON[sid],ix,iy);uiRects.push({x:ix,y:iy,w:16,h:16,tip:()=>[[sk.n+(sk.ult?' (궁극기)':sk.pas?' (패시브)':''),A.col,13],[`${sk.lvl}레벨`,'#9e937a',11],...wrapTxt(sk.desc,11,230).map(l=>[l,'#e6dcc3',11]),...(sk.per?[[sk.per,'#8fd0ff',11]]:[])]});});
-    const cost=cur&&!mine?SH.advChangeCost(ch.lvl):0;const bl=mine?'현재 갈래':cur?`바꾸기 (${cost.toLocaleString()}G)`:'이 갈래로 전직';
-    const arm=G.advPick===k;button(cx+cw-78,cy+180,72,16,arm?'정말 전직?':bl,()=>{if(mine||!lvOk)return;if(!arm){G.advPick=k;return;}G.advPick=null;net({t:'advsel',id:k});G.advOpen=false;G.skTab='adv';},{size:10,main:!mine&&lvOk,dis:mine||!lvOk});});}
+    const cost=cur&&!mine?SH.advChangeCost(ch.lvl):0;const bl=mine?'현재 갈래':cur?`바꾸기 (${cost.toLocaleString()}G)`:'전직 시험 도전';
+    const arm=G.advPick===k;button(cx+cw-78,cy+180,72,16,arm?(cur?'정말 바꿀까요?':'시험 입장!'):bl,()=>{if(mine||!lvOk)return;if(!arm){G.advPick=k;return;}G.advPick=null;net({t:'advsel',id:k});G.advOpen=false;closeFac();if(cur)G.skTab='adv';},{size:10,main:!mine&&lvOk,dis:mine||!lvOk});});}
 function drawMercPanel(){const ch=G.ch;if(!ch)return;if(G.advOpen){drawAdvPanel();return;}const x=6,y=38,w=226,h=194;panel(x,y,w,h,'용병 대장 한스');{const AD=SH.advOf(ch);button(x+w-70,y+3,64,12,AD?`전직: ${AD.n}`:'전직',()=>{G.advOpen=true;G.advPick=null;},{size:9,main:!AD&&ch.lvl>=SH.ADV_LVL,tip:[['전직','#ffd35a',12],[`${SH.ADV_LVL}레벨부터 두 갈래 중 하나를 골라요`,'#e6dcc3',11]]});}const cost=SH.mercCost(ch.lvl);txt('혼자 던전에 들어갈 때만 함께 싸웁니다',x+w/2,y+21,10,'#9e937a','center');
   Object.entries(SH.MERCS).forEach(([k,M],i)=>{const ly=y+32+i*42;const cur=ch.merc===k;pr(x+8,ly,w-16,38,cur?'#3a3016':'rgba(10,7,14,0.6)');if(cur){pr(x+8,ly,w-16,1,PAL.y);}
     const fr=mercFrames(k);const s=fr.idle[0].r;ctx.drawImage(s.c,Math.round((x+12)*SC),Math.round((ly+2)*SC),s.w*0.85*SC,s.h*0.85*SC);
@@ -2047,7 +2048,7 @@ function drawCtrHint(){if(!G.ctrWin||time>G.ctrWin)return;const b=(time*10|0)%2;
 // ================= 레이드 =================
 const RB_TC=new Set();SH.MT_LIST.forEach((t,i)=>{if(SH.MT[t]&&SH.MT[t].rb)RB_TC.add(i);});
 function isBossTc(tc){return tc===3||RB_TC.has(tc);}
-function bossNm(m){return m&&RB_TC.has(m.tc)?SH.MT[SH.MT_LIST[m.tc]].n:SH.bossOf(G.floor).n;}
+function bossNm(m){if(G.trial&&SH.ADV[G.trial])return `${SH.ADV[G.trial].n}의 시험관 (${SH.bossOf(G.floor).n})`;return m&&RB_TC.has(m.tc)?SH.MT[SH.MT_LIST[m.tc]].n:SH.bossOf(G.floor).n;}
 const RB_ORDER=['r_greg','r_lyra','r_nora','r_valen','r_golem','r_karnas','r_ella'];let RSPR=null;const RB_FR={};
 loadImg('sprites/raid_bosses.png').then(i=>{if(i)RSPR=sliceAnim(i,72,48);});
 function raidFrames(type,floor){if(RB_FR[type])return RB_FR[type];const i=RB_ORDER.indexOf(type);if(RSPR&&RSPR[i]&&RSPR[i][0].r.w>0){RB_FR[type]=animFrames(RSPR[i]);return RB_FR[type];}return themedMonsterFrames('boss',floor);}
