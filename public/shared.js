@@ -424,7 +424,7 @@ const SKILLS={
   gscald:{n:'과열 증기 분사',mp:22,cd:10,desc:'2.5초간 앞으로 뜨거운 증기를 뿜는다(0.25초마다 65%, 둔화)'},
   gshell:{ctr:1,n:'충격 포탄',mp:18,cd:8,desc:'무거운 포탄을 곧게 쏜다. 처음 맞은 적에서 폭발(320%), 1.5초 기절과 큰 넉백'},
   gordnance:{pas:1,n:'탄약고',desc:'폭발 강화',per:'등급당 폭발 피해 +3%, 폭발 범위 +2%'},
-  gspin:{n:'쌍권총 난사',mp:16,cd:6,desc:'1.2초간 제자리에서 돌며 사방으로 24발을 쏜다(각 60%)'},
+  gricochet:{n:'도탄 사격',mp:16,cd:6,desc:'커서 방향의 적을 쏘면 탄환이 적 사이를 최대 6번 튕긴다(70%, 튕길 때마다 +15%). 마지막에 작은 폭발 · 적이 하나면 같은 적에게 계속 튕긴다'},
   gslide:{ctr:1,n:'슬라이드 사격',mp:12,cd:5,desc:'커서 방향으로 미끄러지며 가까운 적에게 네 발(각 110%). 미끄러지는 동안 회피'},
   gfan:{n:'패닝',mp:14,cd:7,desc:'가장 가까운 적에게 여섯 발을 순식간에 쏜다(각 85%). 마지막 발은 반드시 치명타(200%)'},
   gkatam:{pas:1,n:'건카타',desc:'치명타와 공격 속도 강화',per:'등급당 치명타 +1%, 공격 속도 +2%'},
@@ -502,7 +502,7 @@ const ADV={
   cannoneer:{cls:'gunner',n:'중포병',sk:['gmortar','gscald','gshell','gordnance'],ult:'siegecannon',col:'#ff9a4a',
     idn:'대구경 전문가',idd:'폭발 피해 +20% · 포탑을 하나 더 설치 · 받는 피해 -8%',
     info:{role:'원거리 광역 포격',diff:3,bars:[3,4,2],rec:'펑펑 터지는 대포로 화면을 뒤덮고 싶다면',pros:['넓은 폭발로 광역 최강급','포탑 두 대로 꾸준한 화력'],cons:['느린 포탄은 조준이 필요','연발귀보다 단일 대상에 약함'],party:'포탑을 깔고 몰려오는 적을 포격으로 날려 버리는 포대'}},
-  gunkata:{cls:'gunner',n:'연발귀',sk:['gspin','gslide','gfan','gkatam'],ult:'bulletballet',col:'#8fd0ff',
+  gunkata:{cls:'gunner',n:'연발귀',sk:['gricochet','gslide','gfan','gkatam'],ult:'bulletballet',col:'#8fd0ff',
     idn:'탄막의 춤',idd:'치명타 +8% · 치명타 피해 +15% · 스킬을 쓰면 2초간 이동 속도 +15%',
     info:{role:'원거리 기동 딜러',diff:4,bars:[2,5,1],rec:'쌍권총을 들고 춤추듯 누비며 쏘는 손맛을 원한다면',pros:['높은 치명타와 순간 딜','슬라이드로 누비며 공격'],cons:['체력이 낮아 움직임이 중요','광역은 중포병보다 약함'],party:'보스 곁을 누비며 치명타를 꽂는 총잡이'}}};
 const ADV_OF={};for(const k in ADV){const c=ADV[k].cls;(ADV_OF[c]=ADV_OF[c]||[]).push(k);}
@@ -514,7 +514,7 @@ const CLASS_INFO={warrior:{diff:2,bars:[4,4,1],rec:'앞에서 시원하게 베�
   gunner:{diff:3,bars:[2,4,2],rec:'탕탕 쏘고 펑펑 터뜨리는 손맛을 원한다면',pros:['총·산탄·유탄을 오가는 화력','포탑과 반동 도약'],cons:['가까이 붙으면 위험','증기압 관리가 필요'],party:'태엽 기사단의 증기총을 물려받은 사수'},
   knight:{diff:4,bars:[3,5,2],rec:'신성력을 모아 한 번에 쏟아내는 기사를 원한다면',pros:['최강의 근접 폭딜','빛의 이동기'],cons:['신성력 관리가 필요'],party:'새벽의 맹세를 받은 숨은 기사'}};
 /* 갈래별 피해 보정 (허수아비 측정: 딜 갈래 둘은 ±5% · 기본 직업보다 약 12% 강하게 / 탱커·힐러 갈래는 역할에 맞게) */
-const ADV_DK={berserker:1.21,blademaster:0.87,bulwark:1.25,judicator:0.67,sniper:0.745,trapper:1.035,elementalist:0.94,astrologer:1.28,hierophant:1.2,exorcist:0.67,dawncommander:1.12,sunblade:0.94,cannoneer:1.05,gunkata:1.06};
+const ADV_DK={berserker:1.21,blademaster:0.87,bulwark:1.25,judicator:0.67,sniper:[1.05,1.05,1.05,1.05,0.87,0.91],trapper:[1.61,1.61,1.61,1.61,1.34,1.41],elementalist:0.94,astrologer:1.28,hierophant:1.2,exorcist:0.67,dawncommander:1.12,sunblade:0.94,cannoneer:1.05,gunkata:1.0};
 /* 갈래별 기본 스킬 변형: mul=피해·효과 배율, cd=재사용 배율, post=시전 후 추가 효과 */
 const ADV_VAR={
   berserker:{whirl:{n:'피의 회전베기',d:'피해 +25% · 사용하면 최대 체력 3% 회복',mul:1.25,post:{selfHeal:0.03}},warcry:{n:'광기의 함성',d:'재사용 -30% · 6초간 공격 속도 +20%',cd:0.7,post:{buff:['as',0.2,6]}}},
@@ -531,6 +531,8 @@ const ADV_VAR={
   cannoneer:{ggren:{n:'고폭 유탄',d:'피해 +30%',mul:1.3},gturret:{n:'중포탑',d:'재사용 -25%',cd:0.75}},
   gunkata:{gshot:{n:'쌍권총 점사',d:'피해 +35%',mul:1.35},grecoil:{n:'공중제비 사격',d:'재사용 -35%',cd:0.65}},
   sunblade:{lslash:{n:'태양 참격',d:'피해 +35%',mul:1.35},crossslash:{n:'작열 십자',d:'조준한 곳에 태양 폭발이 한 번 더 일어남',post:{burst:[34,1.0]}}}};
+/* 전직 보정: 숫자 하나 또는 레벨별 배열(DK_LV 기준 보간) */
+function advDk(k,lvl){const d=ADV_DK[k];if(d==null)return 1;if(!Array.isArray(d))return d;lvl=lvl|0;if(lvl<=DK_LV[0])return d[0];for(let i=1;i<DK_LV.length;i++)if(lvl<=DK_LV[i]){const t=(lvl-DK_LV[i-1])/(DK_LV[i]-DK_LV[i-1]);return d[i-1]+(d[i]-d[i-1])*t;}return d[d.length-1];}
 function advVar(ch,sid){const a=advOf(ch);return a&&ADV_VAR[ch.adv]&&ADV_VAR[ch.adv][sid]||null;}
 function advOf(ch){return ch&&ch.adv&&ADV[ch.adv]&&ADV[ch.adv].cls===ch.cls?ADV[ch.adv]:null;}
 function ultsOf(ch){const C=CLASSES[ch.cls];const a=advOf(ch);return (C.ults||[]).concat(a?[a.ult]:[]);}
@@ -798,7 +800,7 @@ function calcStats(ch){
     if(k==='sunblade'){S.holyGain*=1.3*(1+0.03*r('suncore'));S.critMul+=0.05*r('suncore');}
     if(k==='cannoneer'){S.boomMul=1.2*(1+0.03*r('gordnance'));S.boomR=1+0.02*r('gordnance');S.dr=(S.dr||0)+0.08;S.turrets=2;}
     if(k==='gunkata'){S.crit=Math.min(75,S.crit+8+r('gkatam'));S.critMul+=0.15;S.atkRate*=1+0.02*r('gkatam');S.kata=1;}}
-  if(AD)S.dmgMul*=ADV_DK[ch.adv]||1;
+  if(AD)S.dmgMul*=advDk(ch.adv,ch.lvl);
   S.dmgMul*=classDk(ch.cls,ch.lvl);
   S.set3=[];for(const id in SETS){const n=setCount(ch,id);if(n<2)continue;const b=SETS[id].b2;if(b.hpPct)S.maxHp=Math.round(S.maxHp*(1+b.hpPct/100));if(b.armorPct)S.armor=Math.round(S.armor*(1+b.armorPct/100));if(b.crit)S.crit=Math.min(75,S.crit+b.crit);if(b.as)S.atkRate*=1+b.as/100;if(b.bossDmg)S.bossDmg=(S.bossDmg||0)+b.bossDmg/100;if(n>=3)S.set3.push(id);}
   S.myth=[];for(const s2 of['weapon','armor','ring']){const it=ch.eq[s2];if(it&&it.rar===4&&it.myth&&MYTH[it.myth]&&canEquip(it,ch.cls))S.myth.push(it.myth);}

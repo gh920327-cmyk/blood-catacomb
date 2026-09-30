@@ -2401,7 +2401,7 @@ const GFX=[],GSMOKE=[],GLIGHT=[];function gfx(o){o.t0=time;GFX.push(o);return o;
 function gLight(x,y,r,d){GLIGHT.push({x,y,r,t0:time,max:d});}
 function gSmoke(x,y,vx,vy,r,life,c,z){if(GSMOKE.length>260)return;GSMOKE.push({x,y,z:z||6,vx,vy,vz:rf(4,12),r,life,max:life,c:c||'#bdb6c4'});}
 const GUN_MZ={r:[7,'#fff3c0'],t:[5,'#ffe7a0'],g:[6,'#ffe7a0'],p:[10,'#ffd07a'],k:[6,'#fff6d0'],s:[9,'#ffc070'],c:[8,'#ffb060'],x:[16,'#ffb060']};
-const GUN_FXK=new Set(['gfire','gcone','glob','gboom','gtracer','gvent','gleap','gdeploy','ggat','gkick','godrive','grailc','grail','garmor','gbarrage','gshellfall','gsiege','gballet','gspin','gslide','gscald']);
+const GUN_FXK=new Set(['gfire','gcone','glob','gboom','gtracer','gvent','gleap','gdeploy','ggat','gkick','godrive','grailc','grail','garmor','gbarrage','gshellfall','gsiege','gballet','gspin','gslide','gscald','gric']);
 function gTip(p,a,g){const L=g==='x'?20:g==='c'?12:g==='p'||g==='k'?9:13;return{x:p.x+Math.cos(a)*L,y:p.y-7+Math.sin(a)*L*0.8};}
 function onGunFx(o){const k=o.k;if(!GUN_FXK.has(k))return false;const mine=o.id===myId;
   if(k==='gfire'){const g=o.g;let x,y;if(o.id!=null){const p=kPos(o.id);if(!p)return true;const src=mine?me:G.players.get(o.id);const t=gTip(p,o.a,g);x=t.x;y=t.y;
@@ -2437,6 +2437,7 @@ function onGunFx(o){const k=o.k;if(!GUN_FXK.has(k))return false;const mine=o.id=
   if(k==='gsiege'){gfx({type:'siege',pid:o.id,a:o.a,max:o.d});gunClank();return true;}
   if(k==='gballet'){gfx({type:'ballet',pid:o.id,max:o.d});return true;}
   if(k==='gspin'){gfx({type:'spin',pid:o.id,big:o.big,max:o.d||1.2});if(o.big){const p=kPos(o.id);if(p){gfx({type:'ring',x:p.x,y:p.y,r:90,c:'#8fd0ff',max:0.4});gunBoom(2,gunVol(p.x,p.y,mine));}}return true;}
+  if(k==='gric'){gfx({type:'ric',x:o.x,y:o.y,max:0.18});for(let n=0;n<7;n++){const t=R()*Math.PI*2,sp=rf(60,150);part(o.x,o.y+6,Math.cos(t)*sp,Math.sin(t)*sp*0.6,pick(['w','y','c']),rf(.1,.25),{z:7,glow:true});}gLight(o.x,o.y,34,0.08);if(AC&&soundMode!==2){const v=gunVol(o.x,o.y,false)+0.25;const B=gunBus();const f=rf(2600,3400)*(1+0.04*(o.n|0));gT(B.pre,'triangle',f,f*0.55,0.12,0.09*v);gT(B.pre,'sine',f*1.5,f*0.9,0.08,0.04*v);gN(B.pre,0.03,0.12*v,'highpass',4500);}return true;}
   if(k==='gslide'){for(let i=0;i<8;i++){const f=i/8;gSmoke(o.x1+(o.x2-o.x1)*f,o.y1+(o.y2-o.y1)*f,rf(-5,5),rf(-3,3),rf(1.5,3),rf(0.3,0.6),'#a89f8a',1);}sfx('dash');return true;}
   if(k==='gscald'){gfx({type:'scald',pid:o.id,a:o.a,max:o.d});gunHiss(o.d,1.2);return true;}
   return true;}
@@ -2466,6 +2467,7 @@ function drawGunFx(icx,icy){drawGunSmoke(icx,icy);
       if(R()<0.6)gSmoke(x,y+6,rf(-4,4),rf(-4,4),1.2,0.35,'#8a8294',6);const gx=Math.round(x2)-icx,gy=Math.round(y2)-icy;wx.globalAlpha=0.5*(1-k*0.5);for(let n=0;n<16;n++){if(((n+(time*12|0))&3))continue;const q=n/16*Math.PI*2;wpx(Math.round(gx+Math.cos(q)*(e.big?10:6)),Math.round(gy+Math.sin(q)*(e.big?6:4)),'o');}wx.globalAlpha=1;}
     else if(e.type==='tracer'){const x1=Math.round(e.x1)-icx,y1=Math.round(e.y1)-icy,x2=Math.round(e.x2)-icx,y2=Math.round(e.y2)-icy;wx.save();wx.globalCompositeOperation='lighter';wx.globalAlpha=1-k;wx.strokeStyle=e.w>=3?'rgba(255,190,110,0.9)':'rgba(255,236,170,0.85)';wx.lineWidth=e.w;wx.beginPath();wx.moveTo(x1,y1);wx.lineTo(x2,y2);wx.stroke();if(e.w>=2){wx.strokeStyle='rgba(255,255,255,0.9)';wx.lineWidth=1;wx.beginPath();wx.moveTo(x1,y1);wx.lineTo(x2,y2);wx.stroke();}wx.restore();wx.globalAlpha=1;}
     else if(e.type==='vent'){wx.globalAlpha=1-k;if(e.ring){const r=e.r*Math.min(1,k*2.2);for(let n=0;n<40;n++){const q=n/40*Math.PI*2;wpx(Math.round(sx+Math.cos(q)*r),Math.round(sy+Math.sin(q)*r*0.6),n%2?'w':'W');}}else{for(let n=0;n<7;n++){const aa=e.a-0.6+n*0.2,L=e.r*Math.min(1,k*2.5);lineP(wpx,sx+Math.cos(aa)*6,sy-6+Math.sin(aa)*4,sx+Math.cos(aa)*L,sy-6+Math.sin(aa)*L*0.7,n%2?'w':'W');}}wglow(sx,sy-6,e.r*0.7,'#ffe0c0',0.35*(1-k));wx.globalAlpha=1;}
+    else if(e.type==='ric'){wx.save();wx.globalCompositeOperation='lighter';wx.globalAlpha=1-k;for(let q=0;q<6;q++){const aa=q/6*Math.PI*2+e.t0*7;lineP(wpx,sx+Math.cos(aa)*2,sy+Math.sin(aa)*2,sx+Math.cos(aa)*(4+k*6),sy+Math.sin(aa)*(4+k*6),q%2?'y':'w');}wx.restore();wx.globalAlpha=1;wglow(sx,sy,10,'#bfe6ff',0.6*(1-k));}
     else if(e.type==='ring'){const r=e.r*Math.min(1,k*2);wx.globalAlpha=1-k;wx.strokeStyle=e.c;wx.lineWidth=1;wx.beginPath();wx.ellipse(sx,sy,r,r*0.6,0,0,Math.PI*2);wx.stroke();wx.globalAlpha=1;}
     else if(e.type==='target'){const r=e.r;const bl=((time*6)|0)%2;wx.globalAlpha=0.55+0.25*bl;wx.strokeStyle='#ff5a3a';wx.setLineDash([4,3]);wx.beginPath();wx.ellipse(sx,sy,r,r*0.6,0,0,Math.PI*2);wx.stroke();wx.setLineDash([]);lineP(wpx,sx-8,sy,sx+8,sy,'e');lineP(wpx,sx,sy-5,sx,sy+5,'e');wx.globalAlpha=1;wglow(sx,sy,30,'#ff5a3a',0.15);}
     else if(e.type==='fall'){const y=sy-(1-k)*(1-k)*170;const big=e.big;const w=big?3:1;wx.fillStyle=PAL.k;wx.fillRect(sx-w-1,Math.round(y)-6-(big?4:0),w*2+3,big?12:8);wx.fillStyle=PAL.m;wx.fillRect(sx-w,Math.round(y)-5-(big?4:0),w*2+1,big?10:6);wpx(sx,Math.round(y)+1,'o');wx.globalAlpha=0.5;lineP(wpx,sx,Math.round(y)-8-(big?4:0),sx,Math.round(y)-22,'W');wx.globalAlpha=1;
@@ -2524,7 +2526,7 @@ function gunStamp(q,kind,ox,oy,rar){const T=GUN_TPL[kind];T.r.forEach((row,j)=>{
   gscald:q=>{lineP(q,1,9,5,9,'G');lineP(q,1,10,5,10,'g');for(let i=0;i<5;i++)discP(q,7+i*2,9-i*0.5+(i%2),1+(i>>1),i%2?'w':'W');},
   gshell:q=>{for(let i=3;i<11;i++)for(let j=6;j<10;j++)q(i,j,'m');q(11,7,'S');q(11,8,'S');q(12,7,'s');ringP(q,12,8,3,'y');lineP(q,1,8,3,8,'o');},
   gordnance:q=>{for(let j=7;j<14;j++)for(let i=2;i<14;i++)q(i,j,(j===7||j===13||i===2||i===13)?'k':'b');for(const x of[4,7,10]){for(let j=2;j<7;j++)q(x,j,'g');q(x,1,'o');}lineP(q,3,10,12,10,'B');},
-  gspin:q=>{ringP(q,8,8,6,'y');for(let i=0;i<8;i++){const a=i/8*Math.PI*2;q(8+Math.cos(a)*6,8+Math.sin(a)*6,i%2?'w':'o');}gunStamp(q,'pistol',2,5,1);},
+  gricochet:q=>{const pts=[[1,13],[5,4],[9,11],[12,3],[15,8]];for(let i=0;i<pts.length-1;i++)lineP(q,pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1],i%2?'y':'w');for(const [x,y] of pts.slice(1,4)){q(x,y,'c');q(x+1,y,'w');q(x-1,y,'c');q(x,y-1,'c');q(x,y+1,'c');}q(15,8,'o');q(14,8,'y');},
   gslide:q=>{for(const j of[9,11,13])lineP(q,1,j,6,j,'W');gunStamp(q,'pistol',4,4,1);q(15,5,'y');},
   gfan:q=>{gunStamp(q,'pistol',0,8,1);for(let i=0;i<6;i++){const a=-1+i*0.4;lineP(q,12,6,12+Math.cos(a)*3,6+Math.sin(a)*3,i===5?'r':'y');}},
   gkatam:q=>{gunStamp(q,'pistol',0,2,2);gunStamp(q,'pistol',3,8,2);q(14,8,'c');q(13,3,'c');}};
