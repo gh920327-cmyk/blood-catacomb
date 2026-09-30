@@ -1023,6 +1023,7 @@ function drawCape(bx,by,face,ar,moving,animT){const c1=ar===3?'r':'R',c2=ar===3?
 // 맨손 캐릭터 + 장착 무기 그림
 function drawHeldGear(cls,src,s,sx,sy,e,look){const fam=CLASSES[cls].fam;const kind=look.w||(fam==='melee'?'sword':fam==='bow'?'shortbow':'staff');const rar=Math.max(0,look.wr|0);
   const ws=weapSprite(kind,rar,look.wid);const f=e.face;const ks=s.ks||1,kh=s.kh||1;const ax=sx+Math.round(s.hx*ks+(s.w-s.w*ks)/2),ay=sy+Math.round(s.hy*kh+s.h*(1-kh));
+  if(fam==='gun'){drawGunHeld(cls,src,0,0,f,GUN_TPL[kind]?kind:'rifle',rar,look,{x:ax,y:ay});return;}
   const atk=src.atkAnim>0,prog=atk?1-src.atkAnim/src.atkDur:0,bob=e.moving?Math.sin(src.animT*10)*0.12:0;let ang;
   if(src.spin>0)ang=(1-src.spin/0.3)*Math.PI*2.4;
   else if(fam==='melee'){ang=atk&&src.atkKind==='swing'?-1.3+prog*3.1:atk?1.35:0.35+bob;}
@@ -2381,14 +2382,18 @@ const GUN_TPL={
   handcannon:{r:[".....kkkkkkkk.","....kgSSSSSSsk","kkkkgmSSSSSSSk","kbBkGgmmmmmmsk",".kbk.kcckkkkk.",".kk..kk......."],px:2,py:3}};
 const GUN_RAR=[{g:'G',G:'B',c:'m'},{c:'S'},{g:'y',G:'g',c:'c'},{g:'o',G:'g',m:'r',c:'y'}];
 const GSPR=new Map();
-function gunSprite(kind,rar){rar=Math.max(0,Math.min(3,rar|0));const key=kind+'|'+rar;let w=GSPR.get(key);if(w)return w;const T=GUN_TPL[kind]||GUN_TPL.rifle;const rows=T.r.map(s=>s.replace(/./g,ch=>GUN_RAR[rar][ch]||ch));
+const GUN_ROW={pistol:0,rifle:1,handcannon:2};
+function gunSpriteAI(kind,rar){const row=GUN_ROW[kind];if(row==null||!SPR.guns)return null;const [c,x]=mk(24,12);x.drawImage(SPR.guns,rar*24,row*12,24,12,0,0,24,12);const d=x.getImageData(0,0,24,12).data;let x0=24,x1=-1,y0=12,y1=-1;for(let j=0;j<12;j++)for(let i=0;i<24;i++)if(d[(j*24+i)*4+3]>0){if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j;}if(x1<0)return null;
+  const w=x1-x0+1,h=y1-y0+1;const [c2,x2]=mk(w,h);x2.drawImage(c,x0,y0,w,h,0,0,w,h);let g=null;if(rar>=1){const [gc,gx]=mk(w,h);gx.drawImage(c2,0,0);gx.globalCompositeOperation='source-in';gx.fillStyle=rar===3?'#ff8a1f':rar===2?'#ffd35a':'#7aa2ff';gx.fillRect(0,0,w,h);g=gc;}
+  return{c:c2,g,px:Math.round(w*(kind==='rifle'?0.22:0.28)),py:Math.round(h*0.62),h,x0:0,x1:w-1,y0:0,gun:1,ai:1,col:rar===3?'#ff8a1f':rar===2?'#ffd35a':rar===1?'#7aa2ff':null};}
+function gunSprite(kind,rar){rar=Math.max(0,Math.min(3,rar|0));const key=kind+'|'+rar+(SPR.guns?'|ai':'');let w=GSPR.get(key);if(w)return w;w=gunSpriteAI(kind,rar);if(w){GSPR.set(key,w);return w;}const T=GUN_TPL[kind]||GUN_TPL.rifle;const rows=T.r.map(s=>s.replace(/./g,ch=>GUN_RAR[rar][ch]||ch));
   const c=makeSprite(rows).c;let g=null;if(rar>=1){const [gc,gx]=mk(c.width,c.height);gx.drawImage(c,0,0);gx.globalCompositeOperation='source-in';gx.fillStyle=rar===3?'#ff8a1f':rar===2?'#ffd35a':'#7aa2ff';gx.fillRect(0,0,c.width,c.height);g=gc;}
   w={c,g,px:T.px,py:T.py,h:c.height,x0:0,x1:c.width-1,y0:0,gun:1,col:rar===3?'#ff8a1f':rar===2?'#ffd35a':rar===1?'#7aa2ff':null};GSPR.set(key,w);return w;}
 function gunIcon(it){const ws=gunSprite(it.kind,it.rar);return pcan(16,16,(q,x)=>{x.drawImage(ws.c,Math.round((16-ws.c.width)/2),Math.round((16-ws.c.height)/2));});}
 /* 손에 든 총: 공격 방향으로 겨누고, 쏠 때 총구가 튀어 오른다 */
-function drawGunHeld(cls,src,bx,by,f,kind,wr,look){const g=src.gunT&&time-src.gunT<0.7?src.gunG:null;const kd=g==='p'||g==='k'?'pistol':g==='c'||g==='x'?'handcannon':g?'rifle':kind;const gs=gunSprite(kd,wr);
-  const hx=bx+(f>0?3:-4),hy=by-5;const aim=src.atkAnim>0||g;let a=aim?src.atkAngle:(f>0?0.25:Math.PI-0.25);if(a==null)a=f>0?0:Math.PI;const left=Math.cos(a)<0;const rec=src.atkAnim>0?Math.min(1,src.atkAnim/Math.max(0.05,src.atkDur)):0;const ra=a+(left?1:-1)*rec*0.45;
-  const draw=(ox,oy)=>{wx.save();wx.translate(hx+ox-Math.cos(a)*rec*2,hy+oy-Math.sin(a)*rec*2);wx.rotate(ra);if(left)wx.scale(1,-1);if(gs.g&&wr>=1){wx.globalAlpha=wr>=3?0.4+0.25*Math.sin(time*7):wr===2?0.3:0.18;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])wx.drawImage(gs.g,-gs.px+dx,-gs.py+dy);wx.globalAlpha=1;}wx.drawImage(gs.c,-gs.px,-gs.py);wx.restore();};
+function drawGunHeld(cls,src,bx,by,f,kind,wr,look,hand){const g=src.gunT&&time-src.gunT<0.7?src.gunG:null;const kd=g==='p'||g==='k'?'pistol':g==='c'||g==='x'?'handcannon':g?'rifle':kind;const gs=gunSprite(kd,wr);
+  const hx=hand?hand.x:bx+(f>0?3:-4),hy=hand?hand.y:by-5;const aim=src.atkAnim>0||g;let a=aim?src.atkAngle:(f>0?0.25:Math.PI-0.25);if(a==null)a=f>0?0:Math.PI;const left=Math.cos(a)<0;const rec=src.atkAnim>0?Math.min(1,src.atkAnim/Math.max(0.05,src.atkDur)):0;const ra=a+(left?1:-1)*rec*0.45;
+  const gsc=gs.ai?0.72:1;const draw=(ox,oy)=>{wx.save();wx.translate(hx+ox-Math.cos(a)*rec*2,hy+oy-Math.sin(a)*rec*2);wx.rotate(ra);wx.scale(gsc,left?-gsc:gsc);if(gs.g&&wr>=1){wx.globalAlpha=wr>=3?0.4+0.25*Math.sin(time*7):wr===2?0.3:0.18;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])wx.drawImage(gs.g,-gs.px+dx,-gs.py+dy);wx.globalAlpha=1;}wx.drawImage(gs.c,-gs.px,-gs.py);wx.restore();};
   if(look&&look.adv==='gunkata'&&kd==='pistol')draw(f>0?-3:3,2);draw(0,0);}
 
 /* ---- 효과 ---- */
@@ -2898,7 +2903,7 @@ function playIntro(){playCine(CINE_INTRO,{key:'bc_intro'});}
   const b=cineEl('introBtn');if(b)b.addEventListener('click',playIntro);
   let seen=false;try{seen=!!localStorage.getItem('bc_intro');}catch(e){}if(!seen)setTimeout(()=>{if(scene==='select')playIntro();},300);})();
 renderSelect();
-loadImg('art/adv_portraits.jpg').then(im=>{if(im)SPR.advPort=im;});loadImg('sprites/heroes_adv.png').then(im=>{if(!im)return;SPR.heroAdv=sliceBare(im,40,24);for(const k in PF_CACHE)delete PF_CACHE[k];});
+loadImg('art/adv_portraits.jpg').then(im=>{if(im)SPR.advPort=im;});loadImg('sprites/guns.png').then(im=>{if(!im)return;SPR.guns=im;GSPR.clear();for(const k of [...ICONS.keys()])if(k.startsWith('gi|'))ICONS.delete(k);});loadImg('sprites/heroes_adv.png').then(im=>{if(!im)return;SPR.heroAdv=sliceBare(im,40,24);for(const k in PF_CACHE)delete PF_CACHE[k];});
 Promise.all([loadImg('sprites/heroes_anim.png'),loadImg('sprites/bosses_anim.png'),loadImg('sprites/heroes_bare.png'),loadImg('sprites/weapons.png'),loadImg('sprites/mons_anim.png')]).then(([h,b,hb,wp,ma])=>{if(h)SPR.heroAnim=sliceAnim(h,40,24);if(ma)SPR.monAnim=sliceAnim(ma,36,24);if(hb&&wp){SPR.heroBare=sliceBare(hb,40,24);SPR.weap=wp;ICONS.clear();}if(b)SPR.bossAnim=sliceAnim(b,72,48);for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
 Promise.all([loadImg('sprites/lobby.png'),loadImg('sprites/hubtiles.png'),loadImg('sprites/npcs.png'),loadImg('sprites/pets.png')]).then(([a,b,c,d])=>{LOB.img=a;LOB.tiles=b;LOB.npc=c;LOB.pets=d;LOB.ftex=null;NPC_FR=null;PET_FR=null;});
 loadImg('sprites/tiles.png').then(t=>{if(!t)return;SPR.tiles=t;for(const k in THEME_CACHE)delete THEME_CACHE[k];});
