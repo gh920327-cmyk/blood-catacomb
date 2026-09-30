@@ -86,7 +86,7 @@ function bcastRoster(inst){if(inst.type==='dungeon'){inst.syn=SH.synergies(instP
 function visibleDrops(inst,P){return inst.drops.filter(d=>d.owner==null||d.owner===P.id);}
 function sendMap(P){const inst=P.inst;
   if(inst.type==='hub')send(P,{t:'map',kind:'hub',x:P.x,y:P.y,drops:visibleDrops(inst,P)});
-  else send(P,{t:'map',kind:'dungeon',seed:inst.seed,floor:inst.floor,stairs:inst.stairsOpen,x:P.x,y:P.y,drops:visibleDrops(inst,P),paused:inst.paused,ev:evPub(inst),arena:inst.arena?1:0,trial:inst.trial?inst.trial.adv:0,raid:inst.raid?{id:inst.raid.id,mode:inst.raid.mode,tf:RAID_TF[inst.raid.id]||1,door:!!inst.raid.doorOpen,st:raidPub(inst)}:0});}
+  else send(P,{t:'map',kind:'dungeon',seed:inst.seed,floor:inst.floor,stairs:inst.stairsOpen,x:P.x,y:P.y,drops:visibleDrops(inst,P),paused:inst.paused,ev:evPub(inst),arena:inst.arena?1:0,trial:inst.trial?{adv:inst.trial.adv,cls:inst.trial.cls,look:inst.trial.look}:0,raid:inst.raid?{id:inst.raid.id,mode:inst.raid.mode,tf:RAID_TF[inst.raid.id]||1,door:!!inst.raid.doorOpen,st:raidPub(inst)}:0});}
 function resetCombat(P){P.burn=0;P.rootT=0;P.slowT=0;P.slowV=0;P.downed=false;P.rev=0;P.shield=0;P.shieldT=0;P.dodgeT=0;P.buffs={};P.scd={};P.atkCd=0;}
 function leaveInst(P){if(P.trade)cancelTrade(P,'상대가 마을을 떠나 거래가 취소되었습니다');const inst=P.inst;if(!inst)return;inst.players.delete(P.id);P.inst=null;
   if(inst.type==='dungeon'){inst.flows.delete(P.id);
@@ -293,6 +293,7 @@ function updateMonsters(inst,dt){const map=inst.map;
     if(m.stun>0){m.stun-=dt;m.wind=0;m.charge=0;continue;}
     if(m.frozen)continue;
     if(m.type==='goblin'){goblinAI(inst,m,dt);continue;}
+    if(m.type==='shadow'){shadowAI(inst,m,dt);continue;}
     if(m.ea&&m.alert){m.tpT-=dt;m.shCd-=dt;const T0=m.tgt;
       if(m.ea&8&&m.tpT<=0&&T0&&Math.hypot(T0.x-m.x,T0.y-m.y)>60){for(let k=0;k<8;k++){const a=R()*Math.PI*2,nx=T0.x+Math.cos(a)*18,ny=T0.y+Math.sin(a)*18;if(!SH.blocked(map,nx,ny,m.r)){fx(inst,{k:'blink',x:r1(m.x),y:r1(m.y)});m.x=nx;m.y=ny;fx(inst,{k:'blink',x:r1(nx),y:r1(ny)});break;}}m.tpT=rf(4.5,6);}
       if(m.ea&16&&m.shCd<=0){m.shV=Math.round(m.maxHp*0.25);m.shT=3.5;m.shCd=rf(8,10);fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-24),s:'보호막!',c:'#8fd0ff'});}}
@@ -421,6 +422,8 @@ function buff(P,k,v,t){const b=P.buffs;if(CUR_CASTER&&(k==='red'||k==='wred'||k=
 function atkMul(P){return 1+bOn(P,'as')+(P.S.bloodboil&&P.hp<P.S.maxHp*0.5?0.02*P.S.bloodboil:0);}
 function rollDmg(P,mult){const S=P.S;const bonus=1+bOn(P,'dmg')+bOn(P,'sdmg')+bOn(P,'bdmg');let d=S.dmgBase*rf(0.8,1.2)*S.dmgMul*mult*bonus*synMods(P.inst,P).dmg;const crit=R()*100<S.crit;if(crit)d*=S.critMul;return{d:Math.max(1,Math.round(d)),crit};}
 function hitMonster(inst,m,P,mult,o){if(m.dead)return;o=o||{};if(m.pvp){pvpHit(inst,m,P,mult,o);return;}
+  if(m.fake){if(P&&P.ch&&(!m.rflT||inst.time-m.rflT>0.3)){m.rflT=inst.time;m.flash=0.15;fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-26),s:'허상! 피해 반사',c:'#c9a0e8'});hurtPlayer(inst,P,P.S.maxHp*0.02*clamp(mult,0.5,2),m,{what:'허상의 반사',noMit:1});}return;}
+  if(m.type==='shadow'&&m.sa){m.sa.dmgIn=(m.sa.dmgIn||0)+1;if(m.drT&&inst.time<m.drT)mult*=0.3;}
   const pos=(m.boss||m.ctrable)?bossSide(m,P):0;
   if(m.cwEnd&&inst.time<m.cwEnd&&(o.ctr||inst._ctr)&&!m.hidden){if(pos===1)counterHit(inst,m,P);else if(!P._ctrWarn||inst.time-P._ctrWarn>0.8){P._ctrWarn=inst.time;fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-28),s:'헤드에서 쳐야 해요!',c:'#ffb03a'});}}
   if(inst._um)mult*=inst._um;if(m.grog>inst.time)mult*=1.3;if(m.lmarkT>inst.time)mult*=1.25;if(pos===-1)mult*=1.1;if(m.hidden)return;if(m.invul>0){if(!o.dotHit&&R()<0.3)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-(m.boss?34:18)),s:'무적',c:'#9e937a'});return;}if(m.vuln>0)mult*=2;if(o.exec&&m.hp<m.maxHp*0.3)mult*=2;if(m.boss&&mythOn(P,'wrath'))mult*=1.2;if(m.boss&&P.S.bossDmg)mult*=1+P.S.bossDmg;/* 전직 효과 */if(m.starT>inst.time)mult*=1.1;if(m.curseT>inst.time)mult*=1.15;if(P.S.adv==='berserker'){const lost=1-P.hp/Math.max(1,P.S.maxHp);mult*=1+Math.min(0.4,lost*0.6);}if(P.combo&&inst._sk&&P.comboT>inst.time)mult*=1+0.06*P.combo;if(o.dotHit&&P.S.dotMul)mult*=P.S.dotMul;if(inst.raid&&RAIDX[inst.raid.id].dmgMod)mult*=RAIDX[inst.raid.id].dmgMod(inst,m,P);if(m.brk>inst.time)mult*=1.15;const r=rollDmg(P,mult);if(o.fcrit&&!r.crit){r.crit=true;r.d=Math.round(r.d*P.S.critMul);}let v=r.d;if(m.shV>0&&m.shT>0){const ab=Math.min(m.shV,v);m.shV-=ab;v-=ab;if(v<=0){if(R()<0.4)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-20),s:'보호막',c:'#8fd0ff'});return;}}const real=Math.min(v,m.hp);m.hp-=v;m.flash=0.09;if(!m.alert)alertPack(inst,m);
@@ -800,20 +803,87 @@ function castSkill(inst,P,i,tx,ty){const sid=i===SH.BAR_SIZE?P.ch.rmb:(P.ch.bar&
 function varPost(inst,P,o,tx,ty,kk){if(o.selfHeal)healPlayer(inst,P,P.S.maxHp*o.selfHeal,P);if(o.selfShield){P.shield=Math.max(P.shield,Math.round(P.S.maxHp*o.selfShield));P.shieldT=5;fx(inst,{k:'shieldfx',x:r1(P.x),y:r1(P.y)});}if(o.buff)buff(P,o.buff[0],o.buff[1],o.buff[2]);if(o.partyBuff){const[k,v,t,r]=o.partyBuff;for(const q of partyNear(inst,P,r))buff(q,k,v,t);fx(inst,{k:'ring',x:r1(P.x),y:r1(P.y),r:r*0.6,c:'y',c2:'w'});}if(o.burst){const[r,m]=o.burst;[tx,ty]=clampTarget(P,tx,ty,220);later(inst,0.25,()=>{if(P.inst!==inst)return;fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r});aoe(inst,P,tx,ty,r,m*kk);});}if(o.healLow){let lo=null;for(const q of partyNear(inst,P,220))if(!lo||q.hp/q.S.maxHp<lo.hp/lo.S.maxHp)lo=q;if(lo)healPlayer(inst,lo,(P.S.healPow||P.S.maxHp*0.05)*o.healLow*kk,P);}}
 
 
+
+// ================= 전직 시험: 그림자 분신 =================
+const SHADOW_FAM={warrior:'melee',guardian:'melee',knight:'melee',archer:'bow',mage:'mage',priest:'priest'};
+function spawnShadow(inst,P,advId){const r=inst.map.bossRoom||inst.map.start;const x=r.cx*TS+8,y=r.cy*TS+8;const m=spawnMonster(inst,'shadow',x,y,false);
+  const S=P.S,avg=(S.dmgBase||10)*(S.dmgMul||1);m.boss=true;m.home={x,y};inst.bossId=m.id;
+  m.maxHp=m.hp=Math.round(avg*120+S.maxHp*1.6);m.dmg=m.baseDmg=S.maxHp*0.085;m.spd=Math.max(46,(S.spd||50)*0.9);m.xp=Math.round(40+P.ch.lvl*12);
+  m.sa={fam:SHADOW_FAM[P.ch.cls]||'melee',adv:advId,pid:P.id,atk:1.6,pat:4,mim:9,ult:0,busy:0,said:0,split:0,woke:0,heal:null};
+  return m;}
+function shadowTarget(inst,m){const P=players.get(m.sa.pid);return P&&P.inst===inst&&!P.downed?P:null;}
+function shadowHit(inst,m,x,y,r,mul,what){hitCircle(inst,x,y,r,m.dmg*mul*(m.fake?0.6:1),m,{what});}
+function shadowAI(inst,m,dt){const A=m.sa,T=shadowTarget(inst,m);if(m.fake){const R0=inst.monsters.find(q=>q.id===m.cloneOf&&!q.dead);if(!R0||inst.time>A.until||R0.hp<A.endHp){m.dead=true;fx(inst,{k:'blink',x:r1(m.x),y:r1(m.y)});fx(inst,{k:'mdie',id:m.id});inst.monsters=inst.monsters.filter(q=>q!==m);return;}m.hp=R0.hp;}
+  if(!T)return;const d=Math.hypot(T.x-m.x,T.y-m.y);
+  if(!m.alert){if(d>150&&!(A.dmgIn>0))return;m.alert=true;if(!m.fake){inst.bossMeter=new Map();inst.bossStart=inst.time;fx(inst,{k:'bsay',id:m.id,m:'나는 너다. 네가 걸어온 모든 길의 그림자.'});fx(inst,{k:'sfx',n:'boss'});}}
+  A.atk-=dt;A.pat-=dt;A.mim-=dt;A.ult-=dt;if(A.busy>0){A.busy-=dt;return;}
+  const f=m.hp/m.maxHp;
+  // 기믹 2: 거울 분열 (50%)
+  if(!m.fake&&!A.split&&f<=0.5){A.split=1;shadowSplit(inst,m,T);return;}
+  // 기믹 3: 미래의 궁극기 (25%부터 반복)
+  if(!m.fake&&f<=0.25){if(!A.woke){A.woke=1;m.phase=2;fx(inst,{k:'bsay',id:m.id,m:'보아라. 네가 손에 넣게 될 힘을.'});fx(inst,{k:'shake',v:6});A.ult=0.8;A.busy=1;return;}if(A.ult<=0){A.ult=14;shadowUlt(inst,m,T);return;}}
+  // 사제 계열: 자가 치유 채널링 (피해를 넣어 끊기)
+  if(A.heal){A.heal.t-=dt;if(A.dmgIn-A.heal.h0>=6){fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-30),s:'치유가 끊겼다!',c:'#7fd05a'});A.heal=null;A.busy=0.6;return;}if(A.heal.t<=0){const v=Math.round(m.maxHp*0.1);m.hp=Math.min(m.maxHp,m.hp+v);fx(inst,{k:'heal',x:r1(m.x),y:r1(m.y-20),v});A.heal=null;}return;}
+  // 기믹 1: 따라 하기 — 내가 방금 쓴 스킬을 되갚음
+  if(!m.fake&&A.mim<=0&&T.lastSk&&SKILLS[T.lastSk]){A.mim=10;const sk=SKILLS[T.lastSk];const x=T.x,y=T.y;fx(inst,{k:'bsay',id:m.id,m:`「${sk.n}」… 그 기술, 나도 안다.`});fx(inst,{k:'tele',x:r1(x),y:r1(y),r:40,d:1.1,c:'o'});A.busy=0.5;m.atkT=0.5;later(inst,1.1,()=>{if(m.dead)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:40,cs:['#ffffff','#9a7ad8','#2a1840']});fx(inst,{k:'shake',v:4});shadowHit(inst,m,x,y,40,2.6,`그림자가 따라 한 ${sk.n}`);});return;}
+  // 이동
+  const want=A.fam==='melee'?20:A.fam==='bow'?110:95;
+  if(d>want+14)chase(inst,m,T,dt,1);else if(A.fam!=='melee'&&d<want-40){const a=Math.atan2(m.y-T.y,m.x-T.x);SH.moveEnt(inst.map,m,Math.cos(a)*m.spd*dt,Math.sin(a)*m.spd*dt);m.moving=true;}
+  if(Math.abs(T.x-m.x)>1)m.face=T.x<m.x?-1:1;
+  // 직업 계열 패턴
+  if(A.pat<=0){A.pat=rf(4.5,6);shadowPattern(inst,m,T);return;}
+  // 기본 공격
+  if(A.atk<=0){const a=Math.atan2(T.y-m.y,T.x-m.x);
+    if(A.fam==='melee'){if(d<30){A.atk=1.1;m.atkT=0.35;later(inst,0.3,()=>{if(m.dead)return;const t2=shadowTarget(inst,m);if(t2&&Math.hypot(t2.x-m.x,t2.y-m.y)<32)hurtPlayer(inst,t2,m.dmg*(m.fake?0.6:1),m,{what:'그림자의 일격'});});}}
+    else{A.atk=A.fam==='bow'?0.9:1.2;m.atkT=0.3;mproj(inst,m,A.fam==='bow'?'arrow':A.fam==='mage'?'fireb':'orb',a,A.fam==='bow'?190:140,m.dmg*(A.fam==='bow'?0.7:0.9)*(m.fake?0.6:1),{sn:'그림자의 '+(A.fam==='bow'?'화살':'주문'),src:m});fx(inst,{k:'sfx',n:A.fam==='bow'?'bow':'cast'});}}}
+function shadowPattern(inst,m,T){const A=m.sa;A.busy=0.8;m.atkT=0.5;
+  if(A.fam==='melee'){if(R()<0.5){// 돌진 베기
+      const x=T.x,y=T.y;fx(inst,{k:'tele',x:r1(x),y:r1(y),r:26,d:0.8,c:'r'});later(inst,0.8,()=>{if(m.dead)return;fx(inst,{k:'blink',x:r1(m.x),y:r1(m.y)});if(!SH.blocked(inst.map,x,y,m.r)){m.x=x;m.y=y;}fx(inst,{k:'slam',x:r1(x),y:r1(y)});shadowHit(inst,m,x,y,26,1.8,'그림자의 돌진 베기');});}
+    else{fx(inst,{k:'tele',x:r1(m.x),y:r1(m.y),r:46,d:0.9,c:'r'});later(inst,0.9,()=>{if(m.dead)return;fx(inst,{k:'ring',x:r1(m.x),y:r1(m.y),r:46,c:'r',c2:'k'});shadowHit(inst,m,m.x,m.y,46,1.6,'그림자의 회전베기');});}}
+  else if(A.fam==='bow'){if(R()<0.5){const a0=Math.atan2(T.y-m.y,T.x-m.x);for(let i=-3;i<=3;i++)mproj(inst,m,'arrow',a0+i*0.16,180,m.dmg*0.8*(m.fake?0.6:1),{sn:'그림자의 부채 사격',src:m});fx(inst,{k:'sfx',n:'bow'});}
+    else{for(let i=0;i<3;i++){const x=T.x+rf(-26,26),y=T.y+rf(-18,18);fx(inst,{k:'tele',x:r1(x),y:r1(y),r:28,d:1,c:'y'});later(inst,1,()=>{if(m.dead)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:28});shadowHit(inst,m,x,y,28,1.4,'그림자의 화살비');});}}}
+  else if(A.fam==='mage'){if(R()<0.5){const n=12,off=R()*6.28;for(let k=0;k<n;k++){const a=off+k/n*Math.PI*2;mproj(inst,m,'orb',a,90,m.dmg*0.8*(m.fake?0.6:1),{src:m});}fx(inst,{k:'sfx',n:'boss'});}
+    else{const x=T.x,y=T.y;fx(inst,{k:'tele',x:r1(x),y:r1(y),r:36,d:1.2,c:'o'});later(inst,1.2,()=>{if(m.dead)return;fx(inst,{k:'boom',x:r1(x),y:r1(y),r:36});fx(inst,{k:'shake',v:4});shadowHit(inst,m,x,y,36,2,'그림자의 운석');});}}
+  else{if(!m.fake&&R()<0.45&&m.hp<m.maxHp*0.9){A.heal={t:2.2,h0:A.dmgIn||0};A.busy=0;fx(inst,{k:'bsay',id:m.id,m:'빛이여… 나를 다시 세워라.'});fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-30),s:'치유 영창 · 공격해서 끊으세요!',c:'#ffd35a'});}
+    else{const x=T.x,y=T.y;fx(inst,{k:'tele',x:r1(x),y:r1(y),r:34,d:1,c:'y'});later(inst,1,()=>{if(m.dead)return;fx(inst,{k:'lpillar',x:r1(x),y:r1(y),r:34});shadowHit(inst,m,x,y,34,1.8,'그림자의 심판');});}}}
+function shadowSplit(inst,m,T){const A=m.sa;A.busy=1.2;fx(inst,{k:'bsay',id:m.id,m:'어느 쪽이 진짜일까?'});fx(inst,{k:'shake',v:5});
+  const c=spawnMonster(inst,'shadow',m.x,m.y,false);c.fake=true;c.cloneOf=m.id;c.alert=true;c.maxHp=m.maxHp;c.hp=m.hp;c.dmg=c.baseDmg=m.dmg;c.spd=m.spd;c.xp=0;
+  c.sa=Object.assign({},A,{busy:1.2,atk:1.5,pat:3,mim:99,split:1,woke:1,heal:null,until:inst.time+22,endHp:m.hp-m.maxHp*0.15});
+  for(const q of [m,c]){for(let t=0;t<20;t++){const p=roomPoint(inst,T,50);if(!SH.blocked(inst.map,p.x,p.y,q.r)){fx(inst,{k:'blink',x:r1(q.x),y:r1(q.y)});q.x=p.x;q.y=p.y;fx(inst,{k:'blink',x:r1(q.x),y:r1(q.y)});break;}}}
+  fx(inst,{k:'msg',m:'거울 분열 · 허상을 치면 피해가 반사됩니다',c:'#c9a0e8'});
+  later(inst,5,()=>{if(!c.dead)fx(inst,{k:'msg',m:'힌트: 진짜 그림자만 발밑에 그림자가 드리워져 있다',c:'#9e937a'});});}
+// 미래의 궁극기: 고른 갈래의 궁극기를 분신이 먼저 보여 준다 (적용 버전 · 예고 후 피할 수 있음)
+function shadowUlt(inst,m,T){const A=m.sa,U=SH.ADV[A.adv].ult,sk=SKILLS[U];A.busy=1.4;m.atkT=0.8;
+  fx(inst,{k:'msg',m:`미래의 궁극기 · 「${sk.n}」 — 전직하면 네가 쓰게 될 힘이다`,c:SH.ADV[A.adv].col});fx(inst,{k:'bsay',id:m.id,m:`「${sk.n}」!`});fx(inst,{k:'sfx',n:'ult'});
+  const mx=m.x,my=m.y,tx=T.x,ty=T.y;const H=(x,y,r,mul,w)=>shadowHit(inst,m,x,y,r,mul,`그림자의 ${sk.n}`);
+  switch(U){
+    case 'redmoon':fx(inst,{k:'ultart',s:U,mid:m.id,r:70,d:6,spin:0.4});fx(inst,{k:'redsky',d:6});fx(inst,{k:'burst',x:r1(mx),y:r1(my),r:90,cs:['#ff4a3a','#b3282b','#1b0a0a']});m.dmg=m.baseDmg*1.5;A.atk=0;later(inst,6,()=>{m.dmg=m.baseDmg;});fx(inst,{k:'msg',m:'핏빛 광폭화 · 6초간 거리를 벌리세요',c:'#ff6a5a'});break;
+    case 'thousandcuts':fx(inst,{k:'ultart',s:U,mid:m.id,r:66,d:3,spin:6});for(let i=0;i<12;i++)later(inst,0.3+i*0.22,()=>{if(m.dead)return;const t2=shadowTarget(inst,m);if(t2&&i%4===0&&!SH.blocked(inst.map,t2.x,t2.y,m.r)){m.x+=(t2.x-m.x)*0.5;m.y+=(t2.y-m.y)*0.5;}const a1=rf(0,6.28),a2=a1+rf(2.2,4);fx(inst,{k:'kslash',x1:r1(m.x+Math.cos(a1)*40),y1:r1(m.y+Math.sin(a1)*24),x2:r1(m.x+Math.cos(a2)*40),y2:r1(m.y+Math.sin(a2)*24)});H(m.x,m.y,50,0.35);});break;
+    case 'fortress':fx(inst,{k:'ultart',s:U,mid:m.id,r:100,d:6,spin:0});fx(inst,{k:'dome',x:r1(mx),y:r1(my),r:100,d:6});m.drT=inst.time+6;fx(inst,{k:'msg',m:'불굴의 요새 · 6초간 분신이 받는 피해 -70%',c:'#8fd0ff'});break;
+    case 'finaljudge':for(let i=0;i<5;i++){const last=i===4;later(inst,0.2+i*0.5,()=>{if(m.dead)return;const t2=shadowTarget(inst,m)||T;const x=t2.x+rf(-10,10),y=t2.y+rf(-8,8);fx(inst,{k:'tele',x:r1(x),y:r1(y),r:34,d:0.6,c:'y'});fx(inst,{k:'ultart',s:U,x:r1(x),y:r1(y-30),r:last?60:44,d:0.9,drop:1});later(inst,0.6,()=>{if(m.dead)return;fx(inst,{k:'quake',x:r1(x),y:r1(y),r:40});fx(inst,{k:'shake',v:last?8:4});H(x,y,34,last?2.2:1.2);});});}break;
+    case 'deadeye':fx(inst,{k:'aim',id:T.id,d:2});fx(inst,{k:'ultart',s:U,pid:T.id,r:22,d:1.6,spin:1});later(inst,1.6,()=>{if(m.dead)return;const t2=shadowTarget(inst,m)||T;const x=t2.x,y=t2.y;fx(inst,{k:'tele',x:r1(x),y:r1(y),r:18,d:0.5,c:'y'});for(let i=0;i<5;i++)later(inst,0.5+i*0.12,()=>{if(m.dead)return;fx(inst,{k:'laser',x1:r1(m.x),y1:r1(m.y-8),x2:r1(x),y2:r1(y-8)});H(x,y,18,0.9);});});fx(inst,{k:'msg',m:'필살 조준 · 조준점이 고정되면 옆으로 피하세요',c:'#ffe9a8'});break;
+    case 'killzone':{fx(inst,{k:'tele',x:r1(tx),y:r1(ty),r:80,d:3,c:'z'});fx(inst,{k:'ultart',s:U,x:r1(tx),y:r1(ty),r:80,d:3.4,spin:0.2});const pts=[];for(let i=0;i<8;i++){const t=i/8*Math.PI*2;pts.push([tx+Math.cos(t)*56,ty+Math.sin(t)*36]);}for(const[x,y]of pts)fx(inst,{k:'boom',x:r1(x),y:r1(y),r:8,cs:['z','Z','w']});later(inst,3,()=>{if(m.dead)return;fx(inst,{k:'shake',v:8});for(const[x,y]of pts){fx(inst,{k:'boom',x:r1(x),y:r1(y),r:26});H(x,y,26,1.3);}});fx(inst,{k:'msg',m:'사냥터 · 덫 고리의 한가운데가 안전합니다',c:'#7fd05a'});break;}
+    case 'cataclysm':fx(inst,{k:'tele',x:r1(mx),y:r1(my),r:120,d:1.2,c:'o'});for(let i=0;i<3;i++)later(inst,1.2+i*0.7,()=>{if(m.dead)return;fx(inst,{k:'ultart',s:U,x:r1(m.x),y:r1(m.y),r:120,d:0.8,spin:i%2?-1:1,burst:1});fx(inst,{k:'burst',x:r1(m.x),y:r1(m.y),r:120,cs:['#ffffff','#ffd35a','#ff4a3a']});fx(inst,{k:'shake',v:7});H(m.x,m.y,120,1.1);});fx(inst,{k:'msg',m:'대재앙 · 분신에게서 멀리 떨어지세요',c:'#ff8a3a'});break;
+    case 'supernova':fx(inst,{k:'tele',x:r1(mx),y:r1(my),r:130,d:1.6,c:'w'});later(inst,1.6,()=>{if(m.dead)return;fx(inst,{k:'ultart',s:U,x:r1(m.x),y:r1(m.y),r:140,d:1.2,spin:0.8,burst:1});fx(inst,{k:'burst',x:r1(m.x),y:r1(m.y),r:140,cs:['#ffffff','#e6d8ff','#8fd0ff']});fx(inst,{k:'flash'});fx(inst,{k:'shake',v:10});H(m.x,m.y,130,3);});fx(inst,{k:'msg',m:'초신성 · 빛이 터지기 전에 범위 밖으로!',c:'#c9a0e8'});break;
+    case 'sanctum':fx(inst,{k:'ultart',s:U,x:r1(mx),y:r1(my),r:110,d:5,spin:0.15,ground:1});fx(inst,{k:'lpillar',x:r1(mx),y:r1(my),r:110});for(let i=1;i<=5;i++)later(inst,i,()=>{if(m.dead)return;const v=Math.round(m.maxHp*0.03);m.hp=Math.min(m.maxHp,m.hp+v);fx(inst,{k:'heal',x:r1(m.x),y:r1(m.y-20),v});});fx(inst,{k:'msg',m:'성역 · 분신이 회복합니다 — 최대한 몰아치세요',c:'#fff2b0'});break;
+    case 'purgatory':fx(inst,{k:'ultart',s:U,x:r1(tx),y:r1(ty),r:100,d:5,spin:0.3,ground:1});fx(inst,{k:'redsky',d:5});for(let i=0;i<10;i++)later(inst,0.8+i*0.45,()=>{if(m.dead)return;H(tx,ty,100,0.35);});fx(inst,{k:'msg',m:'연옥 · 보랏빛 불꽃 밖으로 나가세요',c:'#9a7ad8'});break;
+    case 'dawnlegion':fx(inst,{k:'ultart',s:U,mid:m.id,r:70,d:6,spin:0});fx(inst,{k:'burst',x:r1(mx),y:r1(my),r:90,cs:['#ffffff','#ffe9a8','#ffd35a']});for(let i=0;i<14;i++)later(inst,0.4+i*0.4,()=>{if(m.dead)return;const a=rf(0,6.28),x=m.x+Math.cos(a)*rf(20,60),y=m.y+Math.sin(a)*rf(14,40);fx(inst,{k:'lcut',x:r1(x),y:r1(y),a:r1(a),r:30});H(x,y,24,0.8);});fx(inst,{k:'msg',m:'새벽 군단 · 분신 곁의 빛의 검을 피하세요',c:'#ffe9a8'});break;
+    case 'eclipsebreak':fx(inst,{k:'tele',x:r1(tx),y:r1(ty),r:90,d:1.8,c:'o'});fx(inst,{k:'ultart',s:U,x:r1(tx),y:r1(ty),r:90,d:1.9,drop:1.8});later(inst,1.8,()=>{if(m.dead)return;fx(inst,{k:'boom',x:r1(tx),y:r1(ty),r:90});fx(inst,{k:'flash'});fx(inst,{k:'shake',v:12});H(tx,ty,90,3);});fx(inst,{k:'msg',m:'일식 붕괴 · 떨어지는 태양을 피하세요',c:'#ffb03a'});break;
+  }}
 // ================= 전직 적용 · 전직 시험 =================
 function applyAdv(P,id){const A=SH.ADV[id];P.ch.adv=id;recalc(P);markDirty(P);if(P.inst)bcastRoster(P.inst);fx(P.inst,{k:'burst',x:r1(P.x),y:r1(P.y),r:70,cs:['#ffffff',A.col,'#ffd35a']});fx(P.inst,{k:'sfx',n:'ult'});msg(P,`${A.n}(으)로 전직했습니다! 스킬 창(K)의 [전직] 탭에서 새 스킬을 배우세요`,'#ffd35a');
   for(const q of players.values())if(q.ch&&q!==P)msg(q,`${P.ch.name}님이 ${A.n}(으)로 전직했습니다`,'#c9a0e8');}
 function startTrial(P,id){const A=SH.ADV[id],pt=P.party;
   if(pt.members.size>1){msg(P,'전직 시험은 혼자서만 도전할 수 있어요 · 파티를 떠난 뒤 다시 시도하세요','#ff6a5a');return;}
   if(pt.inst){msg(P,'이미 던전에 있어요','#ff6a5a');return;}
-  const inst=createDungeon(pt);inst.trial={adv:id,pid:P.id};
+  const inst=createDungeon(pt);inst.trial={adv:id,pid:P.id,cls:P.ch.cls,look:lookOf(P)};
   leaveInst(P);P.inst=inst;inst.players.add(P.id);resetCombat(P);P.hp=P.S.maxHp;P.mp=P.S.maxMp;
   const fl=clamp(5*Math.floor(Math.min(P.ch.best||10,P.ch.lvl+5)/5),10,95);
   loadFloor(inst,fl);
   // 시험장: 잡몹은 치우고 보스(시험관)만 남김 · 혼자 상대하므로 체력 80%
-  inst.monsters=inst.monsters.filter(m=>m.boss);for(const m of inst.monsters){m.maxHp=m.hp=Math.round(m.maxHp*0.8);m.bname=`${A.n}의 시험관`;}
-  fx(inst,{k:'msg',m:`전직 시험 · ${A.n} — 시험관을 쓰러뜨려 자격을 증명하세요`,c:A.col});
-  msg(P,`「${A.idn}」의 길을 걷고 싶다면 힘을 보여라. 쓰러지면 시험은 실패한다.`,'#e6dcc3');
+  inst.monsters=[];spawnShadow(inst,P,id);
+  fx(inst,{k:'msg',m:`전직 시험 · ${A.n} — 가장 깊은 곳에서 너의 그림자가 기다린다`,c:A.col});
+  msg(P,`「${A.idn}」의 길을 걷고 싶다면, 먼저 너 자신을 넘어서라. 쓰러지면 시험은 실패한다.`,'#e6dcc3');
   bcastRoster(hub);sendParty(pt);}
 function trialWin(inst){const T=inst.trial;if(!T||T.done)return;T.done=1;const P=players.get(T.pid);
   fx(inst,{k:'shake',v:6});fx(inst,{k:'msg',m:'시험 통과! 잠시 후 마을로 돌아갑니다',c:'#ffd35a'});

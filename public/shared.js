@@ -526,6 +526,7 @@ const MT={
   guard:{n:'수호 해골',hp:40,dmg:6,spd:32,r:5,xp:6,cd:1.3},
   clone:{n:'환영',hp:60,dmg:8,spd:30,r:11,xp:0,cd:1.6},
   goblin:{n:'보물 고블린',hp:55,dmg:0,spd:60,r:5,xp:60,cd:99},
+  shadow:{n:'그림자 분신',hp:100,dmg:10,spd:50,r:6,xp:300,cd:1.2},
   r_greg:{n:'종지기 그레고르',hp:520,dmg:14,spd:26,r:12,xp:900,cd:1.8,rb:1},
   r_lyra:{n:'빛의 마녀 리라',hp:520,dmg:14,spd:30,r:10,xp:900,cd:1.6,rb:1},
   r_nora:{n:'그림자 마녀 노라',hp:520,dmg:14,spd:30,r:10,xp:900,cd:1.6,rb:1},
@@ -538,7 +539,7 @@ const MT={
   cog:{n:'태엽 사냥개',hp:30,dmg:8,spd:48,r:5,xp:12,cd:1.1},
   wraith:{n:'흑월 망령',hp:36,dmg:9,spd:36,r:5,xp:14,cd:1.2}
 };
-const MT_LIST=['zombie','skel','hound','boss','egg','tentacle','guard','clone','goblin','r_greg','r_lyra','r_nora','r_valen','r_golem','r_karnas','r_ella','ghoul','shade','cog','wraith'];
+const MT_LIST=['zombie','skel','hound','boss','egg','tentacle','guard','clone','goblin','r_greg','r_lyra','r_nora','r_valen','r_golem','r_karnas','r_ella','ghoul','shade','cog','wraith','shadow'];
 // 엘리트 특성 (비트)
 const EAFF=[['frost','빙결',1],['split','분열',2],['vamp','흡혈',4],['tele','순간이동',8],['shield','보호막',16],['bomb','자폭',32],['fast','신속',64],['tough','강철',128]];
 function eaffNames(mask){return EAFF.filter(a=>mask&a[2]).map(a=>a[1]);}
