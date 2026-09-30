@@ -64,13 +64,14 @@ function openStairs(map){map.tiles[map.stairsIdx]=2;}
 
 // ---------- 마을 (던전 입구 광장) ----------
 // ---------- 특성 나무 (직업마다 3갈래 × 3단계) ----------
-const TN={dmgPct:v=>`공격력 +${v}%`,crit:v=>`치명타 확률 +${v}%`,critDmg:v=>`치명타 피해 +${v}%`,as:v=>`공격 속도 +${v}%`,ms:v=>`이동 속도 +${v}%`,ls:v=>`생명력 흡수 +${v}%`,hpPct:v=>`최대 체력 +${v}%`,mpPct:v=>`최대 마나 +${v}%`,armorPct:v=>`방어력 +${v}%`,dr:v=>`받는 피해 -${v}%`,cdr:v=>`스킬 재사용 대기 -${v}%`,healPct:v=>`치유력 +${v}%`,spellPct:v=>`주문 피해 +${v}%`,regen:v=>`체력 재생 +${v}%`,holy:v=>`신성력 획득 +${v}%`,mpRegen:v=>`마나 재생 +${v}%`};
+const TN={dmgPct:v=>`공격력 +${v}%`,crit:v=>`치명타 확률 +${v}%`,critDmg:v=>`치명타 피해 +${v}%`,as:v=>`공격 속도 +${v}%`,ms:v=>`이동 속도 +${v}%`,ls:v=>`생명력 흡수 +${v}%`,hpPct:v=>`최대 체력 +${v}%`,mpPct:v=>`최대 마나 +${v}%`,armorPct:v=>`방어력 +${v}%`,dr:v=>`받는 피해 -${v}%`,cdr:v=>`스킬 재사용 대기 -${v}%`,healPct:v=>`치유력 +${v}%`,spellPct:v=>`주문 피해 +${v}%`,regen:v=>`체력 재생 +${v}%`,holy:v=>`신성력 획득 +${v}%`,steam:v=>`증기압 획득 +${v}%`,mpRegen:v=>`마나 재생 +${v}%`};
 const tn=(id,n,k,v)=>({id,n,k,v,max:5});
 const TALENTS={
   warrior:[{b:'학살자',n:[tn('w1','무기 숙련','dmgPct',3),tn('w2','처형자의 눈','critDmg',8),tn('w3','광란의 칼날','as',3)]},{b:'불굴',n:[tn('w4','강철 피부','hpPct',4),tn('w5','버티기','dr',2),tn('w6','피의 갈증','ls',0.5)]},{b:'돌격대장',n:[tn('w7','질주','ms',2),tn('w8','전투 감각','cdr',3),tn('w9','급소 찌르기','crit',1.5)]}],
   guardian:[{b:'성벽',n:[tn('g1','두꺼운 갑옷','armorPct',6),tn('g2','굳건함','dr',2),tn('g3','거인의 체력','hpPct',4)]},{b:'응징',n:[tn('g4','방패 강타','dmgPct',4),tn('g5','약점 간파','critDmg',8),tn('g6','연속 타격','as',3)]},{b:'수호 서약',n:[tn('g7','회복의 맹세','regen',15),tn('g8','숙련된 방어','cdr',3),tn('g9','신성한 보호','healPct',5)]}],
   archer:[{b:'저격수',n:[tn('a1','정밀 사격','critDmg',10),tn('a2','매의 눈','crit',1.5),tn('a3','관통 화살','dmgPct',3)]},{b:'사냥꾼',n:[tn('a4','속사','as',3),tn('a5','바람 걸음','ms',2),tn('a6','포식자','ls',0.5)]},{b:'생존술',n:[tn('a7','질긴 몸','hpPct',4),tn('a8','몸 낮추기','dr',2),tn('a9','사냥 본능','cdr',3)]}],
   mage:[{b:'파괴',n:[tn('m1','화염 친화','spellPct',4),tn('m2','불안정한 마력','critDmg',8),tn('m3','집중','crit',1.5)]},{b:'비전',n:[tn('m4','마력 저장소','mpPct',6),tn('m5','시간 왜곡','cdr',3),tn('m6','마나 순환','mpRegen',10)]},{b:'마법 방벽',n:[tn('m7','비전 갑옷','armorPct',8),tn('m8','마력 보호막','dr',2),tn('m9','생명 흡수술','hpPct',4)]}],
+  gunner:[{b:'화력',n:[tn('u1','강선 가공','dmgPct',4),tn('u2','급소 사격','critDmg',10),tn('u3','빠른 장전','as',3)]},{b:'증기 기관',n:[tn('u4','고압 밸브','steam',10),tn('u5','정밀 조준','crit',1.5),tn('u6','냉각 순환','cdr',3)]},{b:'강철 코트',n:[tn('u7','두꺼운 코트','hpPct',4),tn('u8','경량 장비','ms',2),tn('u9','철판 덧댐','dr',2)]}],
   knight:[{b:'성검',n:[tn('k1','성검 숙련','dmgPct',4),tn('k2','빛의 일격','critDmg',10),tn('k3','검무','as',3)]},{b:'신성력',n:[tn('k4','깊은 신앙','holy',10),tn('k5','빛의 권능','crit',1.5),tn('k6','찬란한 심판','cdr',3)]},{b:'섬광',n:[tn('k7','섬광 걸음','ms',2),tn('k8','잔광','ls',0.6),tn('k9','빛의 보호','dr',2)]}],
   priest:[{b:'신성',n:[tn('p1','축복의 손','healPct',5),tn('p2','빛의 권능','spellPct',3),tn('p3','기도의 시간','cdr',3)]},{b:'응징자',n:[tn('p4','심판','dmgPct',4),tn('p5','성스러운 분노','crit',1.5),tn('p6','천벌','critDmg',8)]},{b:'인내',n:[tn('p7','순교자의 몸','hpPct',4),tn('p8','깊은 신앙','mpPct',6),tn('p9','고행','dr',2)]}]};
 const TAL_NEED=[0,5,10];
@@ -143,7 +144,7 @@ const FINAL_LINES=['왔구나… 여기까지. 이리 와, 여기 따뜻해.','�
 const MERCS={w:{n:'방패병',cls:'guardian',hp:1.0,mult:0.5,d:'적의 공격을 대신 받아 주는 근접 용병'},a:{n:'궁수',cls:'archer',hp:0.6,mult:0.42,d:'멀리서 화살을 쏘는 원거리 용병'},p:{n:'사제',cls:'priest',hp:0.7,mult:0.22,d:'체력이 줄면 치유해 주는 용병'}};
 function mercCost(lvl){return 150+(lvl|0)*25;}
 // ---------- 카운터 전용 스킬 (1레벨부터, R키) ----------
-const CTR_SKILL={warrior:{n:'저지 베기',d:'앞으로 짧게 파고들며 베어 180% 피해'},guardian:{n:'방패 밀치기',d:'방패로 밀쳐 140% 피해와 짧은 기절'},archer:{n:'견제 사격',d:'아주 빠른 화살 한 발, 170% 피해'},mage:{n:'마력 충격',d:'순식간에 날아가는 마력탄, 180% 피해'},priest:{n:'신성한 일격',d:'빛의 탄환을 쏘아 160% 피해'},knight:{n:'섬광 반격',d:'빛처럼 파고들며 베어 220% 피해 · 신성력 +15'}};
+const CTR_SKILL={warrior:{n:'저지 베기',d:'앞으로 짧게 파고들며 베어 180% 피해'},guardian:{n:'방패 밀치기',d:'방패로 밀쳐 140% 피해와 짧은 기절'},archer:{n:'견제 사격',d:'아주 빠른 화살 한 발, 170% 피해'},mage:{n:'마력 충격',d:'순식간에 날아가는 마력탄, 180% 피해'},priest:{n:'신성한 일격',d:'빛의 탄환을 쏘아 160% 피해'},knight:{n:'섬광 반격',d:'빛처럼 파고들며 베어 220% 피해 · 신성력 +15'},gunner:{n:'속사 반격',d:'번개처럼 총을 뽑아 한 발, 190% 피해 · 증기압 +15'}};
 const CTR_CD=6;
 // ---------- 레이드 ----------
 const RAIDS=[{id:'bell',n:'잊힌 종탑',boss:'종지기 그레고르',lvl:20,ready:1},{id:'mirror',n:'거울 미궁',boss:'쌍둥이 마녀 리라와 노라',lvl:30,ready:1},{id:'clock',n:'태엽 심장 공장',boss:'기사단장 발렌',lvl:40,ready:1},{id:'moon',n:'흑월의 왕좌',boss:'흑왕 카르나스',lvl:50,ready:1}];
@@ -240,14 +241,17 @@ const CLASSES={
     desc:'파티를 치유하고 보호막을 씌운다. 쓰러진 동료를 두 배 빨리 일으킨다'},
   knight:{n:'빛의 기사',role:'근거리 딜러 · 히든',fam:'melee',prim:'str',range:'melee',base:{str:17,dex:12,vit:12,ene:7},hpMul:1.15,armorMul:1.05,atkRate:1.45,ms:84,hidden:1,
     basic:{kind:'melee',mult:1.35},skills:['lslash','flashdash','lmark','crossslash','holyblade','skyfall','bladedance','dawnawaken','dawnward','judgment','lastflash','lightstorm','radiantspear','excalibur','dawnoath'],ults:['dawnblade','heavendance'],
-    desc:'엘라에게 새벽의 맹세를 받은 기사. 빛의 검으로 신성력을 모아 한 번에 쏟아내는 최강의 딜러'}
+    desc:'엘라에게 새벽의 맹세를 받은 기사. 빛의 검으로 신성력을 모아 한 번에 쏟아내는 최강의 딜러'},
+  gunner:{n:'증기총사',role:'원거리 딜러 · 히든',fam:'gun',prim:'dex',range:'ranged',base:{str:9,dex:17,vit:11,ene:7},hpMul:0.95,armorMul:0.95,atkRate:1.3,ms:80,hidden:1,unlock:'clock',
+    basic:{kind:'gun',proj:16,speed:460,mult:0.95},skills:['gshot','gbuck','ggren','grecoil','gsmith','gturret','gslug','gboiler','ggatling','gkick','gvent','gcluster','goverdrive','grail','gpride'],ults:['steamarmor','bigbarrage'],
+    desc:'태엽 기사단장 발렌의 증기총을 물려받은 사수. 탕탕 쏘고 펑펑 터뜨리며 증기압을 다루는 원거리 딜러'}
 };
 // 직업별 피해 보정 (허수아비 기준: 원거리 딜러 100 · 전사 115 · 빛의 기사 125 · 수호자 55 · 사제 45)
 // 레벨 10·20·35·50 기준값 사이를 이어서 쓴다 (허수아비 측정으로 맞춤)
 const DK_LV=[10,20,27,35,42,50];
-const CLASS_DK={warrior:[1.14,1.331,1.519,1.62,1.689,1.565],guardian:[1.37,1.193,1.70,1.947,1.863,1.767],archer:[0.936,1.012,1.029,0.983,1.132,1.036],mage:[1.12,1.037,0.899,0.80,0.589,0.488],priest:[1.135,0.914,1.311,1.078,0.834,0.755],knight:[0.747,0.794,0.768,0.871,0.772,0.672]};
+const CLASS_DK={warrior:[1.14,1.331,1.519,1.62,1.689,1.565],guardian:[1.37,1.193,1.70,1.947,1.863,1.767],archer:[0.936,1.012,1.029,0.983,1.132,1.036],mage:[1.12,1.037,0.899,0.80,0.589,0.488],priest:[1.135,0.914,1.311,1.078,0.834,0.755],knight:[0.747,0.794,0.768,0.871,0.772,0.672],gunner:[0.98,1.02,1.27,1.26,1.23,1.17]};
 function classDk(cls,lvl){const d=CLASS_DK[cls];if(!d)return 1;lvl=lvl|0;if(lvl<=DK_LV[0])return d[0];for(let i=1;i<DK_LV.length;i++)if(lvl<=DK_LV[i]){const t=(lvl-DK_LV[i-1])/(DK_LV[i]-DK_LV[i-1]);return d[i-1]+(d[i]-d[i-1])*t;}return d[d.length-1];}
-const CLASS_ORDER=['warrior','guardian','archer','mage','priest','knight'];
+const CLASS_ORDER=['warrior','guardian','archer','mage','priest','knight','gunner'];
 const UNLOCK=[1,1,3,5,8,11,14,18,22,26,30,35,38,42,46];const ULT_LVL=20;
 // 궁극기 위력: 20레벨 55% → 50레벨 100%
 function ultPow(lvl){return Math.min(1,0.55+0.45*Math.max(0,(lvl|0)-20)/30);}
@@ -351,6 +355,22 @@ const SKILLS={
   radiantspear:{n:'광휘의 창',mp:20,cd:8,desc:'빛의 창을 던져 경로의 모든 적에게 320% 피해'},
   excalibur:{n:'성검 해방',mp:30,cd:30,desc:'8초간 피해 +20%, 기본 공격마다 빛의 파동이 뻗어 나간다 (100%)'},
   dawnoath:{n:'새벽의 맹세',pas:1,desc:'보스 피해와 치명타 확률 증가',per:'등급당 보스 피해 +2%, 치명타 +1%'},
+  // ----- 증기총사 (히든) -----
+  gshot:{n:'3점사',mp:6,cd:1,desc:'소총으로 탕탕탕 세 발, 각 85% 피해 · 증기압 +9'},
+  gbuck:{n:'산탄 폭발',mp:8,cd:3,desc:'산탄 권총으로 앞을 쾅! 부채꼴 220% 피해와 넉백 · 증기압 +12'},
+  ggren:{n:'유탄 발사',mp:12,cd:5,desc:'커서 위치로 유탄을 퐁 쏘아 올려 펑! 240% 폭발 · 증기압 +10'},
+  grecoil:{ctr:1,n:'반동 도약',mp:10,cd:6,desc:'커서 방향으로 산탄을 쏘며(180%) 그 반동으로 뒤로 크게 물러난다'},
+  gsmith:{n:'총기 개조',pas:1,desc:'치명타 피해와 증기압 획득 증가',per:'등급당 치명타 피해 +6%, 증기압 획득 +5%'},
+  gturret:{n:'증기 포탑',mp:18,cd:14,desc:'커서 위치에 10초간 포탑 설치. 가까운 적을 0.5초마다 쏜다(70%)'},
+  gslug:{n:'파쇄 슬러그',mp:14,cd:8,desc:'모든 것을 꿰뚫는 굵은 탄환, 300% 피해 · 6초간 받는 피해 +15%(파쇄) · 증기압 +12'},
+  gboiler:{n:'고압 보일러',pas:1,desc:'피해 증가, 고압(증기압 70 이상) 보너스 강화',per:'등급당 피해 +2%, 고압 피해 +1%'},
+  ggatling:{n:'증기 개틀링',mp:24,cd:12,desc:'2초간 두두두두 탄환 20발을 퍼붓는다(각 55%) · 발마다 증기압 +2'},
+  gkick:{ctr:1,n:'걷어차기 사격',mp:14,cd:7,desc:'앞의 적을 걷어차(150%, 짧은 기절) 띄운 뒤 코앞에서 산탄을 쏜다(260%) · 증기압 +12'},
+  gvent:{n:'증기 배출',mp:16,cd:8,desc:'증기압을 모두 뿜어 앞을 쓸어버린다. 180% + 증기압 1당 3% (최대 480%) · 고압이면 1초 기절'},
+  gcluster:{n:'집속 포탄',mp:30,cd:16,desc:'커서 위치에 포탄이 터지고(250%) 자탄 6개가 흩어져 연달아 폭발한다(각 130%)'},
+  goverdrive:{n:'과부하 가동',mp:20,cd:24,desc:'10초간 공격 속도 +30%, 피해 +20%, 증기압 획득 두 배'},
+  grail:{n:'증기 레일포',mp:22,cd:10,desc:'0.5초 압력을 모은 뒤 일직선을 꿰뚫는 증기 포격, 380% 피해 · 증기압 +20'},
+  gpride:{n:'명사수의 긍지',pas:1,desc:'보스 피해와 치명타 확률 증가',per:'등급당 보스 피해 +2%, 치명타 +1%'},
   // ----- 전직 스킬 (30레벨 이후) -----
   bfrenzy:{n:'광란의 연타',mp:12,cd:3,desc:'전방을 세 번 연달아 벤다(각 120%). 체력 50% 이하면 피해 +40%'},
   bloodroar:{n:'피의 포효',mp:18,cd:12,desc:'주변 적에게 160% 피해, 8초간 생명력 흡수 +12%'},
@@ -400,6 +420,14 @@ const SKILLS={
   sunpierce:{ctr:1,n:'일섬',mp:18,cd:7,desc:'0.3초 모은 뒤 빛처럼 돌진하며 벤다(450%), 신성력 +20'},
   corona:{n:'코로나',mp:22,cd:14,desc:'6초간 몸 주위에 태양 오라(0.5초마다 90%), 신성력이 계속 찬다'},
   suncore:{pas:1,n:'태양핵',desc:'신성과 치명 강화',per:'등급당 치명타 피해 +5%, 신성력 획득 +3%'},
+  gmortar:{n:'박격포',mp:20,cd:6,desc:'커서 지역에 포탄 세 발이 연달아 떨어진다(각 200%)'},
+  gscald:{n:'과열 증기 분사',mp:22,cd:10,desc:'2.5초간 앞으로 뜨거운 증기를 뿜는다(0.25초마다 65%, 둔화)'},
+  gshell:{ctr:1,n:'충격 포탄',mp:18,cd:8,desc:'무거운 포탄을 곧게 쏜다. 처음 맞은 적에서 폭발(320%), 1.5초 기절과 큰 넉백'},
+  gordnance:{pas:1,n:'탄약고',desc:'폭발 강화',per:'등급당 폭발 피해 +3%, 폭발 범위 +2%'},
+  gspin:{n:'쌍권총 난사',mp:16,cd:6,desc:'1.2초간 제자리에서 돌며 사방으로 24발을 쏜다(각 60%)'},
+  gslide:{ctr:1,n:'슬라이드 사격',mp:12,cd:5,desc:'커서 방향으로 미끄러지며 가까운 적에게 네 발(각 110%). 미끄러지는 동안 회피'},
+  gfan:{n:'패닝',mp:14,cd:7,desc:'가장 가까운 적에게 여섯 발을 순식간에 쏜다(각 85%). 마지막 발은 반드시 치명타(200%)'},
+  gkatam:{pas:1,n:'건카타',desc:'치명타와 공격 속도 강화',per:'등급당 치명타 +1%, 공격 속도 +2%'},
   // 전직 궁극기 (전직하면 세 번째 선택지로)
   redmoon:{ult:1,n:'핏빛 광란',mp:0,cd:100,desc:'10초간 피해 +50%, 공격 속도 +40%, 처음 4초는 체력이 1 아래로 떨어지지 않는다'},
   thousandcuts:{ult:1,n:'천검',mp:0,cd:100,desc:'3초간 주변에 칼날이 휘몰아친다(0.12초마다 70%). 그동안 무적'},
@@ -425,7 +453,11 @@ const SKILLS={
   angel:{ult:1,n:'천사 강림',mp:0,cd:120,desc:'10초간 천사가 내려와 주변 파티원을 계속 치유하고, 쓰러진 동료를 즉시 일으킨다'},
   divinejudge:{ult:1,n:'신의 심판',mp:0,cd:100,desc:'빛기둥 10개가 적을 쫓아 떨어진다(각 300%). 주변 파티원에게 최대 체력 20% 보호막'},
   dawnblade:{ult:1,n:'여명의 성검',mp:0,cd:100,desc:'하늘에서 거대한 빛의 성검을 내려꽂는다(700%, 2초 기절). 이어서 빛의 파동이 세 번 퍼진다(각 300%)'},
-  heavendance:{ult:1,n:'천상의 검무',mp:0,cd:100,desc:'3초간 빛이 되어 주변 적 사이를 12번 오가며 벤다(각 250%). 마지막에 빛이 폭발한다(500%). 그동안 무적'}
+  heavendance:{ult:1,n:'천상의 검무',mp:0,cd:100,desc:'3초간 빛이 되어 주변 적 사이를 12번 오가며 벤다(각 250%). 마지막에 빛이 폭발한다(500%). 그동안 무적'},
+  steamarmor:{ult:1,n:'증기 갑주',mp:0,cd:110,desc:'증기 갑주를 두르며 주변을 짓밟는다(400%). 12초간 피해 +25%, 받는 피해 -30%, 기본 공격이 작은 포탄이 된다(추가 폭발 80%)'},
+  bigbarrage:{ult:1,n:'대구경 포격',mp:0,cd:100,desc:'커서 지역에 포탄 8발이 적을 노려 쏟아지고(각 300%), 마지막에 거대 포탄이 떨어진다(700%, 1.5초 기절)'},
+  siegecannon:{ult:1,n:'공성포 강림',mp:0,cd:100,desc:'거대한 공성포를 세워 커서 방향으로 다섯 발을 쏜다(각 600%, 큰 폭발)'},
+  bulletballet:{ult:1,n:'탄환 발레',mp:0,cd:100,desc:'3초간 무적이 되어 춤추듯 주변 적에게 쌍권총을 난사한다(0.15초마다 150%). 마지막 회전 난사 600%'}
 };
 for(const c in CLASSES){CLASSES[c].skills.forEach((s,i)=>{SKILLS[s].lvl=UNLOCK[i];SKILLS[s].cls=c;});(CLASSES[c].ults||[]).forEach(s=>{SKILLS[s].lvl=ULT_LVL;SKILLS[s].cls=c;});}
 // ================= 전직 (30레벨 · 직업마다 두 갈래) =================
@@ -466,16 +498,23 @@ const ADV={
     info:{role:'지원형 근접 딜러',diff:3,bars:[4,3,4],rec:'앞장서서 파티 전체를 강하게 만드는 리더가 되고 싶다면',pros:['파티 전체 버프','깃발로 회복과 공격력'],cons:['혼자일 땐 태양검보다 약함','깃발 위치를 잘 잡아야 함'],party:'깃발을 꽂고 기사단을 이끄는 지휘관'}},
   sunblade:{cls:'knight',n:'태양검',sk:['solarflare','sunpierce','corona','suncore'],ult:'eclipsebreak',col:'#ffb03a',
     idn:'작열하는 신성',idd:'신성력 획득 +30% · 태양 폭발 피해 +20%',
-    info:{role:'폭발형 근접 딜러',diff:5,bars:[3,5,1],rec:'신성력을 모았다가 한 번에 쏟아내는 폭발을 원한다면',pros:['게임 최고 수준의 순간 폭딜','코로나로 지속 광역'],cons:['신성력 관리가 까다로움','모으는 동안 약함'],party:'신성력을 모았다가 보스 약점 타이밍에 모두 쏟아내는 태양'}}};
+    info:{role:'폭발형 근접 딜러',diff:5,bars:[3,5,1],rec:'신성력을 모았다가 한 번에 쏟아내는 폭발을 원한다면',pros:['게임 최고 수준의 순간 폭딜','코로나로 지속 광역'],cons:['신성력 관리가 까다로움','모으는 동안 약함'],party:'신성력을 모았다가 보스 약점 타이밍에 모두 쏟아내는 태양'}},
+  cannoneer:{cls:'gunner',n:'중포병',sk:['gmortar','gscald','gshell','gordnance'],ult:'siegecannon',col:'#ff9a4a',
+    idn:'대구경 전문가',idd:'폭발 피해 +20% · 포탑을 하나 더 설치 · 받는 피해 -8%',
+    info:{role:'원거리 광역 포격',diff:3,bars:[3,4,2],rec:'펑펑 터지는 대포로 화면을 뒤덮고 싶다면',pros:['넓은 폭발로 광역 최강급','포탑 두 대로 꾸준한 화력'],cons:['느린 포탄은 조준이 필요','탄무사보다 단일 대상에 약함'],party:'포탑을 깔고 몰려오는 적을 포격으로 날려 버리는 포대'}},
+  gunkata:{cls:'gunner',n:'탄무사',sk:['gspin','gslide','gfan','gkatam'],ult:'bulletballet',col:'#8fd0ff',
+    idn:'탄막의 춤',idd:'치명타 +8% · 치명타 피해 +15% · 스킬을 쓰면 2초간 이동 속도 +15%',
+    info:{role:'원거리 기동 딜러',diff:4,bars:[2,5,1],rec:'쌍권총을 들고 춤추듯 누비며 쏘는 손맛을 원한다면',pros:['높은 치명타와 순간 딜','슬라이드로 누비며 공격'],cons:['체력이 낮아 움직임이 중요','광역은 중포병보다 약함'],party:'보스 곁을 누비며 치명타를 꽂는 총잡이'}}};
 const ADV_OF={};for(const k in ADV){const c=ADV[k].cls;(ADV_OF[c]=ADV_OF[c]||[]).push(k);}
 const CLASS_INFO={warrior:{diff:2,bars:[4,4,1],rec:'앞에서 시원하게 베고 싶다면',pros:['강한 근접 피해','흡혈로 오래 버팀'],cons:['원거리 기믹에 약함'],party:'보스 옆에 붙어 딜하는 근접 딜러'},
   guardian:{diff:2,bars:[5,2,3],rec:'파티를 지키는 든든한 방패가 되고 싶다면',pros:['최고의 생존력','적이 먼저 노림'],cons:['피해가 낮음'],party:'보스의 공격을 받아내는 탱커'},
   archer:{diff:3,bars:[2,4,1],rec:'멀리서 안전하게 화살을 퍼붓고 싶다면',pros:['긴 사거리','빠른 공격'],cons:['체력이 낮아 위치 선정이 중요'],party:'안전한 거리에서 꾸준히 딜하는 궁수'},
   mage:{diff:3,bars:[1,5,1],rec:'화려한 광역 마법을 좋아한다면',pros:['광역 피해 최강','다양한 제어기'],cons:['체력과 방어가 가장 낮음'],party:'적 무리를 쓸어버리는 포대'},
   priest:{diff:3,bars:[3,2,5],rec:'동료를 살리고 지키는 게 즐겁다면',pros:['파티 치유와 보호막','부활이 두 배 빠름'],cons:['혼자 사냥이 느림'],party:'파티의 생명줄'},
+  gunner:{diff:3,bars:[2,4,2],rec:'탕탕 쏘고 펑펑 터뜨리는 손맛을 원한다면',pros:['총·산탄·유탄을 오가는 화력','포탑과 반동 도약'],cons:['가까이 붙으면 위험','증기압 관리가 필요'],party:'태엽 기사단의 증기총을 물려받은 사수'},
   knight:{diff:4,bars:[3,5,2],rec:'신성력을 모아 한 번에 쏟아내는 기사를 원한다면',pros:['최강의 근접 폭딜','빛의 이동기'],cons:['신성력 관리가 필요'],party:'새벽의 맹세를 받은 숨은 기사'}};
 /* 갈래별 피해 보정 (허수아비 측정: 딜 갈래 둘은 ±5% · 기본 직업보다 약 12% 강하게 / 탱커·힐러 갈래는 역할에 맞게) */
-const ADV_DK={berserker:1.21,blademaster:0.87,bulwark:1.25,judicator:0.67,sniper:0.745,trapper:1.035,elementalist:0.94,astrologer:1.28,hierophant:1.2,exorcist:0.67,dawncommander:1.12,sunblade:0.94};
+const ADV_DK={berserker:1.21,blademaster:0.87,bulwark:1.25,judicator:0.67,sniper:0.745,trapper:1.035,elementalist:0.94,astrologer:1.28,hierophant:1.2,exorcist:0.67,dawncommander:1.12,sunblade:0.94,cannoneer:1.05,gunkata:1.06};
 /* 갈래별 기본 스킬 변형: mul=피해·효과 배율, cd=재사용 배율, post=시전 후 추가 효과 */
 const ADV_VAR={
   berserker:{whirl:{n:'피의 회전베기',d:'피해 +25% · 사용하면 최대 체력 3% 회복',mul:1.25,post:{selfHeal:0.03}},warcry:{n:'광기의 함성',d:'재사용 -30% · 6초간 공격 속도 +20%',cd:0.7,post:{buff:['as',0.2,6]}}},
@@ -489,6 +528,8 @@ const ADV_VAR={
   hierophant:{heal:{n:'대치유의 빛',d:'치유량 +35%',mul:1.35},shield:{n:'빛의 축복',d:'재사용 -30%',cd:0.7}},
   exorcist:{smite:{n:'퇴마의 심판',d:'피해 +40% · 체력이 가장 낮은 파티원 치유',mul:1.4,post:{healLow:0.8}},purify:{n:'정화의 파동',d:'피해 +30%',mul:1.3}},
   dawncommander:{lslash:{n:'기사단의 참격',d:'주변 파티원 피해 +8% (5초)',post:{partyBuff:['dmg',0.08,5,120]}},flashdash:{n:'돌격 명령',d:'재사용 -30%',cd:0.7}},
+  cannoneer:{ggren:{n:'고폭 유탄',d:'피해 +30%',mul:1.3},gturret:{n:'중포탑',d:'재사용 -25%',cd:0.75}},
+  gunkata:{gshot:{n:'쌍권총 점사',d:'피해 +35%',mul:1.35},grecoil:{n:'공중제비 사격',d:'재사용 -35%',cd:0.65}},
   sunblade:{lslash:{n:'태양 참격',d:'피해 +35%',mul:1.35},crossslash:{n:'작열 십자',d:'조준한 곳에 태양 폭발이 한 번 더 일어남',post:{burst:[34,1.0]}}}};
 function advVar(ch,sid){const a=advOf(ch);return a&&ADV_VAR[ch.adv]&&ADV_VAR[ch.adv][sid]||null;}
 function advOf(ch){return ch&&ch.adv&&ADV[ch.adv]&&ADV[ch.adv].cls===ch.cls?ADV[ch.adv]:null;}
@@ -506,14 +547,15 @@ function synergies(clsList){const has=c=>clsList.includes(c);const out=[];
   if(has('warrior')&&has('guardian'))out.push({id:'van',n:'선봉대',d:'근접 직업 피해 +15%'});
   if(has('archer')&&has('mage'))out.push({id:'art',n:'원거리 포격',d:'원거리 직업 피해 +15%'});
   if(has('knight')&&has('priest'))out.push({id:'dawnpray',n:'새벽의 기도',d:'모든 피해 +8%, 받는 피해 -5%'});
+  if(has('gunner')&&has('guardian'))out.push({id:'forge',n:'증기 공방',d:'원거리 직업 피해 +10%, 받는 피해 -5%'});
   if(has('guardian')&&has('priest')&&has('warrior')&&(has('archer')||has('mage')))out.push({id:'full',n:'완벽한 파티',d:'모든 피해 +10%, 받는 피해 -10%'});
   const cnt={};for(const c of clsList)cnt[c]=(cnt[c]||0)+1;for(const c in cnt)if(cnt[c]>=2)out.push({id:'bro_'+c,n:CLASSES[c].n+' 형제단',d:CLASSES[c].n+' 피해 +8%'});
   return out;}
-const SYN_INFO=[{id:'wall',n:'철벽 대형',req:[['guardian']],d:'파티 받는 피해 -10%'},{id:'grace',n:'신의 가호',req:[['priest']],d:'파티 체력 재생 두 배'},{id:'van',n:'선봉대',req:[['warrior'],['guardian']],d:'근접 직업 피해 +15%'},{id:'art',n:'원거리 포격',req:[['archer'],['mage']],d:'원거리 직업 피해 +15%'},{id:'dawnpray',n:'새벽의 기도',req:[['knight'],['priest']],d:'모든 피해 +8%, 받는 피해 -5%',hidden:1},{id:'full',n:'완벽한 파티',req:[['guardian'],['priest'],['warrior'],['archer','mage']],d:'모든 피해 +10%, 받는 피해 -10%'},{id:'bro',n:'○○ 형제단',req:[],d:'같은 직업 2명 이상: 그 직업 피해 +8%'}];
+const SYN_INFO=[{id:'wall',n:'철벽 대형',req:[['guardian']],d:'파티 받는 피해 -10%'},{id:'grace',n:'신의 가호',req:[['priest']],d:'파티 체력 재생 두 배'},{id:'van',n:'선봉대',req:[['warrior'],['guardian']],d:'근접 직업 피해 +15%'},{id:'art',n:'원거리 포격',req:[['archer'],['mage']],d:'원거리 직업 피해 +15%'},{id:'dawnpray',n:'새벽의 기도',req:[['knight'],['priest']],d:'모든 피해 +8%, 받는 피해 -5%',hidden:'knight'},{id:'forge',n:'증기 공방',req:[['gunner'],['guardian']],d:'원거리 직업 피해 +10%, 받는 피해 -5%',hidden:'gunner'},{id:'full',n:'완벽한 파티',req:[['guardian'],['priest'],['warrior'],['archer','mage']],d:'모든 피해 +10%, 받는 피해 -10%'},{id:'bro',n:'○○ 형제단',req:[],d:'같은 직업 2명 이상: 그 직업 피해 +8%'}];
 function synergyMods(list,cls){let dmg=1,dr=0,regen=1;const ids=new Set(list.map(s=>s.id));
   if(ids.has('wall'))dr+=0.1;if(ids.has('grace'))regen=2;
   if(ids.has('van')&&CLASSES[cls].range==='melee')dmg*=1.15;if(ids.has('art')&&CLASSES[cls].range==='ranged')dmg*=1.15;
-  if(ids.has('full')){dmg*=1.1;dr+=0.1;}if(ids.has('dawnpray')){dmg*=1.08;dr+=0.05;}if(ids.has('bro_'+cls))dmg*=1.08;return{dmg,dr,regen};}
+  if(ids.has('full')){dmg*=1.1;dr+=0.1;}if(ids.has('dawnpray')){dmg*=1.08;dr+=0.05;}if(ids.has('forge')){if(CLASSES[cls].range==='ranged')dmg*=1.1;dr+=0.05;}if(ids.has('bro_'+cls))dmg*=1.08;return{dmg,dr,regen};}
 
 // ---------- 몬스터 ----------
 const MT={
@@ -545,8 +587,8 @@ const EAFF=[['frost','빙결',1],['split','분열',2],['vamp','흡혈',4],['tele
 function eaffNames(mask){return EAFF.filter(a=>mask&a[2]).map(a=>a[1]);}
 const WIND_LIST=['','melee','shoot','charge','slam','ring','cast'];
 // 타격음 종류 (서버가 번호로 보냄)
-const EL_LIST=['slash','blunt','heavy','arrow','magic','zap','fire','ice','holy','poison','void','quake'];
-const PROJ_LIST=['arrow','parrow','bolt','holy','fire','orb','pierce','shieldp','poison','frostorb','holybeam','ice','web','page','void','fireb'];
+const EL_LIST=['slash','blunt','heavy','arrow','magic','zap','fire','ice','holy','poison','void','quake','shot','blast'];
+const PROJ_LIST=['arrow','parrow','bolt','holy','fire','orb','pierce','shieldp','poison','frostorb','holybeam','ice','web','page','void','fireb','bullet','pellet','shell','slug'];
 
 // ---------- 테마 · 보스 ----------
 // 5층마다 테마가 바뀌고, 51층부터는 같은 테마의 타락한 버전이 나온다. 100층은 최종 보스.
@@ -600,7 +642,7 @@ function monName(floor,type,elite,id){const th=themeOf(floor);const base=type===
 // ---------- 아이템 ----------
 const RAR_N=['일반','마법','희귀','전설','신화'];
 const SLOTN={weapon:'무기',armor:'갑옷',ring:'반지'};
-const FAMN={melee:'근접 무기',bow:'활',staff:'지팡이'};
+const FAMN={melee:'근접 무기',bow:'활',staff:'지팡이',gun:'총'};
 const AFF={
   dmg:{f:v=>`+${v} 공격력`,r:(L,R)=>ri(R,1+Math.floor(L*0.6),3+Math.floor(L*1.3))},
   dmgPct:{f:v=>`+${v}% 공격력`,r:(L,R)=>ri(R,5,10+L*2)},
@@ -620,11 +662,12 @@ const AFF_POOL={weapon:['dmg','dmgPct','crit','critDmg','as','ls','str','dex','e
 const PREFIX={dmg:'날카로운',dmgPct:'잔혹한',crit:'정밀한',critDmg:'치명적인',hp:'튼튼한',mp:'신비한',armor:'견고한',ms:'날렵한',as:'신속한',ls:'흡혈의',str:'강인한',dex:'민첩한',vit:'활기찬',ene:'현명한'};
 const RN1=['피','재','그림자','망자','서리','심연','해골','까마귀','강철','저주'];
 const RN2={weapon:['송곳니','절단기','포효','이빨','심판'],armor:['외피','수의','껍질','요새','비늘'],ring:['고리','인장','눈','약속','굴레']};
-const LEG={melee:['그림자 송곳니','왕의 처형검','불타는 심장'],bow:['별을 꿰는 활','까마귀 여왕의 활','폭풍 사수'],staff:['망자의 탄식','서리 군주의 홀','새벽의 지팡이'],armor:['피의 군주의 갑주','서리 파수꾼','심연의 외투'],ring:['영원의 고리','흡혈귀의 인장','별빛 반지']};
+const LEG={melee:['그림자 송곳니','왕의 처형검','불타는 심장'],bow:['별을 꿰는 활','까마귀 여왕의 활','폭풍 사수'],staff:['망자의 탄식','서리 군주의 홀','새벽의 지팡이'],gun:['천둥의 방아쇠','태엽 심장 대포','검은 증기의 총'],armor:['피의 군주의 갑주','서리 파수꾼','심연의 외투'],ring:['영원의 고리','흡혈귀의 인장','별빛 반지']};
 const WEAPONS={
   melee:[{n:'단검',d:0.8,as:15,kind:'dagger'},{n:'장검',d:1,kind:'sword'},{n:'전투 도끼',d:1.2,as:-5,kind:'axe'},{n:'철퇴',d:1.1,kind:'mace'},{n:'대검',d:1.45,as:-12,kind:'great'}],
   bow:[{n:'단궁',d:0.85,as:10,kind:'shortbow'},{n:'장궁',d:1.15,as:-5,kind:'longbow'},{n:'석궁',d:1.35,as:-15,kind:'crossbow'}],
-  staff:[{n:'마법봉',d:0.85,as:10,kind:'wand'},{n:'지팡이',d:1.1,kind:'staff'},{n:'성물 홀',d:1,mp:10,kind:'scepter'}]
+  staff:[{n:'마법봉',d:0.85,as:10,kind:'wand'},{n:'지팡이',d:1.1,kind:'staff'},{n:'성물 홀',d:1,mp:10,kind:'scepter'}],
+  gun:[{n:'산탄 권총',d:0.9,as:8,kind:'pistol'},{n:'증기 소총',d:1.1,kind:'rifle'},{n:'휴대 유탄포',d:1.35,as:-15,kind:'handcannon'}]
 };
 const ARMORS=[{n:'가죽 갑옷',a:0.8,kind:'leather'},{n:'사슬 갑옷',a:1,kind:'chain'},{n:'판금 갑옷',a:1.3,ms:-3,kind:'plate'},{n:'룬 로브',a:0.6,mp:10,kind:'robe'}];
 const GEMS=['r','c','z','p','y'];
@@ -648,13 +691,13 @@ function genItem(L,fam,minR,bonus,R,maxR,fslot){
 }
 // ---------- 신화 (레이드 경매 전용) ----------
 const MYTH={blast:{n:'핏빛 폭발',d:'적을 처치하면 주변에 폭발 (공격력 80%)'},aegis:{n:'불멸의 가호',d:'5초마다 최대 체력 10% 보호막'},chainz:{n:'천둥의 연쇄',d:'치명타 시 번개가 주변 적 3명에게 튄다 (60%)'},vamp:{n:'피의 계약',d:'생명력 흡수 +4%, 처치 시 체력 3% 회복'},haste:{n:'시간의 톱니',d:'스킬 재사용 대기 -15%'},wrath:{n:'군주 사냥꾼',d:'보스에게 주는 피해 +20%'}};
-const MYTH_N={melee:['흑월의 대검','종말의 도끼'],bow:['별을 삼킨 활','피안의 석궁'],staff:['심연의 왕홀','시간을 먹는 지팡이'],armor:['불멸 군주의 갑주','새벽 기사단의 흉갑'],ring:['신들의 반지','엘라의 약속']};
+const MYTH_N={melee:['흑월의 대검','종말의 도끼'],bow:['별을 삼킨 활','피안의 석궁'],staff:['심연의 왕홀','시간을 먹는 지팡이'],gun:['흑월의 공성총','종말의 증기포'],armor:['불멸 군주의 갑주','새벽 기사단의 흉갑'],ring:['신들의 반지','엘라의 약속']};
 // ---------- 세트 아이템 (레이드) ----------
 const SETS={
-  bell:{n:'종지기',raid:'bell',lvl:20,nm:{melee:'종지기의 망치',bow:'종탑 파수꾼의 활',staff:'종소리 지팡이',armor:'종지기의 누더기 갑옷',ring:'녹슨 종 반지'},b2:{hpPct:15,armorPct:10},b2d:'체력 +15%, 방어력 +10%',b3d:'스킬이 적에게 맞으면 5초마다 종소리 파동 (주변 피해 150%)'},
-  twins:{n:'쌍둥이 마녀',raid:'mirror',lvl:30,nm:{melee:'황혼의 쌍검',bow:'빛과 그림자의 활',staff:'쌍둥이 달의 지팡이',armor:'마녀의 거울 드레스',ring:'엇갈린 달 반지'},b2:{crit:8},b2d:'치명타 확률 +8%',b3d:'직전과 다른 스킬을 쓰면 그 스킬 피해 +40%'},
-  clock:{n:'태엽 기사',raid:'clock',lvl:40,nm:{melee:'태엽 기사의 창',bow:'태엽 석궁',staff:'톱니 왕홀',armor:'태엽 기사단 흉갑',ring:'멈추지 않는 톱니 반지'},b2:{as:12},b2d:'공격 속도 +12%',b3d:'스킬 10번 사용마다 6초간 태엽 폭주 (재사용 대기 -50%)'},
-  moon:{n:'흑월',raid:'moon',lvl:50,nm:{melee:'흑월의 처형검',bow:'흑월 사냥꾼의 활',staff:'흑월의 홀',armor:'흑왕의 갑주',ring:'꺼지지 않는 흑월 반지'},b2:{bossDmg:15},b2d:'보스에게 주는 피해 +15%',b3d:'카운터 성공 시 10초간 모든 피해 +35%, 카운터 재사용 초기화'}};
+  bell:{n:'종지기',raid:'bell',lvl:20,nm:{melee:'종지기의 망치',bow:'종탑 파수꾼의 활',staff:'종소리 지팡이',gun:'종탑 종소리 권총',armor:'종지기의 누더기 갑옷',ring:'녹슨 종 반지'},b2:{hpPct:15,armorPct:10},b2d:'체력 +15%, 방어력 +10%',b3d:'스킬이 적에게 맞으면 5초마다 종소리 파동 (주변 피해 150%)'},
+  twins:{n:'쌍둥이 마녀',raid:'mirror',lvl:30,nm:{melee:'황혼의 쌍검',bow:'빛과 그림자의 활',staff:'쌍둥이 달의 지팡이',gun:'거울 쌍권총',armor:'마녀의 거울 드레스',ring:'엇갈린 달 반지'},b2:{crit:8},b2d:'치명타 확률 +8%',b3d:'직전과 다른 스킬을 쓰면 그 스킬 피해 +40%'},
+  clock:{n:'태엽 기사',raid:'clock',lvl:40,nm:{melee:'태엽 기사의 창',bow:'태엽 석궁',staff:'톱니 왕홀',gun:'태엽 심장 소총',armor:'태엽 기사단 흉갑',ring:'멈추지 않는 톱니 반지'},b2:{as:12},b2d:'공격 속도 +12%',b3d:'스킬 10번 사용마다 6초간 태엽 폭주 (재사용 대기 -50%)'},
+  moon:{n:'흑월',raid:'moon',lvl:50,nm:{melee:'흑월의 처형검',bow:'흑월 사냥꾼의 활',staff:'흑월의 홀',gun:'흑월 사냥꾼의 총',armor:'흑왕의 갑주',ring:'꺼지지 않는 흑월 반지'},b2:{bossDmg:15},b2d:'보스에게 주는 피해 +15%',b3d:'카운터 성공 시 10초간 모든 피해 +35%, 카운터 재사용 초기화'}};
 const RAID_SET={bell:'bell',mirror:'twins',clock:'clock',moon:'moon'};
 function genSet(id,L,fam,R,slot){R=R||Math.random;const S0=SETS[id];const it=genItem(L,fam,3,0,R,3,slot);it.set=id;it.name=it.slot==='weapon'?S0.nm[fam]:S0.nm[it.slot];it.value=Math.round(it.value*1.5);return it;}
 function setCount(ch,id){let n=0;for(const s of['weapon','armor','ring']){const it=ch.eq[s];if(it&&it.set===id&&canEquip(it,ch.cls))n++;}return n;}
@@ -735,6 +778,7 @@ function calcStats(ch){
   if(T.dr)S.dr=(S.dr||0)+T.dr/100;S.cdr=Math.min(0.4,(T.cdr||0)/100);if(T.healPct)S.healPow=Math.round(S.healPow*(1+T.healPct/100));if(T.spellPct)S.spell*=1+T.spellPct/100;
   if(r('endless')){S.dmgMul*=1+0.02*r('endless');S.ls+=0.5*r('endless');}if(r('willpower')){S.maxHp=Math.round(S.maxHp*(1+0.03*r('willpower')));S.dr=(S.dr||0)+0.01*r('willpower');}
   S.holyGain=1+(T.holy||0)/100;S.rad=ch.cls==='knight'?1+str*0.012:1;if(r('holyblade')){S.critMul+=0.06*r('holyblade');S.holyGain+=0.05*r('holyblade');}if(r('dawnward')){S.dmgMul*=1+0.03*r('dawnward');S.dr=(S.dr||0)+0.01*r('dawnward');}if(r('dawnoath')){S.bossDmg=(S.bossDmg||0)+0.02*r('dawnoath');S.crit=Math.min(75,S.crit+r('dawnoath'));}
+  S.steamGain=1+(T.steam||0)/100;S.hiP=0.1;if(r('gsmith')){S.critMul+=0.06*r('gsmith');S.steamGain+=0.05*r('gsmith');}if(r('gboiler')){S.dmgMul*=1+0.02*r('gboiler');S.hiP+=0.01*r('gboiler');}if(r('gpride')){S.bossDmg=(S.bossDmg||0)+0.02*r('gpride');S.crit=Math.min(75,S.crit+r('gpride'));}
   if(r('instinct')){S.crit=Math.min(75,S.crit+r('instinct'));S.bossDmg=0.02*r('instinct');}if(r('resonance')){S.spell*=1+0.03*r('resonance');S.cdr=Math.min(0.45,S.cdr+0.01*r('resonance'));}if(r('saint')){S.healPow=Math.round(S.healPow*(1+0.04*r('saint')));S.dr=(S.dr||0)+0.01*r('saint');}
   S.regen=1+(T.regen||0)/100;if(T.mpRegen)S.mpRegen*=1+T.mpRegen/100;
   /* 전직: 갈래 고유 효과 + 전직 패시브 */
@@ -751,7 +795,9 @@ function calcStats(ch){
     if(k==='hierophant'){S.healPow=Math.round(S.healPow*1.2*(1+0.04*r('blessedhands')));S.shieldMul=1.2;}
     if(k==='exorcist'){S.bossDmg=(S.bossDmg||0)+0.15;S.dmgMul*=1+0.03*r('banisher');S.ls+=0.5*r('banisher');S.exoHeal=0.04;}
     if(k==='dawncommander'){S.aura=0.08+0.01*r('command');}
-    if(k==='sunblade'){S.holyGain*=1.3*(1+0.03*r('suncore'));S.critMul+=0.05*r('suncore');}}
+    if(k==='sunblade'){S.holyGain*=1.3*(1+0.03*r('suncore'));S.critMul+=0.05*r('suncore');}
+    if(k==='cannoneer'){S.boomMul=1.2*(1+0.03*r('gordnance'));S.boomR=1+0.02*r('gordnance');S.dr=(S.dr||0)+0.08;S.turrets=2;}
+    if(k==='gunkata'){S.crit=Math.min(75,S.crit+8+r('gkatam'));S.critMul+=0.15;S.atkRate*=1+0.02*r('gkatam');S.kata=1;}}
   if(AD)S.dmgMul*=ADV_DK[ch.adv]||1;
   S.dmgMul*=classDk(ch.cls,ch.lvl);
   S.set3=[];for(const id in SETS){const n=setCount(ch,id);if(n<2)continue;const b=SETS[id].b2;if(b.hpPct)S.maxHp=Math.round(S.maxHp*(1+b.hpPct/100));if(b.armorPct)S.armor=Math.round(S.armor*(1+b.armorPct/100));if(b.crit)S.crit=Math.min(75,S.crit+b.crit);if(b.as)S.atkRate*=1+b.as/100;if(b.bossDmg)S.bossDmg=(S.bossDmg||0)+b.bossDmg/100;if(n>=3)S.set3.push(id);}
@@ -766,7 +812,7 @@ function power(ch,eqOver){const c=eqOver?Object.assign({},ch,{eq:Object.assign({
   const off=S.dmgBase*S.dmgMul*crit*(0.6+0.4*S.atkRate)*main*(S.rad||1)*(1+(S.cdr||0)*0.5)*(1+(S.ls||0)*0.005);
   const lv=Math.max(1,c.lvl|0);const def=S.maxHp/(1-dmgReduce(S,Math.ceil(lv/2)))/(1-Math.min(0.5,S.dr||0));
   const heal=c.cls==='priest'?S.healPow*4:0;return Math.round((Math.pow(off*10,0.6)*Math.pow(def,0.4)*6+heal+S.maxMp)*(CP_NORM[c.cls]||1));}/* 공격 60% · 생존 40% 비중(곱) · 직업 보정으로 직업끼리 비교 가능 */
-const CP_NORM={guardian:0.76,warrior:0.91,archer:1.12,priest:1.12,mage:1.78,knight:0.8};
+const CP_NORM={guardian:0.76,warrior:0.91,archer:1.12,priest:1.12,mage:1.78,knight:0.8,gunner:1.05};
 /* 레이드 권장 전투력 (파티원 1인 기준) */
 const RAID_CP={bell:10000,mirror:18000,clock:27000,moon:41000};/* 보통 전투력의 1.5~2배 */function raidCP(id,hard){return Math.round((RAID_CP[id]||0)*(hard?1.4:1)/100)*100;}
 function potPrice(lvl){return 15+lvl*3;}
