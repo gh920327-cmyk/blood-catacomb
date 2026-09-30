@@ -1994,10 +1994,18 @@ function drawAllyUI(icx,icy){for(const o of G.allies.values()){const px=Math.rou
 /* ---- 전직 선택 창 (용병 대장 한스) ---- */
 function drawStars(x,y,n,c){for(let i=0;i<5;i++)txt(i<n?'★':'☆',x+i*9,y,10,i<n?(c||'#ffd35a'):'#4a4452');}
 function drawBars(x,y,bars){['생존','딜','지원'].forEach((l,i)=>{txt(l,x,y+i*9,9,'#9e937a');for(let k=0;k<5;k++)pr(x+24+k*9,y+i*9-3,8,5,k<bars[i]?['#8fd0ff','#ff8a5a','#7fd05a'][i]:'#2a2330');});}
+// 전직 초상화: 6×2 격자(96×128)에서 잘라 왼쪽·아래를 흐리게 만든 캔버스를 캐시
+const ADV_PORT={};
+function advPortrait(k){if(ADV_PORT[k])return ADV_PORT[k];const im=SPR.advPort;if(!im)return null;const i=Object.keys(SH.ADV).indexOf(k);if(i<0)return null;
+  const [c,x]=mk(96,128);x.drawImage(im,(i%6)*96,Math.floor(i/6)*128,96,128,0,0,96,128);x.globalCompositeOperation='destination-in';
+  let g=x.createLinearGradient(0,0,96,0);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(0.45,'rgba(0,0,0,1)');g.addColorStop(1,'rgba(0,0,0,1)');x.fillStyle=g;x.fillRect(0,0,96,128);
+  g=x.createLinearGradient(0,0,0,128);g.addColorStop(0,'rgba(0,0,0,0.6)');g.addColorStop(0.15,'rgba(0,0,0,1)');g.addColorStop(0.75,'rgba(0,0,0,1)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,96,128);
+  return ADV_PORT[k]=c;}
 function drawAdvPanel(){const ch=G.ch;if(!ch)return;const x=14,y=12,w=452,h=232;panel(x,y,w,h,`전직 · ${CLASSES[ch.cls].n}`);uiRects.push({x,y,w,h,block:true});button(x+w-40,y+3,34,12,'닫기',()=>{G.advOpen=false;},{size:10});
   const brs=SH.ADV_OF[ch.cls]||[];const cur=ch.adv;const lvOk=ch.lvl>=SH.ADV_LVL;
   txt(lvOk?(cur?'다른 갈래로 바꾸려면 골드가 들어요 (배운 전직 스킬 포인트는 돌려받아요)':'두 갈래 중 하나를 고르세요. 30레벨 이후 새 스킬 4개와 전용 궁극기를 얻어요'):`${SH.ADV_LVL}레벨부터 전직할 수 있어요 (지금 ${ch.lvl}레벨)`,x+w/2,y+18,10,lvOk?'#e6dcc3':'#ff8a5a','center');
   brs.forEach((k,ci)=>{const A=SH.ADV[k],I=A.info;const cx=x+8+ci*(w/2-4),cw=w/2-12,cy=y+26;const mine=cur===k;pr(cx,cy,cw,h-34,mine?'rgba(90,64,16,0.45)':'rgba(10,7,14,0.55)');pr(cx,cy,cw,1,A.col);
+    {const pc=advPortrait(k);if(pc){ctx.save();ctx.globalAlpha=mine||G.advPick===k?0.72:0.5;ctx.drawImage(pc,Math.round((cx+cw-100)*SC),Math.round((cy+36)*SC),Math.round(96*SC),Math.round(128*SC));ctx.restore();}}
     bigTxt(A.n,cx+cw/2,cy+12,15,A.col,1.3);txt(I.role,cx+cw/2,cy+27,10,'#e6dcc3','center');
     txt('조작 난이도',cx+8,cy+40,9,'#9e937a');drawStars(cx+60,cy+40,I.diff,A.col);drawBars(cx+112,cy+36,I.bars);
     txt('이런 분께 추천',cx+8,cy+60,9,'#ffd35a');wrapTxt(I.rec,9,cw-16).slice(0,2).forEach((l,i)=>txt(l,cx+8,cy+70+i*10,9,'#e6dcc3'));
@@ -2656,7 +2664,7 @@ function playIntro(){playCine(CINE_INTRO,{key:'bc_intro'});}
   const b=cineEl('introBtn');if(b)b.addEventListener('click',playIntro);
   let seen=false;try{seen=!!localStorage.getItem('bc_intro');}catch(e){}if(!seen)setTimeout(()=>{if(scene==='select')playIntro();},300);})();
 renderSelect();
-loadImg('sprites/heroes_adv.png').then(im=>{if(!im)return;SPR.heroAdv=sliceBare(im,40,24);for(const k in PF_CACHE)delete PF_CACHE[k];});
+loadImg('art/adv_portraits.jpg').then(im=>{if(im)SPR.advPort=im;});loadImg('sprites/heroes_adv.png').then(im=>{if(!im)return;SPR.heroAdv=sliceBare(im,40,24);for(const k in PF_CACHE)delete PF_CACHE[k];});
 Promise.all([loadImg('sprites/heroes_anim.png'),loadImg('sprites/bosses_anim.png'),loadImg('sprites/heroes_bare.png'),loadImg('sprites/weapons.png'),loadImg('sprites/mons_anim.png')]).then(([h,b,hb,wp,ma])=>{if(h)SPR.heroAnim=sliceAnim(h,40,24);if(ma)SPR.monAnim=sliceAnim(ma,36,24);if(hb&&wp){SPR.heroBare=sliceBare(hb,40,24);SPR.weap=wp;ICONS.clear();}if(b)SPR.bossAnim=sliceAnim(b,72,48);for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
 Promise.all([loadImg('sprites/lobby.png'),loadImg('sprites/hubtiles.png'),loadImg('sprites/npcs.png'),loadImg('sprites/pets.png')]).then(([a,b,c,d])=>{LOB.img=a;LOB.tiles=b;LOB.npc=c;LOB.pets=d;LOB.ftex=null;NPC_FR=null;PET_FR=null;});
 loadImg('sprites/tiles.png').then(t=>{if(!t)return;SPR.tiles=t;for(const k in THEME_CACHE)delete THEME_CACHE[k];});
