@@ -249,7 +249,7 @@ const CLASSES={
 // 직업별 피해 보정 (허수아비 기준: 원거리 딜러 100 · 전사 115 · 빛의 기사 125 · 수호자 55 · 사제 45)
 // 레벨 10·20·35·50 기준값 사이를 이어서 쓴다 (허수아비 측정으로 맞춤)
 const DK_LV=[10,20,27,35,42,50];
-const CLASS_DK={warrior:[1.14,1.331,1.519,1.62,1.689,1.565],guardian:[1.37,1.193,1.70,1.947,1.863,1.767],archer:[0.936,1.012,1.029,0.983,1.132,1.036],mage:[1.12,1.037,0.899,0.80,0.589,0.488],priest:[1.135,0.914,1.311,1.078,0.834,0.755],knight:[0.747,0.794,0.768,0.871,0.772,0.672],gunner:[0.98,1.02,1.27,1.26,1.23,1.17]};
+const CLASS_DK={warrior:[1.14,1.331,1.519,1.62,1.689,1.565],guardian:[1.37,1.193,1.70,1.947,1.863,1.767],archer:[0.936,1.012,1.029,0.983,1.132,1.036],mage:[1.12,1.037,0.899,0.80,0.68,0.65],priest:[1.135,0.914,1.311,1.078,0.834,0.755],knight:[0.747,0.794,0.768,0.871,0.772,0.672],gunner:[0.98,1.02,1.27,1.26,1.23,1.17]};
 function classDk(cls,lvl){const d=CLASS_DK[cls];if(!d)return 1;lvl=lvl|0;if(lvl<=DK_LV[0])return d[0];for(let i=1;i<DK_LV.length;i++)if(lvl<=DK_LV[i]){const t=(lvl-DK_LV[i-1])/(DK_LV[i]-DK_LV[i-1]);return d[i-1]+(d[i]-d[i-1])*t;}return d[d.length-1];}
 const CLASS_ORDER=['warrior','guardian','archer','mage','priest','knight','gunner'];
 const UNLOCK=[1,1,3,5,8,11,14,18,22,26,30,35,38,42,46];const ULT_LVL=20;
@@ -514,7 +514,7 @@ const CLASS_INFO={warrior:{diff:2,bars:[4,4,1],rec:'앞에서 시원하게 베�
   gunner:{diff:3,bars:[2,4,2],rec:'탕탕 쏘고 펑펑 터뜨리는 손맛을 원한다면',pros:['총·산탄·유탄을 오가는 화력','포탑과 반동 도약'],cons:['가까이 붙으면 위험','증기압 관리가 필요'],party:'태엽 기사단의 증기총을 물려받은 사수'},
   knight:{diff:4,bars:[3,5,2],rec:'신성력을 모아 한 번에 쏟아내는 기사를 원한다면',pros:['최강의 근접 폭딜','빛의 이동기'],cons:['신성력 관리가 필요'],party:'새벽의 맹세를 받은 숨은 기사'}};
 /* 갈래별 피해 보정 (허수아비 측정: 딜 갈래 둘은 ±5% · 기본 직업보다 약 12% 강하게 / 탱커·힐러 갈래는 역할에 맞게) */
-const ADV_DK={berserker:1.21,blademaster:0.87,bulwark:1.25,judicator:0.67,sniper:[1.05,1.05,1.05,1.05,0.87,0.91],trapper:[1.61,1.61,1.61,1.61,1.34,1.41],elementalist:0.94,astrologer:1.28,hierophant:1.2,exorcist:0.67,dawncommander:1.12,sunblade:0.94,cannoneer:1.05,gunkata:1.0};
+const ADV_DK={berserker:1.21,blademaster:0.87,bulwark:1.25,judicator:0.67,sniper:[1.05,1.05,1.05,1.05,0.87,0.91],trapper:[1.61,1.61,1.61,1.61,1.34,1.41],elementalist:0.94,astrologer:1.28,hierophant:1.2,exorcist:[0.67,0.67,0.67,0.79,0.87,0.97],dawncommander:1.12,sunblade:0.94,cannoneer:1.05,gunkata:1.0};
 /* 갈래별 기본 스킬 변형: mul=피해·효과 배율, cd=재사용 배율, post=시전 후 추가 효과 */
 const ADV_VAR={
   berserker:{whirl:{n:'피의 회전베기',d:'피해 +25% · 사용하면 최대 체력 3% 회복',mul:1.25,post:{selfHeal:0.03}},warcry:{n:'광기의 함성',d:'재사용 -30% · 6초간 공격 속도 +20%',cd:0.7,post:{buff:['as',0.2,6]}}},
