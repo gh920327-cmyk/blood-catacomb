@@ -529,9 +529,12 @@ function rh(inst,k,arr){if(!inst.raid)return arr[2];const lv=hintLv(inst,k);hint
 function hintLv(inst,k){const h=inst.raid&&inst.raid.hl;return Math.min(2,h?h[k]|0:0);}
 function hintUp(inst,k){const r=inst.raid;if(!r)return;const h=r.hl||(r.hl={});if((h[k]|0)>=2)return;h[k]=(h[k]|0)+1;raidState(inst);}
 // open: 아직 못 풀었는지 확인 → wait초 뒤 한 단계 또렷하게 다시 알려 줌 / occ: 나올 때마다 조금씩 또렷하게
-function hint(inst,k,c,v,o){o=o||{};v=v||{};const lv=hintLv(inst,k);fx(inst,{k:'msg',m:HINTS[k][lv](v),c});
+function hint(inst,k,c,v,o){o=o||{};v=v||{};const lv=hintLv(inst,k);
+  // 기믹 컷인: 레이드 한 판에서 그 기믹이 처음 나올 때 한 번만 (다시 알려 주는 힌트에는 없음)
+  if(!o._re&&inst.raid){const cu=inst.raid.cut||(inst.raid.cut={});if(!cu[k]){cu[k]=1;fx(inst,{k:'gcut',g:k});}}
+  fx(inst,{k:'msg',m:HINTS[k][lv](v),c});
   if(o.occ)hintUp(inst,k);
-  if(o.open&&lv<2){const tok=((inst.raid.hTok=inst.raid.hTok||{})[k]=(inst.raid.hTok[k]|0)+1);later(inst,o.wait||20,()=>{if(!inst.raid||inst.raid.hTok[k]!==tok||!o.open())return;hintUp(inst,k);hint(inst,k,c,typeof o.vars==='function'?o.vars():v,o);});}}
+  if(o.open&&lv<2){const tok=((inst.raid.hTok=inst.raid.hTok||{})[k]=(inst.raid.hTok[k]|0)+1);later(inst,o.wait||20,()=>{if(!inst.raid||inst.raid.hTok[k]!==tok||!o.open())return;hintUp(inst,k);hint(inst,k,c,typeof o.vars==='function'?o.vars():v,Object.assign({},o,{_re:1}));});}}
 // 보스 등장·페이즈 카드: 약 3초 동안 보스를 멈추고 무적
 function bossCard(inst,ph){const r=inst.raid;if(!r)return;fx(inst,{k:'bintro',r:r.id,p:ph||null});r.cardT=inst.time+3;const bs=inst.monsters.filter(b=>b.boss&&!b.dead&&!b.introFz);for(const b of bs){b.frozen=true;b.invul=99;b.introFz=1;}later(inst,3,()=>{for(const b of bs){if(!b.introFz)continue;b.introFz=0;b.frozen=false;if(b.invul===99)b.invul=0;}});}
 /* 전투력 분석기: 스킬별 누적 피해 */
