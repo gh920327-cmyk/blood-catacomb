@@ -734,7 +734,7 @@ function onSnap(d){
   if(inDungeon()){G.paused=d.pause||null;G.trans=d.trans||0;G.dark=!!d.dark;}
   for(const o of d.fx||[])onFx(o);
 }
-function playerPos(id){if(id===myId)return me;return G.players.get(id);}
+function playerPos(id){if(id===myId)return me;return G.players.get(id)||G.monsters.get(id);}
 function onFx(o){const k=o.k;if(onGunFx(o))return;if(onUltFx(o))return;if(onGMFx(o))return;if(onKnightFx(o))return;
   if(k==='dmg'){if(o.c===2){ftext(o.x+rf(-4,4),o.y+4,String(o.v),'#c9a0e8',12,'px');return;}onHitJuice(o);}
   else if(k==='pdmg'){const p=playerPos(o.id);if(p&&!(o.q&&o.id!==myId)){ftext(p.x,p.y-18,String(o.v),'#ff5a4a',16,'px');}if(o.id===myId){me.flash=0.1;shake=Math.max(shake,2);sfx('hurt');G.hurtT=time;G.hurtK=Math.min(0.55,0.2+(G.mev&&G.mev[1]?o.v/G.mev[1]*2:0));}else{const q=G.players.get(o.id);if(q)q.flash=0.1;}}
@@ -2563,7 +2563,7 @@ function onKnightFx(o){const k=o.k;
   return false;}
 const MARKS=new Map(),STARM=new Map(),CURSEM=new Map();
 function arcPts(sx,sy,r,a0,a1,n,c,sq){for(let i=0;i<=n;i++){const t=a0+(a1-a0)*i/n;wpx(Math.round(sx+Math.cos(t)*r),Math.round(sy+Math.sin(t)*r*(sq||0.6)),c);}}
-function kPos(id){if(id===myId)return{x:me.x,y:me.y};const p=G.players.get(id);return p?{x:p.dx,y:p.dy}:null;}
+function kPos(id){if(id===myId)return{x:me.x,y:me.y};const p=G.players.get(id)||G.monsters.get(id);return p?{x:p.dx,y:p.dy}:null;}
 function drawKnightFx(icx,icy){for(let i=KFX.length-1;i>=0;i--){const e=KFX[i];const t=time-e.t0;if(t>e.max){KFX.splice(i,1);continue;}const k=t/e.max;const sx=Math.round(e.x||0)-icx,sy=Math.round(e.y||0)-icy-6;
   if(e.type==='cut'){const sw=1.9,a0=e.a-sw/2,a1=e.a+sw/2,prog=Math.min(1,k*2.2),aa=a0+(a1-a0)*prog;wx.globalAlpha=1-k*0.8;for(let w2=0;w2<(e.big?6:4);w2++){const r=e.r-w2*2;arcPts(sx,sy+e.tilt*w2,r,Math.max(a0,aa-1.2),aa,Math.round(r*1.5),w2===0?'w':w2<2?'y':'g',0.6+e.tilt*0.15);}wglow(sx+Math.cos(e.a)*e.r*0.6,sy+Math.sin(e.a)*e.r*0.36,e.r*0.7,'#fff6d0',0.3*(1-k));wx.globalAlpha=1;}
   else if(e.type==='wave'){const x1=e.x1-icx,y1=e.y1-icy,x2=e.x2-icx,y2=e.y2-icy;wx.globalAlpha=1-k;for(const [o2,c] of[[0,'w'],[1,'y'],[-1,'y'],[2,'g'],[-2,'g']])lineP(wpx,x1,y1+o2,x2,y2+o2,c);wx.save();wx.globalCompositeOperation='lighter';wx.strokeStyle='rgba(255,246,208,0.35)';wx.lineWidth=7;wx.beginPath();wx.moveTo(x1,y1);wx.lineTo(x2,y2);wx.stroke();wx.restore();wx.globalAlpha=1;}
