@@ -501,8 +501,8 @@ const ADV={
     info:{role:'폭발형 근접 딜러',diff:5,bars:[3,5,1],rec:'신성력을 모았다가 한 번에 쏟아내는 폭발을 원한다면',pros:['게임 최고 수준의 순간 폭딜','코로나로 지속 광역'],cons:['신성력 관리가 까다로움','모으는 동안 약함'],party:'신성력을 모았다가 보스 약점 타이밍에 모두 쏟아내는 태양'}},
   cannoneer:{cls:'gunner',n:'중포병',sk:['gmortar','gscald','gshell','gordnance'],ult:'siegecannon',col:'#ff9a4a',
     idn:'대구경 전문가',idd:'폭발 피해 +20% · 포탑을 하나 더 설치 · 받는 피해 -8%',
-    info:{role:'원거리 광역 포격',diff:3,bars:[3,4,2],rec:'펑펑 터지는 대포로 화면을 뒤덮고 싶다면',pros:['넓은 폭발로 광역 최강급','포탑 두 대로 꾸준한 화력'],cons:['느린 포탄은 조준이 필요','탄무사보다 단일 대상에 약함'],party:'포탑을 깔고 몰려오는 적을 포격으로 날려 버리는 포대'}},
-  gunkata:{cls:'gunner',n:'탄무사',sk:['gspin','gslide','gfan','gkatam'],ult:'bulletballet',col:'#8fd0ff',
+    info:{role:'원거리 광역 포격',diff:3,bars:[3,4,2],rec:'펑펑 터지는 대포로 화면을 뒤덮고 싶다면',pros:['넓은 폭발로 광역 최강급','포탑 두 대로 꾸준한 화력'],cons:['느린 포탄은 조준이 필요','연발귀보다 단일 대상에 약함'],party:'포탑을 깔고 몰려오는 적을 포격으로 날려 버리는 포대'}},
+  gunkata:{cls:'gunner',n:'연발귀',sk:['gspin','gslide','gfan','gkatam'],ult:'bulletballet',col:'#8fd0ff',
     idn:'탄막의 춤',idd:'치명타 +8% · 치명타 피해 +15% · 스킬을 쓰면 2초간 이동 속도 +15%',
     info:{role:'원거리 기동 딜러',diff:4,bars:[2,5,1],rec:'쌍권총을 들고 춤추듯 누비며 쏘는 손맛을 원한다면',pros:['높은 치명타와 순간 딜','슬라이드로 누비며 공격'],cons:['체력이 낮아 움직임이 중요','광역은 중포병보다 약함'],party:'보스 곁을 누비며 치명타를 꽂는 총잡이'}}};
 const ADV_OF={};for(const k in ADV){const c=ADV[k].cls;(ADV_OF[c]=ADV_OF[c]||[]).push(k);}
