@@ -255,7 +255,7 @@ const CLASS_ORDER=['warrior','guardian','archer','mage','priest','knight','gunne
 const UNLOCK=[1,1,3,5,8,11,14,18,22,26,30,35,38,42,46];const ULT_LVL=20;
 // 궁극기 위력: 20레벨 55% → 50레벨 100%
 function ultPow(lvl){return Math.min(1,0.55+0.45*Math.max(0,(lvl|0)-20)/30);}
-const MAX_RANK=10,BAR_SIZE=6,BAG_N=40;/* 인벤토리 40칸(20칸 × 2쪽) */
+const MAX_RANK=10,BAR_SIZE=8,BAG_N=40;/* 인벤토리 40칸(20칸 × 2쪽) */
 // lvl: 해금 레벨, pas: 패시브, per: 등급당 효과 설명
 const SKILLS={
   // 전사
@@ -611,7 +611,7 @@ function spTotal(ch){return skillPointsTotal(ch.lvl)+(awkOf(ch)?3+Math.min(AWL_M
 function awnSpent(ch){const n=ch.awn||{};let s=0;for(const k in AWN)s+=Math.max(0,n[k]|0);return s;}
 function awkStat(S,o,m){if(!o)return;m=m==null?1:m;if(o.dmg)S.dmgMul*=1+o.dmg*m;if(o.ls)S.ls+=o.ls*m;if(o.crit)S.crit=Math.min(75,S.crit+o.crit*m);if(o.critMul)S.critMul+=o.critMul*m;if(o.dr)S.dr=(S.dr||0)+o.dr*m;if(o.hp)S.maxHp=Math.round(S.maxHp*(1+o.hp*m));if(o.spell)S.spell*=1+o.spell*m;if(o.cdr)S.cdr=Math.min(0.45,(S.cdr||0)+o.cdr*m);if(o.heal)S.healPow=Math.round(S.healPow*(1+o.heal*m));if(o.boss)S.bossDmg=(S.bossDmg||0)+o.boss*m;if(o.as)S.atkRate*=1+o.as*m;}
 function skillMul(rank){return 1+0.12*Math.max(0,rank-1);}
-function defaultSkills(cls){const s=CLASSES[cls].skills;return{sk:{[s[0]]:1,[s[1]]:1},bar:[s[0],s[1],null,null,null,null]};}
+function defaultSkills(cls){const s=CLASSES[cls].skills;const bar=new Array(BAR_SIZE).fill(null);bar[0]=s[0];bar[1]=s[1];return{sk:{[s[0]]:1,[s[1]]:1},bar};}
 function skillPointsTotal(lvl){return Math.max(0,lvl-1);}
 
 // ---------- 시너지 ----------
