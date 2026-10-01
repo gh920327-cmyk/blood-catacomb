@@ -87,7 +87,7 @@ function visibleDrops(inst,P){return inst.drops.filter(d=>d.owner==null||d.owner
 function sendMap(P){const inst=P.inst;
   if(inst.type==='hub')send(P,{t:'map',kind:'hub',x:P.x,y:P.y,drops:visibleDrops(inst,P)});
   else send(P,{t:'map',kind:'dungeon',seed:inst.seed,floor:inst.floor,stairs:inst.stairsOpen,x:P.x,y:P.y,drops:visibleDrops(inst,P),paused:inst.paused,ev:evPub(inst),arena:inst.arena?1:0,trial:inst.trial?{adv:inst.trial.adv,cls:inst.trial.cls,look:inst.trial.look,re:inst.trial.re?1:0,aw:inst.trial.awk?1:0}:0,raid:inst.raid?{id:inst.raid.id,mode:inst.raid.mode,tf:RAID_TF[inst.raid.id]||1,door:!!inst.raid.doorOpen,st:raidPub(inst)}:0});}
-function resetCombat(P){P.burn=0;P.rootT=0;P.slowT=0;P.slowV=0;P.downed=false;P.rev=0;P.shield=0;P.shieldT=0;P.dodgeT=0;P.buffs={};P.scd={};P.atkCd=0;}
+function resetCombat(P){P.awkInv=0;P.burn=0;P.rootT=0;P.slowT=0;P.slowV=0;P.downed=false;P.rev=0;P.shield=0;P.shieldT=0;P.dodgeT=0;P.buffs={};P.scd={};P.atkCd=0;}
 function leaveInst(P){if(P.trade)cancelTrade(P,'상대가 마을을 떠나 거래가 취소되었습니다');const inst=P.inst;if(!inst)return;inst.players.delete(P.id);P.inst=null;
   if(inst.type==='dungeon'){inst.flows.delete(P.id);
     if(inst.players.size===0){dungeons.delete(inst.id);if(inst.party&&inst.party.inst===inst){inst.party.inst=null;sendParty(inst.party);}}
@@ -438,7 +438,7 @@ function hitMonster(inst,m,P,mult,o){if(m.dead)return;o=o||{};if(m.mirrorOf){mir
   if(r.crit&&!o.myth&&!o.dotHit&&m.hp>0)mythCrit(inst,m,P,v);
   if(inst._sk&&!o.dotHit&&P.S.set3&&P.S.set3.includes('bell')&&!(P.bellT>inst.time)&&!m.dummy){P.bellT=inst.time+5;const x=P.x,y=P.y;fx(inst,{k:'bell',c:4,x:r1(x),y:r1(y)});fx(inst,{k:'ring',x:r1(x),y:r1(y),r:60,c:'y',c2:'g'});later(inst,0.05,()=>{if(P.inst===inst)aoe(inst,P,x,y,60,1.5,{kb:4,myth:1});});}
   if(m.hp<=0)killMonster(inst,m,P);}
-function hurtPlayer(inst,P,d,src,o){o=o||{};if(P.downed||P.inst!==inst)return;if(bOn(P,'hdance'))return;
+function hurtPlayer(inst,P,d,src,o){o=o||{};if(P.downed||P.inst!==inst)return;if(bOn(P,'hdance'))return;if(P.awkInv>inst.time){if(inst.time-(P.awkInvTx||0)>0.4){P.awkInvTx=inst.time;fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-18),s:'무적',c:'#ffd35a'});}return;}
   if(P.dodgeT>0&&!o.nododge){fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-18),s:'회피',c:'#8fd0ff'});return;}
   let keep=1-SH.dmgReduce(P.S,inst.floor);if(inst.raid){const bs=['red','wred','tred'].filter(k=>bOn(P,k)>0&&P.buffs[k+'S']&&P.buffs[k+'S']!==P.id);if(bs.length){const f=bs.reduce((a,k)=>a*(1-bOn(P,k)),1);const src=players.get(P.buffs[bs[0]+'S']);if(src&&src.inst===inst){const s=rst(inst,src);if(s)s.mit+=d*keep*(1-f);}}}keep*=1-bOn(P,'red');keep*=1-bOn(P,'wred');keep*=1-bOn(P,'tred');keep*=1-(P.S.dr||0);keep*=1-synMods(inst,P).dr;
   let v=Math.max(1,Math.round(d*keep*rf(0.9,1.1)));
@@ -883,12 +883,15 @@ function awkOp(inst,P,a,tx,ty,K,op,col){
     case 'fx':if(op.k==='whirl')fx(inst,{k:'whirl',id:P.id});break;}}
 function awkCast(inst,P,a,tx,ty,k,sid){const sk=SKILLS[sid],W=SH.AWK[sk.adv];[tx,ty]=clampTarget(P,tx,ty,150);const K=awkK(P,k);
   fx(inst,{k:'awkcast',id:P.id,c:W.col});for(const op of sk.ops)awkOp(inst,P,a,tx,ty,K,op,W.col);}
+const AWK_CUT=0.85;
 for(const a in SH.AWK){const W=SH.AWK[a];
   for(const s of W.sk)if(!s.pas)SK[s.id]=function(inst,P,a2,tx,ty,k){awkCast(inst,P,a2,tx,ty,k,s.id);};
   SK[W.ult]=function(inst,P,a2,tx,ty,k,r){const base=SK[W.base];if(!base)return;const um=1.25*(1+(P.S.awkArt||0));const pu=inst._um;inst._um=(pu||1)*um;
-    fx(inst,{k:'awkult',id:P.id,c:W.col,n:SKILLS[W.ult].n});try{base(inst,P,a2,tx,ty,k,r);}finally{inst._um=pu;}
+    /* 초각성기 컷씬: 0.85초 연출 동안 제자리 고정 · 시전자 무적(약 1.9초) → 본 궁극기 → 1.4초 뒤 마무리 일격 */
+    const D=AWK_CUT;P.gmLock=Math.max(P.gmLock||0,inst.time+D);P.awkInv=inst.time+D+1.05;P.moving=false;
+    fx(inst,{k:'awkult',id:P.id,c:W.col,n:SKILLS[W.ult].n,b:P.ch.adv,an:W.n,d:D});try{later(inst,D,()=>{if(!alive(inst,P))return;withFoes(inst,P,()=>base(inst,P,a2,tx,ty,k,r));});}finally{inst._um=pu;}
     const sp=CLASSES[P.ch.cls].prim==='ene'?(P.S.spell||1):1;
-    later(inst,1.4,()=>{if(!alive(inst,P))return;const x=P.x,y=P.y;fx(inst,{k:'burst',x:r1(x),y:r1(y),r:110,cs:awkHpCol(W.col)});fx(inst,{k:'ring',x:r1(x),y:r1(y),r:100,c:'w',c2:'y'});fx(inst,{k:'shake',v:9});
+    later(inst,D+1.4,()=>{if(!alive(inst,P))return;const x=P.x,y=P.y;fx(inst,{k:'burst',x:r1(x),y:r1(y),r:110,cs:awkHpCol(W.col)});fx(inst,{k:'ring',x:r1(x),y:r1(y),r:100,c:'w',c2:'y'});fx(inst,{k:'shake',v:9});
       aoe(inst,P,x,y,96,4.0*sp*um,{kb:6});if(W.sup)for(const q of partyNear(inst,P,140)){q.shield=Math.max(q.shield||0,Math.round(q.S.maxHp*0.25));q.shieldT=8;q.shieldBy=P.id;fx(inst,{k:'shieldfx',x:r1(q.x),y:r1(q.y)});}});};}
 const ULT_OK=new Set(['ragnarok','wargod','aegisdome','judgehammer','skyrain','dragonarrow','apocalypse','absolutezero','angel','divinejudge','dawnblade','heavendance','redmoon','thousandcuts','fortress','finaljudge','deadeye','killzone','cataclysm','supernova','sanctum','purgatory','dawnlegion','eclipsebreak','steamarmor','bigbarrage','siegecannon','bulletballet'].concat((process.env.ULT_OK||'').split(',').filter(Boolean)));;/* 사용자 승인된 궁극기 */function ultOk(id){return ULT_OK.has(id)||!!process.env.BC_DEBUG;}
 for(const a in SH.AWK)ULT_OK.add(SH.AWK[a].ult);
@@ -1706,7 +1709,7 @@ const H={
     const members=partyList(pt).filter(q=>q.inst===hub);const inst=createDungeon(pt);
     for(const q of members){leaveInst(q);q.inst=inst;inst.players.add(q.id);resetCombat(q);q.hp=q.S.maxHp;q.mp=q.S.maxMp;}
     loadFloor(inst,floor);bcastRoster(hub);sendParty(pt);},
-  pause(P){const inst=P.inst;if(!inst||inst.type!=='dungeon'||inst.arena||inst.raid){if(inst&&inst.raid)msg(P,'레이드에서는 일시정지할 수 없어요','#9e937a');return;}inst.paused=inst.paused?null:P.ch.name;bcast(inst,{t:'paused',by:inst.paused});},
+  pause(P){const inst=P.inst;if(!inst||inst.type!=='dungeon')return;if(inst.paused){inst.paused=null;bcast(inst,{t:'paused',by:null});return;}if(inst.arena||inst.raid||inst.players.size>1){send(P,{t:'paused',self:1});return;}inst.paused=P.ch.name;bcast(inst,{t:'paused',by:inst.paused});},
   unlearn(P,d){const sid=d.sid;const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.ult)return;if(P.inst!==hub){msg(P,'스킬 포인트 빼기는 마을에서만 할 수 있어요','#9e937a');return;}
     const r=P.ch.sk[sid]|0;const min=(SH.defaultSkills(P.ch.cls).sk[sid])|0;if(r<=min){msg(P,min?'기본 스킬은 1 아래로 뺄 수 없어요':'뺄 포인트가 없어요','#9e937a');return;}
     const cost=3*P.ch.lvl;if(P.ch.gold<cost){msg(P,`골드가 부족합니다 (${cost}골드)`,'#ff6a5a');return;}P.ch.gold-=cost;
