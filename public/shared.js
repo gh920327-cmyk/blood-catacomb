@@ -535,9 +535,81 @@ const ADV_VAR={
 function advDk(k,lvl){const d=ADV_DK[k];if(d==null)return 1;if(!Array.isArray(d))return d;lvl=lvl|0;if(lvl<=DK_LV[0])return d[0];for(let i=1;i<DK_LV.length;i++)if(lvl<=DK_LV[i]){const t=(lvl-DK_LV[i-1])/(DK_LV[i]-DK_LV[i-1]);return d[i-1]+(d[i]-d[i-1])*t;}return d[d.length-1];}
 function advVar(ch,sid){const a=advOf(ch);return a&&ADV_VAR[ch.adv]&&ADV_VAR[ch.adv][sid]||null;}
 function advOf(ch){return ch&&ch.adv&&ADV[ch.adv]&&ADV[ch.adv].cls===ch.cls?ADV[ch.adv]:null;}
-function ultsOf(ch){const C=CLASSES[ch.cls];const a=advOf(ch);return (C.ults||[]).concat(a?[a.ult]:[]);}
+function ultsOf(ch){const C=CLASSES[ch.cls];const a=advOf(ch);const w=awkOf(ch);return (C.ults||[]).concat(w?[w.ult]:a?[a.ult]:[]);}
 function advChangeCost(lvl){return 3000;}
 for(const a in ADV){const A=ADV[a];A.sk.forEach((s,i)=>{SKILLS[s].lvl=[30,30,34,38][i]||30;SKILLS[s].cls=A.cls;SKILLS[s].adv=a;});SKILLS[A.ult].lvl=ADV_LVL;SKILLS[A.ult].cls=A.cls;SKILLS[A.ult].adv=a;}
+/* ===== 3차 전직 「각성」: 50레벨 · 2차 갈래마다 1:1 진화 · 각성의 시련 통과 =====
+   sk: [스킬1, 스킬2, 패시브] · ult: 각성 궁극기(2차 궁극기의 진화) · st: 각성 고유 효과 · pp: 패시브 등급당
+   ops: 서버에서 실행하는 동작 목록 (m=피해 배율, 지팡이 계열은 주문력 적용) */
+const AWK_LVL=50,AWL_MAX=20,AWN_MAX=10;
+const AWK={
+  berserker:{n:'혈월 군주',col:'#ff3a4a',ult:'awRedmoon',base:'redmoon',idn:'혈월의 갈증',idd:'피해 +6% · 생명력 흡수 +3%',st:{dmg:0.06,ls:3},pp:{dmg:0.012,ls:0.3},ppd:'등급당 피해 +1.2%, 생명력 흡수 +0.3%',
+    sk:[{id:'awBloodmoon',n:'혈월참',mp:20,cd:7,desc:'체력 5%를 바쳐 전방을 크게 벤다(300%)·주변 폭발(100%). 잃은 체력 비례 최대 +40%',ops:[{o:'hpcost',p:0.05},{o:'cone',r:64,arc:1.2,m:3.0,low:0.4,fx:'cleave'},{o:'nova',at:'self',r:42,m:1.0,cs:['#ff3a4a','#7a0a14','#ffd35a']}]},
+        {id:'awCrimson',n:'선혈 폭풍',mp:24,cd:12,desc:'3초간 몸 주위에 피의 칼바람(0.25초마다 75%) · 생명력 흡수 +8%',ops:[{o:'zone',at:'self',r:46,t:3,iv:0.25,m:0.75,follow:1,vis:7},{o:'buff',k:'lsb',v:0.08,t:3},{o:'fx',k:'whirl'}]},
+        {id:'awBerP',n:'군주의 피',pas:1,desc:'붉은 달의 힘이 피에 스민다'}]},
+  blademaster:{n:'검신',col:'#bfe3ff',ult:'awThousand',base:'thousandcuts',idn:'검의 극의',idd:'치명타 +6% · 치명타 피해 +15%',st:{crit:6,critMul:0.15},pp:{crit:0.6,critMul:0.02},ppd:'등급당 치명타 +0.6%, 치명타 피해 +2%',
+    sk:[{id:'awSkysplit',n:'천공 일섬',mp:18,cd:6,desc:'커서 방향으로 화면을 가로지르는 일섬(340%)',ops:[{o:'beam',len:160,w:14,m:3.4,fx:'lwave'}]},
+        {id:'awBladeDance',n:'만검 난무',mp:24,cd:11,desc:'지정한 곳에 칼날 10개가 연달아 쏟아진다(각 90%)',ops:[{o:'rain',at:'tgt',r:50,rr:20,n:10,gap:0.08,m:0.9,fx:'kslash'}]},
+        {id:'awBladeP',n:'검신의 경지',pas:1,desc:'칼끝이 신의 영역에 닿는다'}]},
+  bulwark:{n:'불괴의 성채',col:'#8fd0ff',ult:'awFortress',base:'fortress',idn:'무너지지 않는 벽',idd:'받는 피해 -8% · 최대 체력 +10%',st:{dr:0.08,hp:0.10},pp:{hp:0.012,dr:0.006},ppd:'등급당 최대 체력 +1.2%, 받는 피해 -0.6%',sup:1,
+    sk:[{id:'awBastion',n:'불괴의 진',mp:20,cd:14,desc:'주변 파티원 받는 피해 -15%(6초) · 자신에게 최대 체력 20% 보호막 · 주변 적 밀쳐냄(120%)',ops:[{o:'pbuff',k:'red',v:0.15,t:6,r:90},{o:'shield',p:0.2,self:1},{o:'nova',at:'self',r:50,m:1.2,kb:10,cs:['#bfe3ff','#8fd0ff','#ffffff']}]},
+        {id:'awShieldQuake',n:'방패 지진',mp:18,cd:8,desc:'방패로 땅을 내리쳐 넓게 피해(220%)와 기절',ops:[{o:'nova',at:'self',r:72,m:2.2,stun:1.2,fx:'quake'}]},
+        {id:'awBulwarkP',n:'성채의 심장',pas:1,desc:'어떤 공격에도 무너지지 않는다'}]},
+  judicator:{n:'대심판관',col:'#ffd35a',ult:'awFinaljudge',base:'finaljudge',idn:'신의 저울',idd:'피해 +4% · 받는 피해 -4%',st:{dmg:0.04,dr:0.04},pp:{dmg:0.012,dr:0.003},ppd:'등급당 피해 +1.2%, 받는 피해 -0.3%',
+    sk:[{id:'awHolyVerdict',n:'천벌의 낙인',mp:20,cd:8,desc:'지정한 곳에 심판의 빛기둥이 세 번 내리꽂힌다(각 140%)',ops:[{o:'rain',at:'tgt',r:20,rr:32,n:3,gap:0.25,m:1.4,fx:'smite'}]},
+        {id:'awJudgeChain',n:'심판 사슬',mp:16,cd:6,desc:'빛의 사슬이 적 5명 사이를 튕기며 묶는다(각 120%, 둔화)',ops:[{o:'chain',n:5,r:100,m:1.2,slow:1.5}]},
+        {id:'awJudgeP',n:'대심판의 권위',pas:1,desc:'판결은 번복되지 않는다'}]},
+  sniper:{n:'천리안',col:'#ffe9a8',ult:'awDeadeye',base:'deadeye',idn:'천 리를 보는 눈',idd:'치명타 피해 +25% · 보스 피해 +6%',st:{critMul:0.25,boss:0.06},pp:{critMul:0.025,boss:0.005},ppd:'등급당 치명타 피해 +2.5%, 보스 피해 +0.5%',
+    sk:[{id:'awPierceShot',n:'관통 섬광탄',mp:18,cd:6,desc:'일직선의 모든 적을 꿰뚫는 한 발(420%)',ops:[{o:'proj',p:'pierce',sp:560,m:4.2,pierce:1,r:4,life:1.2}]},
+        {id:'awEagleRain',n:'매의 낙하',mp:22,cd:10,desc:'지정한 곳에 화살 6발이 번개처럼 꽂힌다(각 120%)',ops:[{o:'rain',at:'tgt',r:40,rr:16,n:6,gap:0.1,m:1.2,fx:'strike'}]},
+        {id:'awSniperP',n:'매의 시야',pas:1,desc:'어떤 약점도 놓치지 않는다'}]},
+  trapper:{n:'사냥의 왕',col:'#7fd05a',ult:'awKillzone',base:'killzone',idn:'왕의 사냥',idd:'피해 +10% · 공격 속도 +5%',st:{dmg:0.10,as:0.05},pp:{dmg:0.012,as:0.006},ppd:'등급당 피해 +1.2%, 공격 속도 +0.6%',
+    sk:[{id:'awHuntField',n:'사냥의 영역',mp:22,cd:12,desc:'지정한 곳에 5초간 사냥터(0.5초마다 60%, 둔화 40%)',ops:[{o:'zone',at:'tgt',r:56,t:5,iv:0.5,m:0.6,slow:0.4,vis:21}]},
+        {id:'awBeastFang',n:'맹수의 송곳니',mp:16,cd:6,desc:'맹수처럼 돌진해 물어뜯고(240%) 앞쪽을 할퀸다(120%)',ops:[{o:'dash',d:64,m:2.4},{o:'cone',r:42,arc:0.9,m:1.2,fx:'cleave'}]},
+        {id:'awTrapperP',n:'사냥꾼의 본능',pas:1,desc:'사냥감의 숨소리까지 들린다'}]},
+  elementalist:{n:'원소의 군주',col:'#ff8a3a',ult:'awCataclysm',base:'cataclysm',idn:'원소 지배',idd:'주문력 +15% · 재사용 대기시간 -5%',st:{spell:0.15,cdr:0.05},pp:{spell:0.012,cdr:0.003},ppd:'등급당 주문력 +1.2%, 재사용 대기시간 -0.3%',
+    sk:[{id:'awTriElement',n:'삼원소 폭발',mp:24,cd:8,desc:'불·얼음·번개 구체 3개를 동시에 발사(각 160%, 폭발)',ops:[{o:'proj',ps:['fire','frostorb','orb'],sp:240,m:1.6,spread:0.22,boom:26,life:1.3}]},
+        {id:'awMeteorFall',n:'유성 낙하',mp:30,cd:14,desc:'지정한 곳에 유성 4개가 차례로 떨어진다(각 200%)',ops:[{o:'rain',at:'tgt',r:60,rr:28,n:4,gap:0.3,m:2.0,fx:'boomfire'}]},
+        {id:'awElemP',n:'원소의 왕관',pas:1,desc:'네 원소가 한 손에 모인다'}]},
+  astrologer:{n:'성좌의 예언자',col:'#c9a0e8',ult:'awSupernova',base:'supernova',idn:'성좌의 계시',idd:'주문력 +16% · 치명타 +4%',st:{spell:0.16,crit:4},pp:{spell:0.012,crit:0.4},ppd:'등급당 주문력 +1.2%, 치명타 +0.4%',
+    sk:[{id:'awConstellation',n:'성좌 강림',mp:26,cd:12,desc:'지정한 곳에 별 7개가 떨어지며(각 100%) 별 표식을 새긴다',ops:[{o:'rain',at:'tgt',r:60,rr:16,n:7,gap:0.12,m:1.0,fx:'strike',star:1}]},
+        {id:'awStarBeam',n:'별빛 광선',mp:18,cd:6,desc:'커서 방향으로 별빛 광선(300%)',ops:[{o:'beam',len:150,w:12,m:3.0,fx:'laser'}]},
+        {id:'awAstroP',n:'운명의 별',pas:1,desc:'별이 길을 비춘다'}]},
+  hierophant:{n:'성자',col:'#fff2b0',ult:'awSanctum',base:'sanctum',idn:'성자의 손',idd:'치유량 +15% · 최대 체력 +5%',st:{heal:0.15,hp:0.05},pp:{heal:0.015,hp:0.008},ppd:'등급당 치유량 +1.5%, 최대 체력 +0.8%',sup:1,
+    sk:[{id:'awHolyRain',n:'성광의 비',mp:26,cd:12,desc:'주변 파티를 크게 치유(치유력 260%)하고 4초간 계속 치유(1초마다 50%)',ops:[{o:'heal',hp:2.6,r:120},{o:'hot',hp:0.5,n:4,iv:1,r:120}]},
+        {id:'awSaintShield',n:'성자의 가호',mp:22,cd:14,desc:'주변 파티 전원에게 보호막(치유력 180%) · 받는 피해 -10%(5초)',ops:[{o:'shield',hp:1.8,r:120},{o:'pbuff',k:'red',v:0.1,t:5,r:110}]},
+        {id:'awSaintP',n:'성자의 은총',pas:1,desc:'빛이 끊이지 않는다'}]},
+  exorcist:{n:'심연 퇴마사',col:'#9a7ad8',ult:'awPurgatory',base:'purgatory',idn:'심연의 눈',idd:'피해 +13% · 보스 피해 +6%',st:{dmg:0.13,boss:0.06},pp:{dmg:0.012,boss:0.004},ppd:'등급당 피해 +1.2%, 보스 피해 +0.4%',
+    sk:[{id:'awAbyssBind',n:'심연 결박',mp:20,cd:9,desc:'지정한 곳의 적을 묶는다(180%, 크게 둔화) · 저주 표식',ops:[{o:'nova',at:'tgt',r:52,m:1.8,slow:2.5,curse:1,cs:['#9a7ad8','#3a1a5a','#c9a0e8']}]},
+        {id:'awSoulBurst',n:'혼백 파쇄',mp:18,cd:6,desc:'터지는 심연 구체를 발사한다(260%, 폭발)',ops:[{o:'proj',p:'void',sp:280,m:2.6,boom:32,life:1.3,r:5}]},
+        {id:'awExoP',n:'심연의 계약',pas:1,desc:'어둠으로 어둠을 벤다'}]},
+  dawncommander:{n:'여명의 대원수',col:'#ffe9a8',ult:'awDawnlegion',base:'dawnlegion',idn:'대원수의 깃발',idd:'피해 +6% · 받는 피해 -5%',st:{dmg:0.06,dr:0.05},pp:{dmg:0.01,dr:0.004},ppd:'등급당 피해 +1%, 받는 피해 -0.4%',sup:1,
+    sk:[{id:'awDawnCharge',n:'여명 돌격',mp:20,cd:9,desc:'돌진하며 벤다(240%) · 주변 파티원 피해 +10%(6초)',ops:[{o:'dash',d:80,m:2.4},{o:'pbuff',k:'bdmg',v:0.1,t:6,r:90}]},
+        {id:'awBannerStrike',n:'군기 낙하',mp:22,cd:11,desc:'지정한 곳에 군기를 꽂아 폭발(220%) · 주변 파티 받는 피해 -10%(6초)',ops:[{o:'nova',at:'tgt',r:56,m:2.2,fx:'lpillar'},{o:'pbuff',k:'red',v:0.1,t:6,r:90}]},
+        {id:'awDawnP',n:'여명의 맹세',pas:1,desc:'새벽은 반드시 온다'}]},
+  sunblade:{n:'일륜검제',col:'#ffb03a',ult:'awEclipse',base:'eclipsebreak',idn:'일륜의 검',idd:'피해 +12% · 치명타 +5%',st:{dmg:0.12,crit:5},pp:{dmg:0.012,crit:0.4},ppd:'등급당 피해 +1.2%, 치명타 +0.4%',
+    sk:[{id:'awSunWheel',n:'일륜참',mp:20,cd:7,desc:'태양처럼 주위를 두 번 회전하며 벤다(각 260%)',ops:[{o:'cone',r:58,arc:3.2,m:2.6,n:2,gap:0.22,fx:'whirl'}]},
+        {id:'awSolarPierce',n:'태양 관통',mp:22,cd:9,desc:'길게 돌진하며 베고(280%) 끝에서 태양 폭발(160%)',ops:[{o:'dash',d:96,m:2.8},{o:'nova',at:'self',r:42,m:1.6,cs:['#ffb03a','#ffd35a','#ffffff']}]},
+        {id:'awSunP',n:'태양의 핵',pas:1,desc:'검 끝에 태양이 깃든다'}]},
+  cannoneer:{n:'공성 거포',col:'#ff9a4a',ult:'awSiege',base:'siegecannon',idn:'거포의 위엄',idd:'피해 +16% · 받는 피해 -4%',st:{dmg:0.16,dr:0.04},pp:{dmg:0.012,hp:0.005},ppd:'등급당 피해 +1.2%, 최대 체력 +0.5%',
+    sk:[{id:'awSiegeShell',n:'공성 포탄',mp:24,cd:10,desc:'크게 폭발하는 대형 포탄(520%, 폭발)',ops:[{o:'proj',p:'shell',sp:300,m:5.2,boom:52,life:0.9,r:5}]},
+        {id:'awBarrage',n:'포화 집중',mp:26,cd:12,desc:'지정한 곳에 포탄 8발이 쏟아진다(각 130%)',ops:[{o:'rain',at:'tgt',r:56,rr:20,n:8,gap:0.15,m:1.3,fx:'boomfire'}]},
+        {id:'awCannonP',n:'강철 포신',pas:1,desc:'포신이 식을 틈이 없다'}]},
+  gunkata:{n:'백발귀',col:'#8fd0ff',ult:'awBallet',base:'bulletballet',idn:'백발백중',idd:'피해 +8% · 치명타 +6% · 공격 속도 +6%',st:{dmg:0.08,crit:6,as:0.06},pp:{crit:0.6,as:0.005},ppd:'등급당 치명타 +0.6%, 공격 속도 +0.5%',
+    sk:[{id:'awHundredShot',n:'백발 난사',mp:20,cd:8,desc:'가장 가까운 적에게 총알 12발을 빠르게 난사(각 60%)',ops:[{o:'proj',p:'bullet',sp:540,m:0.6,n:12,gap:0.05,aim:1,life:0.6}]},
+        {id:'awPhantomStep',n:'환영 보법',mp:16,cd:6,desc:'잔상을 남기며 돌진(200%) · 0.5초 회피, 공격 속도 +20%(3초)',ops:[{o:'dash',d:72,m:2.0},{o:'dodge',t:0.5},{o:'buff',k:'as',v:0.2,t:3}]},
+        {id:'awKataP',n:'귀신의 손놀림',pas:1,desc:'눈으로 좇을 수 없는 속도'}]}};
+/* 각성 궁극기: 2차 궁극기를 1.25배로 쓰고, 1.4초 뒤 진화 마무리(갈래색 대폭발 · 지원형은 파티 보호막) */
+const AWK_ULT_N={awRedmoon:'혈월 강림',awThousand:'만검 귀일',awFortress:'불괴의 성역',awFinaljudge:'최후의 대심판',awDeadeye:'천리안 사격',awKillzone:'왕의 사냥터',awCataclysm:'원소 대재앙',awSupernova:'초신성 붕괴',awSanctum:'성자의 성역',awPurgatory:'심연 연옥',awDawnlegion:'여명 대군세',awEclipse:'일륜 붕괴',awSiege:'천공 공성포',awBallet:'백발 무도'};
+/* 각성 포인트(각성 레벨마다 1): 공격·생명·가속·극의 */
+const AWN={atk:{n:'각성 공격',d:'피해 +1%'},hp:{n:'각성 생명',d:'최대 체력 +2%'},cd:{n:'각성 가속',d:'재사용 대기시간 -0.6%'},art:{n:'각성 극의',d:'각성기 피해 +3%'}};
+for(const a in AWK){const W=AWK[a],A=ADV[a];W.cls=A.cls;W.sk.forEach((s,i)=>{SKILLS[s.id]=Object.assign({lvl:AWK_LVL,cls:A.cls,adv:a,awk:1},s.pas?{pas:1,n:s.n,desc:s.desc,per:W.ppd}:{n:s.n,mp:s.mp,cd:s.cd,desc:s.desc,ops:s.ops});});W.ids=W.sk.map(s=>s.id);
+  const B=SKILLS[W.base];SKILLS[W.ult]={ult:1,n:AWK_ULT_N[W.ult],mp:0,cd:B.cd,desc:`${B.n}의 진화 · 피해 1.25배, 끝날 때 ${W.sup?'파티 전원에게 최대 체력 25% 보호막과 ':''}${W.n}의 대폭발(400%)`,lvl:AWK_LVL,cls:A.cls,adv:a,awk:1,base:W.base};}
+function awkOf(ch){return ch&&ch.awk&&(ch.lvl|0)>=AWK_LVL&&advOf(ch)&&AWK[ch.adv]?AWK[ch.adv]:null;}
+function awNeed(l){return Math.round(xpFor(AWK_LVL)*0.6*(1+0.12*(l|0)));}
+function spTotal(ch){return skillPointsTotal(ch.lvl)+(awkOf(ch)?3+Math.min(AWL_MAX,ch.awl|0):0);}
+function awnSpent(ch){const n=ch.awn||{};let s=0;for(const k in AWN)s+=Math.max(0,n[k]|0);return s;}
+function awkStat(S,o,m){if(!o)return;m=m==null?1:m;if(o.dmg)S.dmgMul*=1+o.dmg*m;if(o.ls)S.ls+=o.ls*m;if(o.crit)S.crit=Math.min(75,S.crit+o.crit*m);if(o.critMul)S.critMul+=o.critMul*m;if(o.dr)S.dr=(S.dr||0)+o.dr*m;if(o.hp)S.maxHp=Math.round(S.maxHp*(1+o.hp*m));if(o.spell)S.spell*=1+o.spell*m;if(o.cdr)S.cdr=Math.min(0.45,(S.cdr||0)+o.cdr*m);if(o.heal)S.healPow=Math.round(S.healPow*(1+o.heal*m));if(o.boss)S.bossDmg=(S.bossDmg||0)+o.boss*m;if(o.as)S.atkRate*=1+o.as*m;}
 function skillMul(rank){return 1+0.12*Math.max(0,rank-1);}
 function defaultSkills(cls){const s=CLASSES[cls].skills;return{sk:{[s[0]]:1,[s[1]]:1},bar:[s[0],s[1],null,null,null,null]};}
 function skillPointsTotal(lvl){return Math.max(0,lvl-1);}
@@ -816,6 +888,7 @@ function calcStats(ch){
     if(k==='sunblade'){S.holyGain*=1.3*(1+0.03*r('suncore'));S.critMul+=0.05*r('suncore');}
     if(k==='cannoneer'){S.boomMul=1.2*(1+0.03*r('gordnance'));S.boomR=1+0.02*r('gordnance');S.dr=(S.dr||0)+0.08;S.turrets=2;}
     if(k==='gunkata'){S.crit=Math.min(75,S.crit+8+r('gkatam'));S.critMul+=0.15;S.atkRate*=1+0.02*r('gkatam');S.kata=1;}}
+  {const AW=awkOf(ch);S.awk=AW?ch.adv:null;S.awkArt=0;if(AW){awkStat(S,AW.st);const pr=r(AW.ids[2]);if(pr)awkStat(S,AW.pp,pr);const nd=ch.awn||{};if(nd.atk)S.dmgMul*=1+0.01*nd.atk;if(nd.hp)S.maxHp=Math.round(S.maxHp*(1+0.02*nd.hp));if(nd.cd)S.cdr=Math.min(0.45,(S.cdr||0)+0.006*nd.cd);S.awkArt=0.03*(nd.art|0);}}
   if(AD)S.dmgMul*=advDk(ch.adv,ch.lvl);
   S.dmgMul*=classDk(ch.cls,ch.lvl);
   S.set3=[];for(const id in SETS){const n=setCount(ch,id);if(n<2)continue;const b=SETS[id].b2;if(b.hpPct)S.maxHp=Math.round(S.maxHp*(1+b.hpPct/100));if(b.armorPct)S.armor=Math.round(S.armor*(1+b.armorPct/100));if(b.crit)S.crit=Math.min(75,S.crit+b.crit);if(b.as)S.atkRate*=1+b.as/100;if(b.bossDmg)S.bossDmg=(S.bossDmg||0)+b.bossDmg/100;if(n>=3)S.set3.push(id);}
@@ -840,7 +913,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,ADV,ADV_OF,ADV_LVL,ADV_VAR,advVar,CLASS_INFO,advOf,ultsOf,advChangeCost,lvCost,itemLvUp,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
