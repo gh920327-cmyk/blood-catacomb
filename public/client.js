@@ -751,21 +751,21 @@ function awkArt(b){if(!b||!AWK_ART[b])return null;let im=AWK_IMG[b];if(!im){im=n
 // 초각성기 컷씬 (로스트아크 초각성기 모티브): 레터박스 · 암전 · 집중선 · 일러스트 컷인 · 붓글씨 기술명 · 섬광
 let AWCUT=null;
 function startAwkCut(o){const mine=o.id===myId;const p=playerPos(o.id);const nm=mine?(G.ch&&G.ch.name):((G.players.get(o.id)||{}).name||'');awkArt(o.b);
-  if(!mine&&AWCUT&&AWCUT.mine&&time-AWCUT.t0<1.9)return;AWCUT={t0:time,mine,b:o.b,c:o.c||'#ffd35a',n:o.n||'',an:o.an||'',name:nm,d:o.d||0.85,flashed:false};UCUT=null;if(mine)shake=Math.max(shake,2);}
+  if(!mine&&AWCUT&&AWCUT.mine&&time-AWCUT.t0<1.2)return;AWCUT={t0:time,mine,b:o.b,c:o.c||'#ffd35a',n:o.n||'',an:o.an||'',name:nm,d:o.d||0.85,flashed:false};UCUT=null;if(mine)shake=Math.max(shake,2);}
 function drawAwkCut(){const A=AWCUT;if(!A)return;const t=time-A.t0;const c=A.c;const im=awkArt(A.b);
   if(!A.mine){const T=2.2;if(t>T){AWCUT=null;return;}const inA=Math.min(1,t/0.18),out=t>T-0.35?(T-t)/0.35:1;const off=(1-inA)*170+(1-out)*170;const x=296+off,y=66,w=176,h=40;
     ctx.save();ctx.globalAlpha=Math.max(0,out);ctx.beginPath();ctx.moveTo((x+14)*SC,y*SC);ctx.lineTo((x+w)*SC,y*SC);ctx.lineTo((x+w)*SC,(y+h)*SC);ctx.lineTo(x*SC,(y+h)*SC);ctx.closePath();ctx.fillStyle='rgba(8,5,12,0.88)';ctx.fill();ctx.clip();
     if(im){const iw=96,ih=iw*im.naturalHeight/im.naturalWidth;ctx.drawImage(im,(x+4)*SC,(y-ih*0.1)*SC,iw*SC,ih*SC);}
     const g=ctx.createLinearGradient((x+50)*SC,0,(x+110)*SC,0);g.addColorStop(0,'rgba(8,5,12,0)');g.addColorStop(1,'rgba(8,5,12,0.95)');ctx.fillStyle=g;ctx.fillRect(x*SC,y*SC,w*SC,h*SC);ctx.restore();
     ctx.globalAlpha=Math.max(0,out);pr(x+14,y,w-14,1,c);pr(x,y+h-1,w,1,c);txt(A.name+' · 초각성',x+w-6,y+11,9,'#e6dcc3','right');bigTxt(A.n,x+w-6-tbW(A.n,15,'brush')*0.55,y+27,15,'#ffffff',1.1,'brush');ctx.globalAlpha=1;return;}
-  const T=A.d+0.75;if(t>T){AWCUT=null;return;}
+  const T=A.d+0.32;if(t>T){AWCUT=null;return;}
   const inA=Math.min(1,t/0.14),outA=t>T-0.3?Math.max(0,(T-t)/0.3):1;const bar=34*inA*outA;
   // 암전 + 색 비네트
   pr(0,0,W,H,`rgba(4,3,8,${0.72*inA*outA})`);const rg=ctx.createRadialGradient(W*SC*0.62,H*SC*0.5,10*SC,W*SC*0.62,H*SC*0.5,300*SC);rg.addColorStop(0,hexA(c,0.32*inA*outA));rg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=rg;ctx.fillRect(0,0,W*SC,H*SC);
   // 집중선
   ctx.save();ctx.globalAlpha=0.55*inA*outA;ctx.fillStyle=c;const cx=W*0.62*SC,cy=H*0.5*SC;for(let i=0;i<34;i++){const q=i/34*Math.PI*2+((i*7919)%13)*0.05+Math.floor(time*20)*0.13*(i%3);const r1=(70+((i*37+Math.floor(time*24)*11)%50))*SC,r2=330*SC,wd=0.012+(i%4)*0.006;ctx.beginPath();ctx.moveTo(cx+Math.cos(q)*r1,cy+Math.sin(q)*r1);ctx.lineTo(cx+Math.cos(q-wd)*r2,cy+Math.sin(q-wd)*r2);ctx.lineTo(cx+Math.cos(q+wd)*r2,cy+Math.sin(q+wd)*r2);ctx.fill();}ctx.restore();
   // 일러스트: 사선 띠 안에서 오른쪽→왼쪽으로 빠르게 들어와 천천히 흐른 뒤 빠져나감
-  const ex=T-0.32;const slide=t<0.2?(1-Math.pow(1-t/0.2,3))*0:0;const ix=t<0.2?220*(1-Math.pow(t/0.2,0.5)):t<ex?-(t-0.2)*14:-(ex-0.2)*14-(t-ex)/0.32*360;
+  const ex=A.d-0.2;const slide=t<0.2?(1-Math.pow(1-t/0.2,3))*0:0;const ix=t<0.2?220*(1-Math.pow(t/0.2,0.5)):t<ex?-(t-0.2)*14:-(ex-0.2)*14-(t-ex)/0.2*360;
   ctx.save();ctx.globalAlpha=outA<1?outA:1;const bx0=150+ix*0.15,bw=250;ctx.beginPath();ctx.moveTo((bx0+46)*SC,bar*SC);ctx.lineTo((bx0+bw+46)*SC,bar*SC);ctx.lineTo((bx0+bw)*SC,(H-bar)*SC);ctx.lineTo(bx0*SC,(H-bar)*SC);ctx.closePath();
   ctx.fillStyle='rgba(10,6,16,0.92)';ctx.fill();ctx.clip();
   if(im){const iw=290,ih=iw*im.naturalHeight/im.naturalWidth;const px=bx0-6+ix,py=bar-16-Math.min(1,t/A.d)*12;ctx.drawImage(im,px*SC,py*SC,iw*SC,ih*SC);}
