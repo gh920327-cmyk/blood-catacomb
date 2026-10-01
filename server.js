@@ -75,7 +75,7 @@ function newParty(P){const pt={id:'pt'+(nextId++),leader:P.id,members:new Set([P
 function partyList(pt){const a=[];for(const id of pt.members){const p=players.get(id);if(p)a.push(p);}return a;}
 function sendParty(pt){const list=partyList(pt).map(p=>({id:p.id,cid:p.ch.id,name:p.ch.name,cls:p.ch.cls,lvl:p.ch.lvl}));for(const p of partyList(pt))send(p,{t:'party',leader:pt.leader,members:list,inDungeon:!!pt.inst});}
 // 재접속(서버 재시작 등)했을 때 예전 파티원끼리 자동으로 다시 묶기
-function restoreParty(P){const prev=P.prevParty;if(!prev||prev.length<2)return;for(const Q of players.values()){if(Q===P||!Q.ch||!Q.party||Q.inst!==hub||!prev.includes(Q.ch.id))continue;if(!(Q.prevParty||[]).includes(P.ch.id))continue;const pt=Q.party;if(pt===P.party||pt.members.size>=4||pt.inst)continue;
+function restoreParty(P){const prev=P.prevParty;if(!prev||prev.length<2)return;for(const Q of players.values()){if(Q===P||!Q.ch||!Q.party||Q.inst!==hub||!prev.includes(Q.ch.id))continue;if(!(Q.prevParty||[]).includes(P.ch.id))continue;const pt=Q.party;if(pt===P.party||pt.members.size>=PARTY_MAX||pt.inst)continue;
     leaveParty(P);pt.members.add(P.id);P.party=pt;sendParty(pt);bcastRoster(hub);for(const q of partyList(pt))msg(q,`${P.ch.name}님이 다시 파티에 합류했습니다`,'#7fd05a');return;}}
 function leaveParty(P){const pt=P.party;if(!pt)return;pt.members.delete(P.id);P.party=null;if(pt.members.size===0){parties.delete(pt.id);}else{if(pt.leader===P.id)pt.leader=[...pt.members][0];sendParty(pt);}}
 
@@ -94,7 +94,7 @@ function leaveInst(P){if(P.trade)cancelTrade(P,'상대가 마을을 떠나 거�
     else bcastRoster(inst);}
   else bcastRoster(inst);}
 function joinHub(P){leaveInst(P);P.inst=hub;hub.players.add(P.id);const s=hub.map.spawn;P.x=s.x+rf(-30,30);P.y=s.y+rf(-12,12);resetCombat(P);P.hp=P.S.maxHp;P.mp=P.S.maxMp;sendMap(P);bcastRoster(hub);}
-function placeStart(inst,P,k){const st=inst.map.start;const offs=[[0,0],[14,0],[-14,0],[0,14],[0,-14],[14,14]];const o=offs[k%offs.length];let x=st.cx*TS+8+o[0],y=st.cy*TS+8+o[1];if(SH.blocked(inst.map,x,y,4)){x=st.cx*TS+8;y=st.cy*TS+8;}P.x=x;P.y=y;}
+function placeStart(inst,P,k){const st=inst.map.start;const offs=[[0,0],[14,0],[-14,0],[0,14],[0,-14],[14,14],[-14,14],[14,-14],[-14,-14]];const o=offs[k%offs.length];let x=st.cx*TS+8+o[0],y=st.cy*TS+8+o[1];if(SH.blocked(inst.map,x,y,4)){x=st.cx*TS+8;y=st.cy*TS+8;}P.x=x;P.y=y;}
 function createDungeon(pt){const inst={id:'d'+(nextId++),type:'dungeon',party:pt,players:new Set(),floor:0,seed:0,map:null,monsters:[],projs:[],drops:[],zones:[],timers:[],hz:[],dark:0,fx:[],paused:null,mid:1,pid:1,did:1,time:0,flows:new Map(),meter:new Map(),bossMeter:null,bossStart:0,trans:null,wipeT:0,meterT:0};dungeons.set(inst.id,inst);pt.inst=inst;return inst;}
 function loadFloor(inst,floor){
   if(inst.floor>0&&floor===inst.floor+1)for(const P of instPlayers(inst))bump(P,'floor',1);
@@ -125,7 +125,7 @@ function spawnMonsters(inst){const map=inst.map,f=inst.floor,n=Math.max(1,inst.p
   for(const r of map.rooms){
     if(r===map.start)continue;
     if(r===map.bossRoom){const b=spawnMonster(inst,'boss',r.cx*TS+8,r.cy*TS+8,false);b.boss=true;b.home={x:b.x,y:b.y};const th=SH.themeOf(f);const bm=(1+th.idx*0.12)*(th.corrupt?1.3:1)*(1+BAL.bossHpCurve*(f-1))*(f===100?BAL.finalBoss:1);const pn=n-1;b.hp=b.maxHp=Math.round(b.maxHp*bm*(1+BAL.bossPartyHp*pn));b.dmg*=1+BAL.bossPartyDmg*pn;b.baseDmg=b.dmg;b.partyCd=1/(1+BAL.bossPartyTempo*pn);b.r=f===100?13:11;inst.bossId=b.id;continue;}
-    let c=ri(2,4)+Math.min(4,Math.floor(f/4))+(n-1);if(map.boss)c=Math.max(1,c-2);const eliteRoom=R()<0.12+Math.min(0.3,f*0.015);
+    let c=ri(2,4)+Math.min(4,Math.floor(f/4))+(n<=4?n-1:3+Math.ceil((n-4)/2));if(map.boss)c=Math.max(1,c-2);const eliteRoom=R()<0.12+Math.min(0.3,f*0.015);
     for(let i=0;i<c;i++){const x=(r.x+ri(1,r.w-2))*TS+8,y=(r.y+ri(1,r.h-2))*TS+8;spawnMonster(inst,pickType(f),x,y,eliteRoom&&i===0);}
   }}
 function livingPlayers(inst){return instPlayers(inst).filter(p=>!p.downed);}
@@ -151,7 +151,7 @@ function monsterStrike(inst,m){const T=m.tgt;
 // ================= 보스 패턴 엔진 =================
 const RING_PROJ=['orb','ice','fireb','orb','orb','web','orb','page','orb','void'];
 function roomPoint(inst,minFrom,minD){const r=inst.map.bossRoom||inst.map.start;for(let t=0;t<30;t++){const x=(r.x+1+R()*(r.w-2))*TS,y=(r.y+1+R()*(r.h-2))*TS;if(SH.blocked(inst.map,x,y,6))continue;if(minFrom&&Math.hypot(x-minFrom.x,y-minFrom.y)<minD)continue;return{x,y};}return{x:(r.cx)*TS+8,y:(r.cy)*TS+8};}
-function hitCircle(inst,x,y,r,dmg,src,o){for(const p of livingPlayers(inst))if(Math.hypot(p.x-x,p.y-y)<r+4)hurtPlayer(inst,p,dmg,src,o);if(inst.allies)for(const a of inst.allies)if(!a.downed&&Math.hypot(a.x-x,a.y-y)<r+4)hurtAlly(inst,a,dmg*0.6);}
+function hitCircle(inst,x,y,r,dmg,src,o){const big=src&&src.id!=null&&instPlayers(inst).length>4;for(const p of livingPlayers(inst))if(Math.hypot(p.x-x,p.y-y)<r+4){let d=dmg;/* 5인 이상: 사람마다 생기는 장판이 겹쳐도 몇 배로 맞지 않게 */if(big){if(p._hcS===src.id&&inst.time-p._hcT<0.3)d*=0.35;p._hcS=src.id;p._hcT=inst.time;}hurtPlayer(inst,p,d,src,o);}if(inst.allies)for(const a of inst.allies)if(!a.downed&&Math.hypot(a.x-x,a.y-y)<r+4)hurtAlly(inst,a,dmg*0.6);}
 function distSeg(px,py,x1,y1,x2,y2){const vx=x2-x1,vy=y2-y1,L2=vx*vx+vy*vy||1;const t=clamp(((px-x1)*vx+(py-y1)*vy)/L2,0,1);return Math.hypot(x1+vx*t-px,y1+vy*t-py);}
 function mproj(inst,m,type,a,speed,dmg,o){o=o||{};inst.projs.push(Object.assign({id:inst.pid++,type,owner:'m',x:m.x+Math.cos(a)*(m.r+2),y:m.y+Math.sin(a)*(m.r+2),vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,dmg,r:3,life:4,h:10},o));}
 function addHz(inst,o){const h=Object.assign({x:0,y:0,r:24,t:6,arm:0.8,iv:0.5,tick:0,dmg:0,slow:0,root:0,heal:0,vis:20,src:null},o);h.max=h.t+h.arm;inst.hz.push(h);return h;}
@@ -1048,16 +1048,17 @@ function wipe(inst){fx(inst,{k:'msg',m:'파티가 전멸했습니다 · 입구�
 
 // ================= 레이드 =================
 const RAID_TF={bell:1,mirror:36,clock:31,moon:46}; // 타일 테마용 층
-function raidScale(L,n,hard){const f=L;return (1+BAL.monHpPerFloor*(f-1))*(1+BAL.monHpCurve*(f-1))*(1+BAL.bossHpCurve*(f-1))*BAL.bossHp*(hard?40:32)*[0,0.22,0.5,0.76,1][clamp(n,1,4)];}
+const PARTY_MAX=8;
+function raidScale(L,n,hard){const f=L;return (1+BAL.monHpPerFloor*(f-1))*(1+BAL.monHpCurve*(f-1))*(1+BAL.bossHpCurve*(f-1))*BAL.bossHp*(hard?40:32)*[0,0.22,0.5,0.76,1,1.22,1.44,1.66,1.88][clamp(n,1,PARTY_MAX)];}
 function createRaid(pt,id,mode,members){const def=SH.RAIDS.find(r=>r.id===id);const seed=(Math.random()*2147483647)|0;const hard=mode==='hard',practice=mode==='practice';const day=dayKey();
   const inst={id:'r'+(nextId++),type:'dungeon',party:pt,players:new Set(),floor:def.lvl,seed,map:SH.genRaid(id,seed),monsters:[],projs:[],drops:[],zones:[],timers:[],hz:[],dark:0,fx:[],paused:null,mid:1,pid:1,did:1,time:0,flows:new Map(),meter:new Map(),bossMeter:null,bossStart:0,trans:null,wipeT:0,meterT:0,stairsOpen:false,ev:null,traps:[],
-    raid:{id,def,mode,hard,practice,deaths:3,stage:'gate',bossT:0,enr:Math.round(((RAID_TUNE[id]||{}).enr||540)*(hard?0.8:1)),day,elig:members.filter(q=>!practice).map(q=>q.ch.id)/* 보상 횟수 제한 없음: 클리어할 때마다 보상 */,done:false,fail:false,endT:0,rings:[],tethers:[],bb:null,pz:null,gT:4,auc:null,n:members.length}};
+    raid:{id,def,mode,hard,practice,deaths:members.length>4?3+Math.ceil((members.length-4)*0.75):3,stage:'gate',bossT:0,enr:Math.round(((RAID_TUNE[id]||{}).enr||540)*(hard?0.8:1)),day,elig:members.filter(q=>!practice).map(q=>q.ch.id)/* 보상 횟수 제한 없음: 클리어할 때마다 보상 */,done:false,fail:false,endT:0,rings:[],tethers:[],bb:null,pz:null,gT:4,auc:null,n:members.length}};
   dungeons.set(inst.id,inst);pt.inst=inst;
   for(const q of members){leaveInst(q);q.inst=inst;inst.players.add(q.id);resetCombat(q);q.hp=q.S.maxHp;q.mp=q.S.maxMp;q.raidRev=0;q.raidDown=false;}
   let k=0;for(const q of members){q.x=inst.map.startPt.x+(k%2?12:-12);q.y=inst.map.startPt.y-(k>>1)*12;k++;}
   RAIDX[id].init(inst);
   for(const q of members){sendMap(q);}bcastRoster(inst);bcastRoster(hub);sendParty(pt);raidState(inst);
-  fx(inst,{k:'msg',m:`${def.n} (${hard?'하드':practice?'연습':'노말'}) · 파티 데스 카운트 ${practice?'무제한':3}`,c:'#ffd35a'});
+  fx(inst,{k:'msg',m:`${def.n} (${hard?'하드':practice?'연습':'노말'}) · 파티 데스 카운트 ${practice?'무제한':inst.raid.deaths}`,c:'#ffd35a'});
   }
 function rst(inst,P){const r=inst.raid;if(!r||!P||!P.ch)return null;const S=r.st||(r.st={});return S[P.id]||(S[P.id]={ctr:0,gim:0,deaths:0,mit:0});}
 function raidMvp(inst){const r=inst.raid;const ps=instPlayers(inst);const T=Math.max(1,r.bossT||1);const rows=ps.map(P=>{const m=inst.meter.get(P.id)||{dmg:0,taken:0,heal:0,shield:0};const s=rst(inst,P);return{id:P.id,name:P.ch.name,cls:P.ch.cls,dmg:Math.round(m.dmg),dps:Math.round(m.dmg/Math.max(1,inst.time)),heal:Math.round(m.heal),shield:Math.round(m.shield),taken:Math.round(m.taken),mit:Math.round(s.mit),ctr:s.ctr,gim:s.gim,deaths:s.deaths};});
@@ -1181,8 +1182,8 @@ const GM={
   // 종지기: 원마다 정확히 그 인원
   funeral:{col:'#c9a0e8',why:'장례의 종이 무너졌다 — 원마다 인원이 맞지 않았다',
     hv:(inst,g)=>({txt:g.circles.map(c=>c.need).join('·')}),
-    start(inst,g){const r=inst.raid;const n=Math.max(1,gmPlayers(inst).length);const S={1:[1],2:[1,1],3:[2,1],4:r.hard?[3,1]:[2,1,1]}[Math.min(4,n)];const need=shuffle(S.slice());
-      const spots=shuffle([[0.2,0.35],[0.8,0.35],[0.5,0.82],[0.5,0.3]]);g.circles=need.map((nd,i)=>{const p=brPt(inst,spots[i][0],spots[i][1]);return{x:p.x,y:p.y,r:24,need:nd,have:0};});g.t=r.hard?8:11;
+    start(inst,g){const r=inst.raid;const n=Math.max(1,gmPlayers(inst).length);const S={1:[1],2:[1,1],3:[2,1],4:r.hard?[3,1]:[2,1,1],5:r.hard?[3,2]:[2,2,1],6:r.hard?[4,2]:[2,2,2],7:r.hard?[4,3]:[3,2,2],8:r.hard?[5,3]:[3,3,2]}[Math.min(PARTY_MAX,n)];const need=shuffle(S.slice());
+      const spots=shuffle([[0.2,0.35],[0.8,0.35],[0.5,0.82],[0.5,0.3]]);g.circles=need.map((nd,i)=>{const p=brPt(inst,spots[i][0],spots[i][1]);return{x:p.x,y:p.y,r:24+Math.max(0,nd-2)*5,need:nd,have:0};});g.t=r.hard?8:11;
       fx(inst,{k:'bsay',id:inst.bossId,m:'너희 장례식이다… 관 자리를 정확히 채워라!'});},
     tick(inst,g){const ps=gmPlayers(inst);for(const c of g.circles)c.have=ps.filter(p=>inCircle(p,c)).length;
       if(g.t<=0){const all=ps.every(p=>g.circles.some(c=>inCircle(p,c)));return all&&g.circles.every(c=>c.have===c.need)?'ok':true;}return null;},
@@ -1200,9 +1201,9 @@ const GM={
     pub:(inst,g)=>({toll:g.cur>=0?1:0,next:g.tolls.map(t=>r1(t-g.el)).filter(v=>v>-0.1)[0]??null,cnt:g.tolls.filter(t=>g.el>=t).length,tot:g.tolls.length})},
   // 쌍둥이: 갇힌 사람이 비친 거울만 깨기
   prison:{col:'#ffe9a8',why:'거울 감옥이 닫혔다',
-    start(inst,g){const r=inst.raid;const ps=gmPlayers(inst);if(ps.length<2)return false;const k=Math.min(2,ps.length-1);const sh=shuffle(ps.slice());g.jail=sh.slice(0,k).map(p=>p.id);const out=sh.slice(k);
-      const corners=shuffle([[0.1,0.2],[0.9,0.2],[0.1,0.85],[0.9,0.85]]);const shows=shuffle(g.jail.map(id=>({id,real:1})).concat(out.slice(0,4-k).map(p=>({id:p.id,real:0}))));
-      while(shows.length<4)shows.push({id:null,real:0,cls:pick(Object.keys(CLASSES))});
+    start(inst,g){const r=inst.raid;const ps=gmPlayers(inst);if(ps.length<2)return false;const big=ps.length>4;const k=Math.min(big?3:2,ps.length-1);const NM=big?6:4;const sh=shuffle(ps.slice());g.jail=sh.slice(0,k).map(p=>p.id);const out=sh.slice(k);
+      const corners=shuffle(big?[[0.1,0.2],[0.9,0.2],[0.1,0.85],[0.9,0.85],[0.5,0.12],[0.5,0.92]]:[[0.1,0.2],[0.9,0.2],[0.1,0.85],[0.9,0.85]]);const shows=shuffle(g.jail.map(id=>({id,real:1})).concat(out.slice(0,NM-k).map(p=>({id:p.id,real:0}))));
+      while(shows.length<NM)shows.push({id:null,real:0,cls:pick(Object.keys(CLASSES))});
       g.mir=shows.map((s,i)=>{const p=brPt(inst,corners[i][0],corners[i][1]);const P=s.id&&players.get(s.id);return{x:p.x,y:p.y,id:s.id,real:s.real,cls:P?P.ch.cls:s.cls,name:P?P.ch.name:'?',broken:false};});
       g.freed={};for(const id of g.jail){const P=players.get(id);if(P){P.gmLock=inst.time+60;P.rootT=Math.max(P.rootT,60);P.dodgeT=Math.max(P.dodgeT,60);fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-30),s:'거울에 갇힘!',c:'#ffe9a8'});}}
       g.t=r.hard?15:22;g.idle=false;g.invul=true;fx(inst,{k:'bsay',id:inst.bossId,m:'거울 속에서 영원히 우리 자매와 함께 살아라…'});},
@@ -1220,7 +1221,7 @@ const GM={
     pub:(inst,g)=>({chant:g.ch.map(c=>[c.id,Math.min(1,r1(c.dmg/c.thr*100)/100),c.bt!=null?1:0]),gap:g.ch.some(c=>c.bt!=null)?r1(g.gap-(inst.time-g.ch.find(c=>c.bt!=null).bt)):null})},
   // 기사단장: 밸브를 각자 하나씩
   core:{col:'#ffb03a',why:'코어가 과열되어 공장이 폭발했다',
-    start(inst,g){const r=inst.raid;const n=Math.max(1,Math.min(4,gmPlayers(inst).length));const spots=shuffle([[0.06,0.5],[0.94,0.5],[0.5,0.1],[0.5,0.92]]).slice(0,n);
+    start(inst,g){const r=inst.raid;const n=Math.max(1,Math.min(PARTY_MAX,gmPlayers(inst).length));const spots=shuffle([[0.06,0.5],[0.94,0.5],[0.5,0.1],[0.5,0.92]]).concat(shuffle([[0.12,0.15],[0.88,0.15],[0.12,0.85],[0.88,0.85]])).slice(0,n);
       g.valves=spots.map(([a,b])=>{const p=brPt(inst,a,b);return{x:p.x,y:p.y,by:null};});g.used={};g.t=r.hard?12:16;g.st=0;fx(inst,{k:'bsay',id:inst.bossId,m:'코어 출력 최대! 모두 불타 버려라!'});},
     act(inst,g,P,i){const v=g.valves[i];if(!v||v.by||Math.hypot(P.x-v.x,P.y-v.y)>34)return;if(g.used[P.id]){msg(P,'밸브는 한 사람당 하나만 돌릴 수 있어요!','#ff8a5a');fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-26),s:'한 사람당 하나!',c:'#ff8a5a'});return;}
       g.used[P.id]=1;v.by=P.ch.name;fx(inst,{k:'bell',c:3,x:r1(v.x),y:r1(v.y)});fx(inst,{k:'txt',x:r1(v.x),y:r1(v.y-22),s:'냉각!',c:'#8fd0ff'});},
@@ -1236,7 +1237,7 @@ const GM={
     okMsg:'한 줄로 모여 톱니벽을 넘겼다!'},
   // 흑왕: 등불 기둥에 불 옮기기 (맞으면 꺼짐) — 보스는 계속 공격
   moonfall:{col:'#ffe9a8',why:'흑월이 떨어졌다 — 등불이 모자랐다',okMsg:'등불의 빛이 흑월을 밀어냈다!',
-    start(inst,g){const r=inst.raid;const n=Math.max(1,gmPlayers(inst).length);const np=n>=3?4:n===2?3:2;const sp=shuffle([[0.2,0.3],[0.8,0.3],[0.2,0.8],[0.8,0.8]]).slice(0,np);
+    start(inst,g){const r=inst.raid;const n=Math.max(1,gmPlayers(inst).length);const np=n>=6?6:n>=3?4:n===2?3:2;const sp=shuffle([[0.2,0.3],[0.8,0.3],[0.2,0.8],[0.8,0.8]]).concat([[0.05,0.55],[0.95,0.55]]).slice(0,np);
       g.pil=sp.map(([a,b])=>{const p=brPt(inst,a,b);return{x:p.x,y:p.y,lit:false};});const c=brPt(inst,0.5,0.6);g.br={x:c.x,y:c.y};g.carry={};g.idle=false;g.invul=false;g.t=r.hard?26:32;
       fx(inst,{k:'bsay',id:inst.bossId,m:'보아라, 흑월이 내려온다. 너희의 작은 불씨로 무엇을 막겠느냐!'});fx(inst,{k:'redsky',d:g.t});},
     act(inst,g,P,i){if(i===0){if(Math.hypot(P.x-g.br.x,P.y-g.br.y)>34||g.carry[P.id])return;g.carry[P.id]=1;fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-30),s:'등불을 들었다',c:'#ffe9a8'});return;}
@@ -1259,7 +1260,7 @@ const RAID_DMG=+(process.env.RAID_DMG||1);/* 측정용 추가 배율 */
 /* 레이드별 보스 공격력·체력 배율 (호흡 8~15분, 보통 실력으로는 못 깨는 선) · 흑왕은 절망 난이도 */
 const RAID_TUNE={bell:{dmg:1.35,hp:1.35,enr:780},mirror:{dmg:1.35,hp:1.5,enr:780},clock:{dmg:1.35,hp:1.9,enr:780},moon:{dmg:1.5,hp:2.0,enr:900}};
 function raidBoss(inst,type,x,y,share){const r=inst.raid;const b=spawnMonster(inst,type,x,y,false);b.boss=true;b.home={x,y};const TU=RAID_TUNE[r.id]||{dmg:1,hp:1};b.maxHp=b.hp=Math.round(SH.MT[type].hp*raidScale(r.def.lvl,r.n,r.hard)*(share||1)*TU.hp);
-  b.dmg*=(r.hard?2.6:1.8)*[0,0.55,0.78,0.9,1][clamp(r.n,1,4)]*(r.id==='moon'?1.6:r.id==='clock'?1.15:1)*RAID_DMG*TU.dmg;b.baseDmg=b.dmg;b.r=SH.MT[type].r;b.raidAI=RAID_AI[type];b.bname=SH.MT[type].n;b.tf=r.hard?0.85:1;b.phase=1;b.fightT=0;b.patCd=2.5;b.spdMul=1;return b;}
+  b.dmg*=(r.hard?2.6:1.8)*[0,0.55,0.78,0.9,1,1.04,1.08,1.12,1.15][clamp(r.n,1,PARTY_MAX)]*(r.id==='moon'?1.6:r.id==='clock'?1.15:1)*RAID_DMG*TU.dmg;b.baseDmg=b.dmg;b.r=SH.MT[type].r;b.raidAI=RAID_AI[type];b.bname=SH.MT[type].n;b.tf=r.hard?0.85:1;b.phase=1;b.fightT=0;b.patCd=2.5;b.spdMul=1;return b;}
 function raidAdds(inst,dt,type,cap){const r=inst.raid;if(r.stage!=='gate')return;r.gT-=dt;if(r.gT>0)return;r.gT=r.hard?6:8;const alive=inst.monsters.filter(m=>!m.dead&&m.type===type).length;if(alive>=(r.hard?cap+2:cap))return;const map=inst.map;
   for(let k=0;k<2;k++){const x=(map.start.x+1+ri(0,map.start.w-3))*TS+8,y=(map.start.y+1+ri(0,2))*TS+8;if(SH.blocked(map,x,y,5))continue;const m=spawnMonster(inst,type,x,y,false);m.alert=true;fx(inst,{k:'blink',x:r1(x),y:r1(y)});}}
 function setTile(inst,tx,ty,v){const i=ty*inst.map.w+tx;if(inst.map.tiles[i]===v)return;inst.map.tiles[i]=v;bcast(inst,{t:'tile',i,v});}
@@ -1350,13 +1351,13 @@ function clockRound(inst){const r=inst.raid,pz=r.pz;const n=pz.sizes[pz.round];c
   let st=new Array(n).fill(1);const presses=ri(2,Math.min(4,n));for(let k=0;k<presses;k++){const i=ri(0,n-1);for(const j of[i-1,i,i+1])if(j>=0&&j<n)st[j]^=1;}if(st.every(v=>v))st[ri(0,n-1)]^=1;pz.st2=st;pz.st='play';pz.t=r.hard?40:55;raidState(inst);
   const rd=pz.round;hint(inst,'clockpz','#ffd35a',{i:rd+1,n:pz.sizes.length},{open:()=>inst.raid.pz.round===rd&&inst.raid.pz.st==='play'&&!inst.raid.doorOpen,wait:22});}
 const PLATE_OFS=[[0.12,0.2],[0.88,0.2],[0.12,0.85],[0.88,0.85]];
-RAIDX.clock={init(inst){const r=inst.raid;const b=raidBoss(inst,'r_valen',inst.map.bossPt.x,inst.map.bossPt.y,1);b.col='o';inst.bossId=b.id;const br=inst.map.bossRoom;r.plates=PLATE_OFS.map(([a,c])=>({x:(br.x+br.w*a)*TS,y:(br.y+br.h*c)*TS}));r.pz={round:0,sizes:r.hard?[4,5,5]:[4,5],st:'play',t:55,lev:null};clockRound(inst);},
+RAIDX.clock={init(inst){const r=inst.raid;const b=raidBoss(inst,'r_valen',inst.map.bossPt.x,inst.map.bossPt.y,1);b.col='o';inst.bossId=b.id;const br=inst.map.bossRoom;r.plates=(r.n>4?PLATE_OFS.concat([[0.35,0.12],[0.65,0.12],[0.35,0.92],[0.65,0.92]]):PLATE_OFS).map(([a,c])=>({x:(br.x+br.w*a)*TS,y:(br.y+br.h*c)*TS}));r.pz={round:0,sizes:r.hard?[4,5,5]:[4,5],st:'play',t:55,lev:null};clockRound(inst);},
   update(inst,dt){const r=inst.raid,pz=r.pz;raidAdds(inst,dt,'cog',5);
     if(pz.st==='play'&&!r.doorOpen){pz.t-=dt;if(pz.t<=0){hintUp(inst,'clockpz');fx(inst,{k:'msg',m:'증기가 폭발했다! 장치가 다시 섞인다',c:'#ff6a5a'});fx(inst,{k:'shake',v:4});for(const p of livingPlayers(inst))if(p.y>27*TS)hurtPlayer(inst,p,p.S.maxHp*(r.hard?0.4:0.22),null,{what:'과열 증기',nododge:true});clockRound(inst);}}
     const b=bossList(inst)[0];if(!b||r.stage!=='boss')return;
     const hpf=b.hp/b.maxHp;const marks=r.hard?[0.8,0.5,0.2]:[0.7,0.35];r.plN=r.plN||0;
     if(!r.pl){gmTrig(inst,'g1',hpf<0.86,'gears');gmTrig(inst,'c1',hpf<0.58,'core');gmTrig(inst,'g2',hpf<0.42,'gears');if(r.hard){gmTrig(inst,'c2',hpf<0.22,'core');gmTrig(inst,'g3',hpf<0.12,'gears');}}
-    if(!r.pl&&!r.gm&&r.plN<marks.length&&hpf<marks[r.plN]){r.plN++;const need=Math.max(1,Math.min(4,livingPlayers(inst).length));r.pl={need,t:16,hold:0};b.invul=99;b.busy=0;fx(inst,{k:'bsay',id:b.id,m:'과열 코어 가동! 막을 수 있겠나!'});hint(inst,'plates','#8fd0ff',{need},{open:()=>!!inst.raid.pl,wait:7});raidState(inst);}
+    if(!r.pl&&!r.gm&&r.plN<marks.length&&hpf<marks[r.plN]){r.plN++;const need=Math.max(1,Math.min(r.plates.length,livingPlayers(inst).length));r.pl={need,t:16,hold:0};b.invul=99;b.busy=0;fx(inst,{k:'bsay',id:b.id,m:'과열 코어 가동! 막을 수 있겠나!'});hint(inst,'plates','#8fd0ff',{need},{open:()=>!!inst.raid.pl,wait:7});raidState(inst);}
     if(r.pl){const pl=r.pl;pl.t-=dt;const on=r.plates.filter(q=>livingPlayers(inst).some(p=>Math.hypot(p.x-q.x,p.y-q.y)<18)).length;pl.on=on;if(on>=pl.need){pl.hold+=dt;if(pl.hold>=1.5){r.pl=null;b.invul=0;b.stun=4;b.grog=inst.time+5;fx(inst,{k:'counter',id:b.id,x:r1(b.x),y:r1(b.y),by:''});fx(inst,{k:'msg',m:'압력이 빠졌다! 발렌이 휘청인다',c:'#7fd05a'});for(const p of livingPlayers(inst))rst(inst,p).gim++;raidState(inst);}}else pl.hold=0;
       if(r.pl&&pl.t<=0){r.pl=null;b.invul=0;hintUp(inst,'plates');fx(inst,{k:'msg',m:'과열 폭발!',c:'#ff4a3a'});fx(inst,{k:'shake',v:9});fx(inst,{k:'boom',x:r1(b.x),y:r1(b.y),r:200});for(const p of livingPlayers(inst))hurtPlayer(inst,p,p.S.maxHp*(r.hard?3:0.75),null,{what:'과열 폭발',nododge:true});raidState(inst);}
       if(r.pl&&(((pl.t*2)|0)!==pl.lt)){pl.lt=(pl.t*2)|0;raidState(inst);}}
@@ -1617,12 +1618,12 @@ const H={
   sell(P,d){if(P.inst!==hub||!near(P,hub.map.merchant,48))return;const i=d.bi|0,it=P.ch.bag[i];if(!it)return;P.ch.bag[i]=null;P.ch.gold+=it.value;markDirty(P);msg(P,`${it.name} 판매 · +${it.value} 골드`,'#ffd35a');send(P,{t:'fxp',k:'gold'});},
   chat(P,d){const m=String(d.m||'').replace(/\s+/g,' ').trim().slice(0,80);if(!m||!P.inst)return;bcast(P.inst,{t:'chat',id:P.id,name:P.ch.name,m});},
   inv(P,d){const T=players.get(d.id);if(!T||T===P)return;if(P.inst!==hub||T.inst!==hub){msg(P,'마을에서만 초대할 수 있습니다','#ff6a5a');return;}
-    if(P.party.members.size>=4){msg(P,'파티가 가득 찼습니다 (최대 4명)','#ff6a5a');return;}if(T.party.members.size>1){msg(P,`${T.ch.name}님은 이미 파티 중입니다`,'#ff6a5a');return;}
+    if(P.party.members.size>=PARTY_MAX){msg(P,`파티가 가득 찼습니다 (최대 ${PARTY_MAX}명)`,'#ff6a5a');return;}if(T.party.members.size>1){msg(P,`${T.ch.name}님은 이미 파티 중입니다`,'#ff6a5a');return;}
     if(P.party.inst){msg(P,'파티가 던전에 있을 때는 초대할 수 없습니다','#ff6a5a');return;}
     T.invite={from:P.id,pt:P.party.id,t:Date.now()};send(T,{t:'invite',from:P.id,name:P.ch.name});msg(P,`${T.ch.name}님에게 파티 초대를 보냈습니다`,'#9e937a');},
   ians(P,d){const iv=P.invite;P.invite=null;if(!iv||iv.from!==d.from)return;const F=players.get(iv.from);if(!F){msg(P,'초대가 만료되었습니다','#ff6a5a');return;}
     if(!d.ok){msg(F,`${P.ch.name}님이 파티 초대를 거절했습니다`,'#9e937a');return;}
-    const pt=parties.get(iv.pt);if(!pt||!pt.members.has(F.id)||pt.members.size>=4||pt.inst||P.inst!==hub||P.party.members.size>1){msg(P,'파티에 들어갈 수 없습니다','#ff6a5a');return;}
+    const pt=parties.get(iv.pt);if(!pt||!pt.members.has(F.id)||pt.members.size>=PARTY_MAX||pt.inst||P.inst!==hub||P.party.members.size>1){msg(P,'파티에 들어갈 수 없습니다','#ff6a5a');return;}
     leaveParty(P);pt.members.add(P.id);P.party=pt;sendParty(pt);bcastRoster(hub);for(const q of partyList(pt))msg(q,`${P.ch.name}님이 파티에 들어왔습니다`,'#7fd05a');},
   leave(P){if(P.inst!==hub){msg(P,'마을에서만 파티를 나갈 수 있습니다','#ff6a5a');return;}if(P.party.members.size<=1)return;leaveParty(P);newParty(P);sendParty(P.party);bcastRoster(hub);msg(P,'파티에서 나왔습니다','#9e937a');},
   kick(P,d){const pt=P.party;if(pt.leader!==P.id||P.inst!==hub||pt.inst)return;const T=players.get(d.id);if(!T||T.party!==pt||T===P)return;leaveParty(T);newParty(T);sendParty(T.party);msg(T,'파티에서 추방되었습니다','#ff6a5a');bcastRoster(hub);},
@@ -1751,7 +1752,7 @@ wss.on('connection',ws=>{
   ws.on('pong',()=>{P.alive=true;});
   ws.on('message',raw=>{let d;try{d=JSON.parse(raw);}catch(e){return;}if(!d||typeof d.t!=='string')return;
     if(++P.msgs>200)return;
-    if(!P.ch){if(d.t==='join'){const ch=sanitizeChar(d.ch);if(!ch){send(P,{t:'err',m:'캐릭터 정보가 올바르지 않습니다'});return;}P.ch=ch;P.S=SH.calcStats(ch);P.stash=sanitizeStash(d.stash);players.set(P.id,P);newParty(P);send(P,{t:'welcome',id:P.id,ultok:process.env.BC_DEBUG?null:[...ULT_OK]});if(ch._capped){delete ch._capped;markDirty(P);setTimeout(()=>{msg(P,`만렙이 ${SH.LVL_CAP}으로 정해져 레벨이 ${SH.LVL_CAP}이 되었어요`,'#ffd35a');msg(P,'스탯·스킬·특성 포인트를 모두 돌려드렸어요. 다시 찍어 주세요 (C · K · N)','#ffd35a');},1500);}joinHub(P);P.prevParty=Array.isArray(d.prev)?d.prev.slice(0,4).map(String):null;restoreParty(P);sendParty(P.party);send(P,{t:'ch',ch:P.ch,S:P.S});send(P,{t:'stash',s:P.stash});}return;}
+    if(!P.ch){if(d.t==='join'){const ch=sanitizeChar(d.ch);if(!ch){send(P,{t:'err',m:'캐릭터 정보가 올바르지 않습니다'});return;}P.ch=ch;P.S=SH.calcStats(ch);P.stash=sanitizeStash(d.stash);players.set(P.id,P);newParty(P);send(P,{t:'welcome',id:P.id,ultok:process.env.BC_DEBUG?null:[...ULT_OK]});if(ch._capped){delete ch._capped;markDirty(P);setTimeout(()=>{msg(P,`만렙이 ${SH.LVL_CAP}으로 정해져 레벨이 ${SH.LVL_CAP}이 되었어요`,'#ffd35a');msg(P,'스탯·스킬·특성 포인트를 모두 돌려드렸어요. 다시 찍어 주세요 (C · K · N)','#ffd35a');},1500);}joinHub(P);P.prevParty=Array.isArray(d.prev)?d.prev.slice(0,PARTY_MAX).map(String):null;restoreParty(P);sendParty(P.party);send(P,{t:'ch',ch:P.ch,S:P.S});send(P,{t:'stash',s:P.stash});}return;}
     const h=H[d.t];if(h){try{h(P,d);}catch(e){console.error('handler',d.t,e);}}});
   ws.on('close',()=>{if(!P.ch)return;leaveInst(P);const pt=P.party;leaveParty(P);players.delete(P.id);});
 });

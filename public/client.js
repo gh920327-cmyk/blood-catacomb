@@ -1314,7 +1314,12 @@ function drawHUD(){const mv=G.mev,cls=myCls(),skills=CLASSES[cls].skills;
   if(hoverMon&&!(boss&&hoverMon===boss)){const m=hoverMon,y=boss?22:6,f=m.hp/m.maxHp;pr(170,y,140,11,PAL.k);pr(171,y+1,Math.round(138*f),9,PAL.R);pr(171,y+1,Math.round(138*f),2,PAL.r);
     const nm=(m.ea&255?`[${SH.eaffNames(m.ea).join('·')}] `:'')+(m.type==='clone'?SH.bossOf(G.floor).n:SH.monName(G.floor,m.type,!!(m.fl&1),m.id));txt(nm,240,y+5.5,12,(m.fl&1)?'#8fd0ff':'#e6dcc3','center');}}
 function drawPartyFrames(){const pt=G.party;if(!pt||pt.members.length<=1)return;let y=40;
-  for(const mb of pt.members){const p=G.players.get(mb.id);const here=!!p;pr(4,y,100,15,'rgba(8,6,12,0.72)');pr(4,y,2,15,CLASS_COL[mb.cls]);
+  if(pt.members.length>4){/* 5~8명: 한 줄 압축 */
+    for(const mb of pt.members){const p=G.players.get(mb.id);const here=!!p;pr(4,y,100,11,'rgba(8,6,12,0.72)');pr(4,y,2,11,CLASS_COL[mb.cls]);
+      txt((mb.id===pt.leader?'★':'')+mb.name,8,y+3.5,10,here?'#e6dcc3':'#6b6275');txt(here?(p.downed?'쓰러짐':''+mb.lvl):(G.kind==='hub'?'던전':'마을'),102,y+3.5,9,here&&p.downed?'#ff6a5a':'#9e937a','right');
+      if(here){const f=p.maxHp?p.hp/p.maxHp:0;pr(8,y+8,94,2,PAL.k);pr(8,y+8,Math.round(94*f),2,p.downed?'#6b6275':'#c0392b');}
+      y+=12;}}
+  else for(const mb of pt.members){const p=G.players.get(mb.id);const here=!!p;pr(4,y,100,15,'rgba(8,6,12,0.72)');pr(4,y,2,15,CLASS_COL[mb.cls]);
     txt((mb.id===pt.leader?'★ ':'')+mb.name,9,y+4.5,11,here?'#e6dcc3':'#6b6275');txt(`${CLASSES[mb.cls].n} ${mb.lvl}`,102,y+4.5,10,'#9e937a','right');
     if(here){const f=p.maxHp?p.hp/p.maxHp:0;pr(9,y+10,92,3,PAL.k);pr(9,y+10,Math.round(92*f),3,p.downed?'#6b6275':'#c0392b');if(p.downed)txt('쓰러짐',102,y+11,9,'#ff6a5a','right');}
     else txt(G.kind==='hub'?'던전에 있음':'마을에 있음',9,y+11,9,'#6b6275');
