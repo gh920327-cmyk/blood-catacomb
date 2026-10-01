@@ -2163,7 +2163,7 @@ function drawRaidUI(){const rs=G.raid;if(!rs||!inDungeon()||!G.map||!G.map.raid)
   y2=drawRaidX(rs,y2);
   const nb=nearBell();if(nb&&!meDowned())txt(`${keyLabel(kbCode('act'))}: ${nb.lab||BELL_NM[nb.b.c]+' 종 치기'}`,me.x-camX,me.y-camY+10,11,'#ffd35a','center');
   if(meDowned()){const p=G.players.get(myId);txt(rs.deaths<0?'연습 모드 · 8초 뒤 다시 일어납니다':`8초 뒤 부활 · 남은 데스 카운트 ${Math.max(0,rs.deaths)}`,240,138,12,'#ffd35a','center');}
-  if(rs.fail){pr(0,0,W,H,'rgba(40,4,8,0.35)');bigTxt('공략 실패',240,96,16,'#e0473a',2);txt('잠시 뒤 마을로 돌아갑니다',240,118,12,'#e6dcc3','center');}
+  if(rs.fail){pr(0,0,W,H,'rgba(40,4,8,0.35)');bigTxt('공략 실패',240,96,16,'#e0473a',2);if(rs.retry){txt(`${rs.retry}초 뒤 마을로 돌아갑니다`,240,118,12,'#e6dcc3','center');button(170,128,140,18,'2관문부터 재도전',()=>{net({t:'rretry'});sfx('pick');},{size:12,main:true,tip:[['보스방 앞에서 바로 다시 시작','#ffd35a',12],['1관문 퍼즐 없이 · 데스 카운트와 보스 체력 초기화','#e6dcc3',11],['파티 누구든 누르면 모두 함께 재도전해요','#9e937a',11]]});}else txt('잠시 뒤 마을로 돌아갑니다',240,118,12,'#e6dcc3','center');}
   else if(rs.done&&!G.auc&&!G.mvp&&time-(G.raidDoneT||0)<6){bigTxt(`${def.n} 클리어!`,240,96,16,'#ffd35a',2);}
   /* 레이드 종료 후: 나가기 · 전투 결과 켜기/끄기 */
   if(rs.done||rs.fail){let bx=x+w+3;if(G.mvp){const on=!G.mvpHide;button(bx,y,56,13,on?'결과 숨기기':'전투 결과',()=>{G.mvpHide=on;if(!on)G.mvp.pin=1;},{size:9,main:!on});bx+=59;}
