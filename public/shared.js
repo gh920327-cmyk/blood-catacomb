@@ -536,7 +536,7 @@ function advDk(k,lvl){const d=ADV_DK[k];if(d==null)return 1;if(!Array.isArray(d)
 function advVar(ch,sid){const a=advOf(ch);return a&&ADV_VAR[ch.adv]&&ADV_VAR[ch.adv][sid]||null;}
 function advOf(ch){return ch&&ch.adv&&ADV[ch.adv]&&ADV[ch.adv].cls===ch.cls?ADV[ch.adv]:null;}
 function ultsOf(ch){const C=CLASSES[ch.cls];const a=advOf(ch);return (C.ults||[]).concat(a?[a.ult]:[]);}
-function advChangeCost(lvl){return 20000+lvl*1000;}
+function advChangeCost(lvl){return 3000;}
 for(const a in ADV){const A=ADV[a];A.sk.forEach((s,i)=>{SKILLS[s].lvl=[30,30,34,38][i]||30;SKILLS[s].cls=A.cls;SKILLS[s].adv=a;});SKILLS[A.ult].lvl=ADV_LVL;SKILLS[A.ult].cls=A.cls;SKILLS[A.ult].adv=a;}
 function skillMul(rank){return 1+0.12*Math.max(0,rank-1);}
 function defaultSkills(cls){const s=CLASSES[cls].skills;return{sk:{[s[0]]:1,[s[1]]:1},bar:[s[0],s[1],null,null,null,null]};}
