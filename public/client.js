@@ -1545,7 +1545,7 @@ function render(){
   drawWorldUI(icx,icy);drawPartyArrows(icx,icy);drawHUD();drawTut();drawChat();
   if(G.trade)drawTrade();if(G.talent)drawTalents();else if(G.chron)drawChron();else if(G.comm)drawComm();else if(G.anal)drawAnal();else if(G.rec)drawRecords();else if(showSkills)drawSkills();else if(showChar)drawChar();else if(showShop)drawShop();else if(G.fac)drawFacPanel();
   if(showInv&&!showSkills&&!G.talent&&!G.rec)drawInv();
-  if(!G.anal)button(G.kind==='hub'&&!G.comm?198:130,3,60,13,`분석기 (${keyLabel(kbCode('anal'))})`,()=>openAnal(true),{size:9,tip:[['전투력 분석기','#ffd35a',12],['어떤 스킬이 피해를 얼마나 넣었는지 보여줘요','#e6dcc3',11]]});
+  if(!G.anal)button(G.kind==='hub'?(!G.comm?198:130):268,G.kind==='hub'?3:222,60,13,`분석기 (${keyLabel(kbCode('anal'))})`,()=>openAnal(true),{size:9,tip:[['전투력 분석기','#ffd35a',12],['어떤 스킬이 피해를 얼마나 넣었는지 보여줘요','#e6dcc3',11]]});
   if(G.kind==='hub'&&!G.comm)button(130,3,66,13,`커뮤니티 (${keyLabel(kbCode('comm'))})`,()=>openComm(true),{size:9,tip:[['친구 · 접속자 목록','#ffd35a',12],['멀리 있어도 파티 초대 · 정보 보기','#e6dcc3',11]]});
   if(G.insp)drawInsp();
   if(G.portalMenu)drawPortalMenu();
