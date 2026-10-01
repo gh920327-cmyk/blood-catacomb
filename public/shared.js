@@ -645,6 +645,22 @@ function monName(floor,type,elite,id){const th=themeOf(floor);const base=type===
 const RAR_N=['일반','마법','희귀','전설','신화'];
 const SLOTN={weapon:'무기',armor:'갑옷',ring:'반지'};
 const FAMN={melee:'근접 무기',bow:'활',staff:'지팡이',gun:'총'};
+/* 꾸미기 무기 외형: 능력치 변화 없음 · sprites/skins.png 24x24 칸(col) · 무기 계열(fam)마다 하나씩 장착 */
+const SKIN_PRICE=5000;
+const SKINS={
+  katana:{n:'벚꽃 카타나',fam:'melee',col:0,d:'검은 칼집에서 벚꽃 문양 칼날이 빛난다'},
+  tuna:{n:'냉동 참치',fam:'melee',col:1,d:'꽁꽁 언 참치. 맞으면 아프다'},
+  pan:{n:'무쇠 프라이팬',fam:'melee',col:2,d:'달걀 프라이도, 몬스터도 한 번에'},
+  leek:{n:'대파',fam:'melee',col:3,d:'싱싱한 대파 한 단'},
+  umbrella:{n:'물방울 우산',fam:'melee',col:4,d:'흑월의 비도 막아 주는 보라 우산'},
+  baguette:{n:'바게트',fam:'melee',col:6,d:'갓 구운 바게트. 겉바속촉'},
+  broom:{n:'마녀 빗자루',fam:'staff',col:5,d:'빨간 리본을 묶은 짚 빗자루'},
+  lollipop:{n:'왕 막대사탕',fam:'staff',col:7,d:'무지개 소용돌이 사탕'},
+  catpaw:{n:'고양이 발바닥 지팡이',fam:'staff',col:10,d:'말랑한 젤리가 달린 지팡이'},
+  starwand:{n:'별사탕 지팡이',fam:'staff',col:11,d:'반짝이는 별사탕이 달린 요술봉'},
+  heartbow:{n:'하트 활',fam:'bow',col:9,d:'날개 달린 하트 모양 활'},
+  watergun:{n:'장난감 물총',fam:'gun',col:8,d:'물이 가득 찬 장난감 총'}};
+
 const AFF={
   dmg:{f:v=>`+${v} 공격력`,r:(L,R)=>ri(R,1+Math.floor(L*0.6),3+Math.floor(L*1.3))},
   dmgPct:{f:v=>`+${v}% 공격력`,r:(L,R)=>ri(R,5,10+L*2)},
@@ -824,7 +840,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,ADV,ADV_OF,ADV_LVL,ADV_VAR,advVar,CLASS_INFO,advOf,ultsOf,advChangeCost,lvCost,itemLvUp,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
