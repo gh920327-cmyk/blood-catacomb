@@ -175,8 +175,17 @@ const FISH=[{id:'f0',n:'진흙 메기',r:0,v:8},{id:'f1',n:'비늘 붕어',r:0,v
   {id:'f10',n:'심연의 아귀',r:3,v:400,dust:4},{id:'f11',n:'황금 비늘 용어',r:3,v:600,gem:2}];
 const FISH_RN=['일반','고급','희귀','전설'],FISH_RC=['#e6dcc3','#7aa2ff','#ffd35a','#ff8a1f'];
 const FISH_GN=['보통','큼','월척','전설급'],FISH_GC=['#9e937a','#e6dcc3','#7fd05a','#ff8a1f'];function fishGrade(f,cm){if(!f)return 0;const q=cm/(1+f.r*0.6);return q<24?0:q<36?1:q<52?2:3;}
-function rollFishCm(R,f){R=R||Math.random;let b=12+28*Math.pow(R(),1.5);const j=R();if(j<0.007)b*=1.8+R()*0.6;else if(j<0.06)b*=1.3+R()*0.3;return Math.round(b*(1+f.r*0.6)*10)/10;}
-function rollFish(R,lvl){R=R||Math.random;const x=R()*100;const b=Math.min(4,(lvl|0)/25);const r=x<2+b?3:x<12+b*2?2:x<40?1:0;const pool=FISH.filter(f=>f.r===r);return pool[Math.floor(R()*pool.length)];}
+// 낚시 레벨: 높은 등급이 더 자주 나올 뿐, 잡는 판정(입질·칸·속도)은 그대로
+const FISH_LV_MAX=20;
+function fishNeed(L){return 15+L*10;}
+function fishLvOf(xp){xp=Math.max(0,xp|0);let L=1;while(L<FISH_LV_MAX&&xp>=fishNeed(L)){xp-=fishNeed(L);L++;}return{lv:L,cur:L>=FISH_LV_MAX?0:xp,need:L>=FISH_LV_MAX?0:fishNeed(L)};}
+function fishXpGain(f,g){return Math.round([5,10,20,40][f?f.r|0:0]*[1,1.25,1.5,2][g|0]);}
+// 희귀도 확률(%) [일반, 고급, 희귀, 전설]
+function fishOdds(L){const t=(Math.max(1,Math.min(FISH_LV_MAX,L|0))-1)/(FISH_LV_MAX-1);const lg=2+4*t,rr=10+10*t,hi=28+6*t;return[100-lg-rr-hi,hi,rr,lg];}
+// 크기 대박 확률 [아주 큼, 큼]
+function fishBigOdds(L){const t=(Math.max(1,Math.min(FISH_LV_MAX,L|0))-1)/(FISH_LV_MAX-1);return[0.007*(1+t),0.06*(1+0.6*t)];}
+function rollFishCm(R,f,L){R=R||Math.random;const [j1,j2]=fishBigOdds(L||1);let b=12+28*Math.pow(R(),1.5);const j=R();if(j<j1)b*=1.8+R()*0.6;else if(j<j2)b*=1.3+R()*0.3;return Math.round(b*(1+f.r*0.6)*10)/10;}
+function rollFish(R,L){R=R||Math.random;const o=fishOdds(L||1);const x=R()*100;const r=x<o[3]?3:x<o[3]+o[2]?2:x<o[3]+o[2]+o[1]?1:0;const pool=FISH.filter(f=>f.r===r);return pool[Math.floor(R()*pool.length)];}
 // ---------- 염색 · 감정표현 ----------
 const DYES=[{n:'기본'},{n:'핏빛',h:0},{n:'황금',h:44},{n:'숲',h:110},{n:'청록',h:172},{n:'바다',h:212},{n:'자수정',h:276},{n:'장미',h:330},{n:'칠흑',dark:1},{n:'설원',light:1}];
 const DYE_COST=800;
@@ -1039,7 +1048,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={MOUNTS,MOUNT_PRICE,FOOTS,FOOT_PRICE,LEGENDS,legendOk,AWK_ULT_N,FISH_GN,FISH_GC,fishGrade,rollFishCm,COSTUMES,COS_PRICE,AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={FISH_LV_MAX,fishNeed,fishLvOf,fishXpGain,fishOdds,fishBigOdds,MOUNTS,MOUNT_PRICE,FOOTS,FOOT_PRICE,LEGENDS,legendOk,AWK_ULT_N,FISH_GN,FISH_GC,fishGrade,rollFishCm,COSTUMES,COS_PRICE,AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,ADV,ADV_OF,ADV_LVL,ADV_VAR,advVar,CLASS_INFO,advOf,ultsOf,advChangeCost,lvCost,itemLvUp,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
