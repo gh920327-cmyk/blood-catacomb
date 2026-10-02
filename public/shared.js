@@ -965,7 +965,8 @@ const SETS={
   bell:{n:'종지기',raid:'bell',lvl:20,nm:{melee:'종지기의 망치',bow:'종탑 파수꾼의 활',staff:'종소리 지팡이',gun:'종탑 종소리 권총',armor:'종지기의 누더기 갑옷',ring:'녹슨 종 반지'},b2:{hpPct:15,armorPct:10},b2d:'체력 +15%, 방어력 +10%',b3d:'스킬이 적에게 맞으면 5초마다 종소리 파동 (주변 피해 150%)'},
   twins:{n:'쌍둥이 마녀',raid:'mirror',lvl:30,nm:{melee:'황혼의 쌍검',bow:'빛과 그림자의 활',staff:'쌍둥이 달의 지팡이',gun:'거울 쌍권총',armor:'마녀의 거울 드레스',ring:'엇갈린 달 반지'},b2:{crit:8},b2d:'치명타 확률 +8%',b3d:'직전과 다른 스킬을 쓰면 그 스킬 피해 +40%'},
   clock:{n:'태엽 기사',raid:'clock',lvl:40,nm:{melee:'태엽 기사의 창',bow:'태엽 석궁',staff:'톱니 왕홀',gun:'태엽 심장 소총',armor:'태엽 기사단 흉갑',ring:'멈추지 않는 톱니 반지'},b2:{as:12},b2d:'공격 속도 +12%',b3d:'스킬 10번 사용마다 6초간 태엽 폭주 (재사용 대기 -50%)'},
-  moon:{n:'흑월',raid:'moon',lvl:50,nm:{melee:'흑월의 처형검',bow:'흑월 사냥꾼의 활',staff:'흑월의 홀',gun:'흑월 사냥꾼의 총',armor:'흑왕의 갑주',ring:'꺼지지 않는 흑월 반지'},b2:{bossDmg:15},b2d:'보스에게 주는 피해 +15%',b3d:'카운터 성공 시 10초간 모든 피해 +35%, 카운터 재사용 초기화'}};
+  moon:{n:'흑월',raid:'moon',lvl:50,nm:{melee:'흑월의 처형검',bow:'흑월 사냥꾼의 활',staff:'흑월의 홀',gun:'흑월 사냥꾼의 총',armor:'흑왕의 갑주',ring:'꺼지지 않는 흑월 반지'},b2:{bossDmg:15},b2d:'보스에게 주는 피해 +15%',b3d:'카운터 성공 시 10초간 모든 피해 +35%, 카운터 재사용 초기화'},
+  ember:{n:'잿불',raid:null,field:1,lvl:60,nm:{melee:'잿불 수호자의 검',bow:'잿불 순례자의 활',staff:'꺼지지 않는 등불 지팡이',gun:'잿불 화승총',armor:'잿불 순례자의 망토',ring:'마지막 불씨 반지'},b2:{hpPct:10,bossDmg:10},b2d:'체력 +10%, 보스에게 주는 피해 +10%',b3d:'잿불의 공명: 켜진 유물 태그마다 유물 1개를 더 가진 것으로 계산 (결투장 제외)'}};
 const RAID_SET={bell:'bell',mirror:'twins',clock:'clock',moon:'moon'};
 function genSet(id,L,fam,R,slot){R=R||Math.random;const S0=SETS[id];const it=genItem(L,fam,3,0,R,3,slot);it.set=id;it.name=it.slot==='weapon'?S0.nm[fam]:S0.nm[it.slot];it.value=Math.round(it.value*1.5);return it;}
 function setCount(ch,id){let n=0;for(const s of['weapon','armor','ring']){const it=ch.eq[s];if(it&&it.set===id&&canEquip(it,ch.cls))n++;}return n;}
@@ -1063,13 +1064,14 @@ const RBAG_SZ=[[4,3],[5,3],[5,4],[6,4]];
 const RINV_MAX=16;
 function rotA(dx,dy,r){for(let i=0;i<(r&3);i++){const t=dx;dx=-dy;dy=t;}return[dx,dy];}
 // 가방 평가 → {lv:[칸별 유효 레벨], on:{id:lv}, sets:{tag:n}, st:{능력치}, sp:{특수}}
-function relicEval(ch){const B=ch&&ch.rbag;const out={lv:[],on:{},sets:{},st:{},sp:{},act:[]};if(!B||!Array.isArray(B.c))return out;const W=B.w,H=B.h,C=B.c;const add=new Array(W*H).fill(0);
+function relicEval(ch,res){if(res==null)res=ch&&ch.eq&&setCount(ch,'ember')>=3?1:0;const B=ch&&ch.rbag;const out={lv:[],on:{},sets:{},st:{},sp:{},act:[],res};if(!B||!Array.isArray(B.c))return out;const W=B.w,H=B.h,C=B.c;const add=new Array(W*H).fill(0);
   for(let i=0;i<C.length;i++){const q=C[i];if(!q||q.t!=='s'||!TABLETS[q.id])continue;const T=TABLETS[q.id];const x=i%W,y=(i/W)|0;
     if(T.cond==='edge'&&!(x===0||y===0||x===W-1||y===H-1))continue;
     if(T.cond==='alone'){let nb=false;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;const o=C[ny*W+nx];if(o&&o.t==='s'){nb=true;break;}}if(nb)continue;}
     for(const [ax,ay,v] of T.a){const [dx,dy]=rotA(ax,ay,q.r|0);const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;add[ny*W+nx]+=v;out.act.push([i,ny*W+nx,v]);}}
   for(let i=0;i<C.length;i++){const q=C[i];if(!q||q.t!=='r'||!RELICS[q.id]){out.lv[i]=0;continue;}const R=RELICS[q.id];const L=Math.max(0,Math.min(R.max,(q.lv|0)+add[i]));out.lv[i]=L;if(L>0){out.on[q.id]=Math.max(out.on[q.id]||0,L);}}
   for(const id in out.on){const R=RELICS[id];out.sets[R.tag]=(out.sets[R.tag]||0)+1;if(R.st){const s=R.st(out.on[id]);for(const k in s)out.st[k]=(out.st[k]||0)+s[k];}}
+  if(res)for(const tg in out.sets)out.sets[tg]+=res;
   for(const tg in out.sets)for(const [n,,b] of RSET[tg])if(out.sets[tg]>=n)for(const k in b){if(k in{fire4:1,frost4:1,lamp4:1})out.sp[k]=1;else out.st[k]=(out.st[k]||0)+b[k];}
   return out;}
 function relicNewBag(lv){const s=RBAG_SZ[Math.max(0,Math.min(RBAG_SZ.length-1,lv|0))];return{w:s[0],h:s[1],c:new Array(s[0]*s[1]).fill(null)};}

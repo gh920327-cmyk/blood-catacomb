@@ -1558,7 +1558,7 @@ function drawRelicTab(x,y,w,h){const ch=G.ch;const B=ch.rbag;const I=ch.rinv||[]
   // 석판 영향 표시
   if(hovI>=0){for(const [s0,t0,v] of E.act)if(s0===hovI||t0===hovI){const tx=gx+(t0%B.w)*(sz+1),ty=gy+((t0/B.w)|0)*(sz+1);pr(tx,ty,sz,1,v>0?'#7fd05a':'#ff6a5a');pr(tx,ty+sz-1,sz,1,v>0?'#7fd05a':'#ff6a5a');}}
   // 세트
-  const sx0=gx+B.w*(sz+1)+4;let sy0=gy;txt('계열',sx0,sy0+3,9,'#9e937a');sy0+=10;
+  const sx0=gx+B.w*(sz+1)+4;let sy0=gy;txt('계열',sx0,sy0+3,9,'#9e937a');if(E.res){txt('공명+1',sx0+20,sy0+3,8,'#ff9a4a');uiRects.push({x:sx0,y:sy0,w:44,h:8,tip:[['잿불의 공명','#ff9a4a',12],['잿불 세트 3부위 효과',  '#c9c1b2',11],['켜진 계열마다 유물 1개를 더 센다','#7fd05a',11]]});}sy0+=10;
   for(const tg in SH.RTAG){const n=E.sets[tg]|0;const T=SH.RTAG[tg];const S2=SH.RSET[tg];const on2=n>=2,on4=n>=4;rGlyph(tg,sx0,sy0,n?T.c:'#3a3442');txt(`${n}`,sx0+11,sy0+4,9,on4?'#ffd35a':on2?T.c:'#6b6275');
     uiRects.push({x:sx0,y:sy0,w:28,h:9,tip:[[`${T.n} 계열 ${n}개`,T.c,12],...S2.map(([k,d2])=>[`${k}개: ${d2}`,n>=k?'#7fd05a':'#6b6275',11])]});sy0+=11;}
   // 보관함
