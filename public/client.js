@@ -1111,6 +1111,7 @@ function drawPlayer0(p,icx,icy,isMe){const cls=isMe?myCls():(p.cls||'warrior');c
   const sx=bx-(s.w>>1)+(s.dx||0),sy=by-s.h+2+(s.dy||0);
   if(look.ar>=2&&!s.ai)drawCape(bx,by,e.face,look.ar,e.moving,src.animT);
   if(cls==='guardian'&&!(src.spin>0)&&!s.anim)drawShield(bx,by,e.face,false,look.ar);
+  if(look.cs&&COS_WING[look.cs])drawCosWings(src,look.cs,bx,by,e.face);
   if(LG&&!(flash>0)){const mv=isMe?me.moving:p.moving;drawLegend(LG,s,sx,sy,e.face,mv,isMe?me.x:p.dx,isMe?me.y:p.dy,!!(p&&p.selPv));}
   else blitS(flash>0?s.fc:s.c,s,sx-(flash>0&&s.ai?e.face:0),sy,flash);
   if(riding)drawMount(look.mt,bx,by,e.face,src.animT,isMe?me.moving:p.moving,1);
@@ -1122,6 +1123,22 @@ function drawPlayer0(p,icx,icy,isMe){const cls=isMe?myCls():(p.cls||'warrior');c
   if(look.rr>=2&&((time*4|0)%3===0)){wpx(bx+(e.face>0?-4:3),by-5,look.rr===3?'o':'c');}
   if(p&&p.shield){wx.globalAlpha=0.5;for(let n=0;n<24;n++){const t=n/24*Math.PI*2+time*2;if(n%2)wpx(Math.round(bx+Math.cos(t)*9),Math.round(by-6+Math.sin(t)*10),'c');}}
   wx.globalAlpha=1;return s;}
+/* ===== 의상 연출: 대천사 — 공격할 때 등 뒤의 큰 날개가 펼쳐짐 ===== */
+const COS_WING={archangel:1};const WING_C=[];const WING_N=10;
+function wingCanvas(st){if(WING_C[st])return WING_C[st];const k=st/(WING_N-1),W=72,H=46,ox=36,oy=31;const g=new Uint8Array(W*H);
+  const put=(x,y,v)=>{x=Math.round(x);y=Math.round(y);if(x<0||y<0||x>=W||y>=H)return;const i=y*W+x;if(v>g[i])g[i]=v;};
+  for(const sd of[-1,1]){const A=i=>0.12+k*(0.12+i*0.33),L=i=>(5+k*19)*(1-i*0.06);
+    for(let a=A(0);a<=A(4);a+=0.03){const t=(a-A(0))/Math.max(0.01,A(4)-A(0));const Lc=(L(0)*(1-t)+L(4)*t)*0.8;for(let r=0;r<=Lc;r+=0.5)put(ox+sd*Math.sin(a)*r,oy-Math.cos(a)*r,1);}
+    for(let i=0;i<5;i++){const a=A(i),l=L(i);for(let r=0;r<=l;r+=0.5){const v=r>l*0.78?3:2;const x=ox+sd*Math.sin(a)*r,y=oy-Math.cos(a)*r;put(x,y,v);if(r<l*0.7){put(x,y+1,v);put(x+sd*0.6,y,v);}}}}
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');const col=['', '#fff1c8','#ffffff','#ffe08a'];
+  for(let y=0;y<H;y++)for(let xx=0;xx<W;xx++){const v=g[y*W+xx];if(v){x.fillStyle=col[v];x.fillRect(xx,y,1,1);}else{let n=0;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const X=xx+dx,Y=y+dy;if(X>=0&&Y>=0&&X<W&&Y<H&&g[Y*W+X])n=1;}if(n){x.fillStyle='#7a4e0c';x.fillRect(xx,y,1,1);}}}
+  return(WING_C[st]={c,ox,oy});}
+function drawCosWings(src,cs,bx,by,face){if(!COS_WING[cs])return;const now=time,d=Math.max(0,Math.min(0.1,now-(src._wt||now)));src._wt=now;
+  const atk=src.atkAnim>0;src._wk=atk?Math.min(1,(src._wk||0)+d*10):Math.max(0,(src._wk||0)-d*3.3);const k=src._wk;if(k<=0.02)return;
+  const st=Math.max(1,Math.min(WING_N-1,Math.round(k*(WING_N-1))));const w=wingCanvas(st);const cx=bx-face*1,cy=by-15;
+  if(k>0.35){wx.save();wx.globalAlpha=0.28*k;const gr=wx.createRadialGradient(cx,cy-6,1,cx,cy-6,30);gr.addColorStop(0,'#fff6c8');gr.addColorStop(1,'rgba(255,214,90,0)');wx.fillStyle=gr;wx.fillRect(cx-32,cy-38,64,64);wx.restore();}
+  wx.drawImage(w.c,cx-w.ox,cy-w.oy);
+  if(atk&&k>0.5&&R()<0.3)part(cx+(R()<0.5?-1:1)*rf(8,18),cy-rf(0,14),rf(-8,8),rf(-6,4),R()<0.6?'#ffffff':'#ffe08a',rf(0.5,0.9),{glow:true,z:rf(6,12),vz:rf(-6,4)});}
 /* ===== 탈것 · 전설 외형 · 발자국 (전부 코드로 그림) ===== */
 function fr_(x,y,w,h,c){wx.fillStyle=c;wx.fillRect(x,y,w,h);}
 function mountLift(k,t,mv){t=t||0;if(k==='duck')return 1+Math.round(Math.sin(t*4)*0.8);if(k==='broom')return 7+Math.round(Math.sin(t*3)*1.2);if(k==='cloud')return 6+Math.round(Math.sin(t*2.5)*1);if(k==='carpet')return 6+Math.round(Math.sin(t*3.5)*0.8);if(k==='skate')return 3;return 0;}
