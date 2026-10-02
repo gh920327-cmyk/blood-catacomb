@@ -23,6 +23,17 @@ jobs:
         with:
           node-version: 20
       - run: npm install --no-audit --no-fund
-      - run: npx electron-builder --win --publish always
+      - name: build
+        shell: bash
+        run: |
+          set -o pipefail
+          npx electron-builder --win --publish always 2>&1 | tee build.log
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 실패하면 로그 끝부분을 공개 주석(annotation)으로 남겨 로그인 없이도 원인을 볼 수 있게
+      - name: report failure
+        if: failure()
+        shell: bash
+        run: |
+          tail -n 45 build.log | cut -c1-220 | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}' > tail.txt
+          echo "::error title=build log::$(cat tail.txt)"
