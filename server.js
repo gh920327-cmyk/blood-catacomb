@@ -257,10 +257,15 @@ function counterWindow(inst,m,T){const moon=m.ctrMode==='moon',hard=!!(inst.raid
     const mul=moon?(hard?3.6:3.0):2.4,kb=moon?300:220;
     for(const p of livingPlayers(inst)){const d=Math.hypot(p.x-m.x,p.y-m.y);if(d<FR+4){hurtPlayer(inst,p,m.dmg*mul,m,{what:`${m.bname||'보스'}의 강공격`});if(!p.downed){const a=Math.atan2(p.y-m.y,p.x-m.x);send(p,{t:'force',vx:Math.cos(a)*kb,vy:Math.sin(a)*kb,d:0.25});}}}
     if(inst.allies)for(const a of inst.allies)if(!a.downed&&Math.hypot(a.x-m.x,a.y-m.y)<FR)hurtAlly(inst,a,m.dmg*1.5);
-    if(moon)moonCtrChain(inst,m);});
+    if(moon)moonCtrChain(inst,m,false);});
   return win+CTR_GRACE+0.4;}
 /* 흑왕: 2페이즈부터 연속 카운터 (성공·실패와 상관없이 이어서 한 번 더) */
-function moonCtrChain(inst,m){if(m.phase<2||m.dead||m.chainLeft===0)return;if(m.chainLeft==null){if(R()>(m.phase>2?0.55:0.4))return;m.chainLeft=1;}m.chainLeft--;later(inst,0.55,()=>{if(m.dead||m.hidden)return;const ps=livingPlayers(inst);if(!ps.length)return;fx(inst,{k:'bsay',id:m.id,m:'한 번 더!'});m.busy=counterWindow(inst,m,pick(ps));});}
+function moonCtrChain(inst,m,ok){if(m.phase<2||m.dead||m.chainLeft===0)return;if(m.chainLeft==null){if(R()>(m.phase>2?0.55:0.4))return;m.chainLeft=1;}m.chainLeft--;m.chainFirst=!!ok;later(inst,0.55,()=>{if(m.dead||m.hidden)return;const ps=livingPlayers(inst);if(!ps.length)return;fx(inst,{k:'bsay',id:m.id,m:'한 번 더!'});m.busy=counterWindow(inst,m,pick(ps));m.chainWin=m.ctrId;});}
+/* 2연속 카운터 모두 성공 → 흑월 균열: 진짜 무력화 + 파티 버프 */
+function moonCrack(inst,m,P){m.chainWin=0;m.busy=3;m.stun=Math.max(m.stun||0,3);m.grog=inst.time+4;m.wind=0;m.atkT=0;fx(inst,{k:'bsay',id:m.id,m:'크윽… 흑월이… 갈라진다…!'});fx(inst,{k:'shake',v:9});fx(inst,{k:'flash'});
+  fx(inst,{k:'sv',s:'awnova',x:r1(m.x),y:r1(m.y),r:120,c:'#ffe9a8',sid:'',d:1});fx(inst,{k:'sv',s:'starburst',x:r1(m.x),y:r1(m.y-10),r:60,d:0.9});
+  for(const q of livingPlayers(inst)){buff(q,'dmg',0.15,10);fx(inst,{k:'txt',x:r1(q.x),y:r1(q.y-30),s:'새벽의 기세!',c:'#ffd35a'});}
+  for(const q of instPlayers(inst))msg(q,`흑월 균열! ${P.ch.name}님의 연속 카운터로 흑왕이 무력화됐다 (3초 · 받는 피해 +30%) · 파티 공격력 +15% 10초`,'#ffd35a');}
 /* 흑왕 카운터 성공: 무력화되지 않고 튕겨낸 뒤 카운터한 사람에게 약한 반격 (짧은 경고 → 피해야 함) */
 function moonRetaliate(inst,m,P){const hard=!!(inst.raid&&inst.raid.hard),t=hard?0.42:0.5,dm=m.dmg*(hard?1.0:0.8);const v=pick(['slash','drop','cross']);m.busy=t+0.5;
   fx(inst,{k:'bsay',id:m.id,m:pick(['가소롭다!','그 정도로는 안 된다.','흑월은 꺾이지 않는다!'])});
@@ -269,10 +274,10 @@ function moonRetaliate(inst,m,P){const hard=!!(inst.raid&&inst.raid.hard),t=hard
   else if(v==='drop'){const x=P.x,y=P.y;fx(inst,{k:'tele',x:r1(x),y:r1(y),r:34,d:t,c:'p'});later(inst,t,()=>{if(m.dead)return;fx(inst,{k:'sv',s:'awnova',x:r1(x),y:r1(y),r:34,c:'#9a7ad8',sid:'',d:0.6});hitCircle(inst,x,y,34,dm,m,{what:'흑왕의 반격'});});}
   else{const a0=Math.atan2(P.y-m.y,P.x-m.x),L=150;const segs=[0,Math.PI/2].map(o=>[m.x-Math.cos(a0+o)*L,m.y-Math.sin(a0+o)*L,m.x+Math.cos(a0+o)*L,m.y+Math.sin(a0+o)*L]);for(const g of segs)fx(inst,{k:'teleline',x1:r1(g[0]),y1:r1(g[1]),x2:r1(g[2]),y2:r1(g[3]),w:10,d:t+0.08});
     later(inst,t+0.08,()=>{if(m.dead)return;for(const g of segs)fx(inst,{k:'sv',s:'awbeam',x1:r1(g[0]),y1:r1(g[1]-6),x2:r1(g[2]),y2:r1(g[3]-6),w:10,c:'#9a7ad8',sid:'',d:0.4});for(const p of livingPlayers(inst))if(segs.some(g=>distSeg(p.x,p.y,g[0],g[1],g[2],g[3])<12))hurtPlayer(inst,p,dm,m,{what:'흑왕의 십자 반격'});});}
-  later(inst,t+0.2,()=>moonCtrChain(inst,m));}
+  later(inst,t+0.2,()=>moonCtrChain(inst,m,true));}
 // 보스 기준 플레이어 위치: 1 헤드(앞), -1 백(뒤), 0 옆
 function bossSide(m,P){const f=m.face<0?-1:1;const dx=P.x-m.x,dy=P.y-m.y,d=Math.hypot(dx,dy)||1;const c=dx*f/d;return c>0.3?1:c<-0.5?-1:0;}
-function counterHit(inst,m,P){if(P.S&&P.S.set3&&P.S.set3.includes('moon')){buff(P,'sdmg',0.35,10);P.ctrT=0;send(P,{t:'ctrReset'});fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-34),s:'흑월 각성!',c:'#c9a0e8'});}if(inst.raid){const s=rst(inst,P);if(s)s.ctr++;}m.cwEnd=0;m.countered=m.ctrId;m.busy=0;m.wind=0;m.atkT=0;if(m.ctrMode==='moon'){fx(inst,{k:'counter',id:m.id,x:r1(m.x),y:r1(m.y),by:P.ch.name});stInc(P,'ctr');later(inst,0.22,()=>{if(!m.dead)moonRetaliate(inst,m,P);});m.busy=0.9;for(const q of instPlayers(inst))msg(q,`${P.ch.name}님의 카운터! 흑왕이 튕겨내고 반격한다 — 피하세요!`,'#c9a0e8');return;}m.stun=Math.max(m.stun||0,1.8);m.grog=inst.time+1.8;
+function counterHit(inst,m,P){if(P.S&&P.S.set3&&P.S.set3.includes('moon')){buff(P,'sdmg',0.35,10);P.ctrT=0;send(P,{t:'ctrReset'});fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-34),s:'흑월 각성!',c:'#c9a0e8'});}if(inst.raid){const s=rst(inst,P);if(s)s.ctr++;}m.cwEnd=0;m.countered=m.ctrId;m.busy=0;m.wind=0;m.atkT=0;if(m.ctrMode==='moon'){fx(inst,{k:'counter',id:m.id,x:r1(m.x),y:r1(m.y),by:P.ch.name});stInc(P,'ctr');P.ctrT=0;send(P,{t:'ctrReset'});/* 흑왕: 카운터 성공 시 카운터 쿨 초기화 → 혼자서도 연속 카운터 가능 */if(m.chainWin&&m.chainWin===m.ctrId&&m.chainFirst){moonCrack(inst,m,P);return;}later(inst,0.22,()=>{if(!m.dead)moonRetaliate(inst,m,P);});m.busy=0.9;for(const q of instPlayers(inst))msg(q,`${P.ch.name}님의 카운터! 흑왕이 튕겨내고 반격한다 — 피하세요!`,'#c9a0e8');return;}m.stun=Math.max(m.stun||0,1.8);m.grog=inst.time+1.8;
   fx(inst,{k:'counter',id:m.id,x:r1(m.x),y:r1(m.y),by:P.ch.name});fx(inst,{k:'shake',v:3});stInc(P,'ctr');
   for(const q of instPlayers(inst))msg(q,`${P.ch.name}님의 카운터! 보스가 그로기 상태입니다`,'#8fd0ff');}
 
@@ -1374,7 +1379,7 @@ function near2(P,o,r){return Math.hypot(P.x-o.x,P.y-o.y)<=r;}
 function bossList(inst){return inst.monsters.filter(m=>m.boss&&!m.dead);}
 // 공통 보스 AI 틀: 패턴 목록·카운터·추적
 function raidAIcore(inst,m,T,d,dt,sm,o){const r=inst.raid;if(m.invul>0&&m.invul<90){m.invul-=dt;if(m.invul<0)m.invul=0;}if(!(m.faceLock>inst.time))m.face=T.x<m.x?-1:1;m.fightT+=dt;
-  const CB=o.ctrBase||[15,20];if(o.ctrBase&&m.ctrCd!=null&&!m.hidden)m.ctrCd-=dt;/* 흑왕: 패턴 중에도 카운터 쿨이 돈다 */
+  const CB=o.ctrBase||[15,20];if(o.ctrBase&&m.ctrCd!=null&&!m.hidden&&!(m.stun>0))m.ctrCd-=dt;/* 흑왕: 패턴 중에도 카운터 쿨이 돈다 */
   if(m.busy>0){m.busy-=dt;return;}if(m.hidden||m.invul>=90){if(o.idle)o.idle();return;}
   m.ctrCd=(m.ctrCd==null?rf(CB[0]*0.6,CB[1]*0.7)*(o.ctrMul||1):m.ctrCd)-(o.ctrBase?0:dt);if(m.ctrCd<=0){m.ctrCd=rf(CB[0],CB[1])*(m.phase>1?0.85:1)*(o.ctrMul||1);m.chainLeft=null;m.busy=counterWindow(inst,m,T);return;}
   m.patCd-=dt;if(m.patCd<=0){let pool=o.pool(m).filter(p=>p!==m.last);const name=pick(pool);m.last=name;m.busy=(o.P[name]||BP[name])(inst,m,T)||0.5;m.patCd=rf(1.9,2.9)*(r.hard?0.8:1)*(m.phase>1?0.85:1)*(o.tempo?o.tempo(m):1)*(o.patMul||1);return;}
