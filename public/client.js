@@ -598,7 +598,10 @@ const selEl=document.getElementById('select');
 let chosenCls='warrior',delArm=null;
 function clsPreview(cls,ch){const c=document.createElement('canvas');c.width=16;c.height=16;const x=c.getContext('2d');const lk=ch?{a:ch.eq.armor&&ch.eq.armor.kind,ar:ch.eq.armor?ch.eq.armor.rar:0}:{};x.drawImage(playerFrames(cls,lk).idle[0].r.c,0,0);return c;}
 /* 히든 직업: 빛의 기사(흑월 레이드) · 증기총사(태엽 레이드) */
-function clsUnlocked(k){const C=CLASSES[k];if(!C||!C.hidden)return true;const rid=C.unlock||'moon';try{if(localStorage.getItem('bc_'+k))return true;}catch(e){}return loadChars().some(c=>((c.rclr||{})[rid]|0)>0);}
+/* 빛의 기사: 모든 레이드를 하드로 클리어(이 기기의 캐릭터들 합산) · 이미 해금한 기기는 유지 */
+function knightHard(){const A=loadChars();return SH.RAIDS.map(r=>A.some(c=>((c.rclrH||{})[r.id]|0)>0));}
+try{if(!localStorage.getItem('bc_kmig')){if(loadChars().some(c=>((c.rclr||{}).moon|0)>0||c.cls==='knight'))localStorage.setItem('bc_knight','1');localStorage.setItem('bc_kmig','1');}}catch(e){}
+function clsUnlocked(k){const C=CLASSES[k];if(!C||!C.hidden)return true;const rid=C.unlock||'moon';try{if(localStorage.getItem('bc_'+k))return true;}catch(e){}if(loadChars().some(c=>c.cls===k))return true;if(k==='knight')return knightHard().every(Boolean);return loadChars().some(c=>((c.rclr||{})[rid]|0)>0);}
 function knightUnlocked(){return clsUnlocked('knight');}
 function unlockCls(k){try{localStorage.setItem('bc_'+k,'1');}catch(e){}}
 function unlockKnight(){unlockCls('knight');}
@@ -626,6 +629,7 @@ function renderSelect(){
     const cvs=clsPreview(k);b.appendChild(cvs);const n=document.createElement('div');n.innerHTML=`<div class="nm" style="font-size:15px"></div><div class="role"></div><div class="df"></div><div class="d"></div>`;n.querySelector('.nm').textContent=C.n;n.querySelector('.role').textContent=C.role;n.querySelector('.d').textContent=C.desc;{const I=SH.CLASS_INFO[k];n.querySelector('.df').innerHTML=`조작 난이도 <b>${'★'.repeat(I.diff)}${'☆'.repeat(5-I.diff)}</b>`;}b.appendChild(n);
     if(C.hidden)b.classList.add('hid');b.onclick=()=>{chosenCls=k;[...cl.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===k?'true':'false'));renderClsDetail();};cl.appendChild(b);});}
   {[...cl.children].forEach(x=>{if(CLASSES[x.dataset.k].hidden)x.hidden=!clsUnlocked(x.dataset.k);});if(!clsUnlocked(chosenCls))chosenCls='warrior';}
+  {let hh=document.getElementById('hidHint');if(!hh){hh=document.createElement('p');hh.id='hidHint';hh.className='note';hh.style.margin='8px 0 0';cl.after(hh);}if(clsUnlocked('knight'))hh.textContent='';else{const H=knightHard();hh.innerHTML='🔒 히든 직업 <b>빛의 기사</b> — 모든 레이드를 <b>하드</b>로 클리어하면 열려요 ('+SH.RAIDS.map((r,i)=>(H[i]?'✔ ':'· ')+r.n).join('  ')+') · 하드 클리어 '+H.filter(Boolean).length+'/'+SH.RAIDS.length;}}
   renderSyn();renderClsDetail();
   [...cl.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===chosenCls?'true':'false'));
 }
@@ -679,7 +683,7 @@ function handle(d){switch(d.t){
   case 's':onSnap(d);break;
   case 'ch':{const firstCh=!G.ch;const old=G.ch;G.ch=d.ch;G.S=d.S;if(old&&!((old.rclr||{}).clock|0)&&((d.ch.rclr||{}).clock|0)>0&&!clsUnlocked('gunner'))onGunnerUnlock();if(old&&d.ch.lvl>old.lvl){}
     {const cp=SH.power(d.ch);const eqk=c=>['weapon','armor','ring'].map(s=>c.eq[s]?c.eq[s].id+'.'+(c.eq[s].up|0)+'.'+(c.eq[s].L|0)+'.'+(c.eq[s].so||[]).join(''):'-').join('|');if(old&&G.cp!=null&&cp!==G.cp&&eqk(old)!==eqk(d.ch)){const dv=cp-G.cp;msg(`전투력 ${dv>0?'+':''}${dv.toLocaleString()} ${dv>0?'▲':'▼'}  (${cp.toLocaleString()})`,dv>0?'#7fd05a':'#e0574a');}G.cp=cp;}
-    saveCurrent(d.ch);break;}
+    saveCurrent(d.ch);if(old&&JSON.stringify(old.rclrH||{})!==JSON.stringify(d.ch.rclrH||{}))knightCheck();break;}
   case 'tp':me.x=d.x;me.y=d.y;me.path=null;me.lastSent='';break;
   case 'force':me.force={vx:d.vx,vy:d.vy,t:d.d};break;
   case 'victory':G.victory=time;sfx('legend');if(G.kind==='hub')setTimeout(()=>playEnding('end1'),3500);else G.pendEnd='end1';break;
@@ -2110,7 +2114,8 @@ const ENDINGS=[{id:'end1',n:'엔딩 1 · 심장이 멈춘 날',hint:'지하 100�
     {img:'art/ph_karnas3.jpg',t:'흑왕 카르나스가 무릎을 꿇었다.\n깨어진 심장 조각 사이로, 그는 마지막으로 엘라의 이름을 불렀다.'},
     {img:'art/end2.jpg',t:'검은 달이 부서지고, 하렌에 첫 새벽이 왔다.\n사람들은 등불을 높이 들어 해를 맞았다.'},
     {img:'art/intro1.jpg',t:'새벽의 종이 다시 울린다.\n엘라는 등불을 든 자에게 새벽의 맹세를 건넸다.\n"이제 당신도 새벽 기사예요."'}]}];
-function onFirstDawn(){unlockKnight();msg('새벽의 맹세를 받았다 · 히든 직업 「빛의 기사」 해금!','#ffd35a');G.knightNew=time;}
+function onFirstDawn(){if(clsUnlocked('knight'))return;const n=knightHard().filter(Boolean).length;msg(`새벽의 기사단이 지켜보고 있다 · 모든 레이드를 하드로 정복하면 「빛의 기사」가 응답한다 (하드 클리어 ${n}/${SH.RAIDS.length})`,'#ffd35a');}
+function knightCheck(){let had=false;try{had=!!localStorage.getItem('bc_knight');}catch(e){}if(!had&&knightHard().every(Boolean)){unlockKnight();msg('모든 레이드를 하드로 정복했다 · 새벽의 맹세를 받았다 · 히든 직업 「빛의 기사」 해금!','#ffd35a');G.knightNew=time;sfx('legend');}}
 function playEnding(id,done){const e=ENDINGS.find(q=>q.id===id);if(!e)return;playCine(e.list,{title:e.title,done});}
 function openChron(on){if(on){G.comm=false;G.anal=false;}G.chron=on;G.chronD=null;if(on){G.rec=false;G.talent=false;showSkills=false;showChar=false;showInv=false;closeFac();G.chronT=G.chronT||'act';}}
 function artCover(img,dx,dy,dw,dh,fx){const ir=img.width/img.height,r=dw/dh;let sw,sh,sx,sy;if(ir>r){sh=img.height;sw=sh*r;sx=Math.max(0,Math.min(img.width-sw,(fx==null?0.6:fx)*img.width-sw/2));sy=0;}else{sw=img.width;sh=sw/r;sx=0;sy=(img.height-sh)/2;}artDraw(img,sx,sy,sw,sh,dx,dy,dw,dh);}

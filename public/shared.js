@@ -517,7 +517,7 @@ const CLASS_INFO={warrior:{diff:2,bars:[4,4,1],rec:'앞에서 시원하게 베�
   gunner:{diff:3,bars:[2,4,2],rec:'탕탕 쏘고 펑펑 터뜨리는 손맛을 원한다면',pros:['총·산탄·유탄을 오가는 화력','포탑과 반동 도약'],cons:['가까이 붙으면 위험','증기압 관리가 필요'],party:'태엽 기사단의 증기총을 물려받은 사수'},
   knight:{diff:4,bars:[3,5,2],rec:'신성력을 모아 한 번에 쏟아내는 기사를 원한다면',pros:['최강의 근접 폭딜','빛의 이동기'],cons:['신성력 관리가 필요'],party:'새벽의 맹세를 받은 숨은 기사'}};
 /* 갈래별 피해 보정 (허수아비 측정: 딜 갈래 둘은 ±5% · 기본 직업보다 약 12% 강하게 / 탱커·힐러 갈래는 역할에 맞게) */
-const ADV_DK={berserker:1.21,blademaster:0.87,bulwark:1.25,judicator:0.67,sniper:[1.05,1.05,1.05,1.05,0.87,0.91],trapper:[1.61,1.61,1.61,1.61,1.34,1.41],elementalist:0.94,astrologer:1.28,hierophant:1.2,exorcist:[0.67,0.67,0.67,0.79,0.87,0.97],dawncommander:1.12,sunblade:0.94,cannoneer:1.05,gunkata:1.0};
+const ADV_DK={berserker:1.21,blademaster:0.87,bulwark:1.25,judicator:0.67,sniper:[1.21,1.21,1.21,1.21,1.0,1.05],trapper:[1.85,1.85,1.85,1.85,1.54,1.62],elementalist:0.94,astrologer:1.28,hierophant:1.2,exorcist:[0.67,0.67,0.67,0.79,0.87,0.97],dawncommander:1.12,sunblade:0.94,cannoneer:1.05,gunkata:1.0};
 /* 갈래별 기본 스킬 변형: mul=피해·효과 배율, cd=재사용 배율, post=시전 후 추가 효과 */
 const ADV_VAR={
   berserker:{whirl:{n:'피의 회전베기',d:'피해 +25% · 사용하면 최대 체력 3% 회복',mul:1.25,post:{selfHeal:0.03}},warcry:{n:'광기의 함성',d:'재사용 -30% · 6초간 공격 속도 +20%',cd:0.7,post:{buff:['as',0.2,6]}}},
@@ -570,15 +570,15 @@ const AWK={
     sk:[{id:'awHuntField',n:'사냥의 영역',mp:22,cd:12,desc:'지정한 곳에 5초간 사냥터(0.5초마다 60%, 둔화 40%)',ops:[{o:'zone',at:'tgt',r:56,t:5,iv:0.5,m:0.6,slow:0.4,vis:21}]},
         {id:'awBeastFang',n:'맹수의 송곳니',mp:16,cd:6,desc:'맹수처럼 돌진해 물어뜯고(240%) 앞쪽을 할퀸다(120%)',ops:[{o:'dash',d:64,m:2.4},{o:'cone',r:42,arc:0.9,m:1.2,fx:'cleave'}]},
         {id:'awTrapperP',n:'사냥꾼의 본능',pas:1,desc:'사냥감의 숨소리까지 들린다'}]},
-  elementalist:{n:'원소의 군주',col:'#ff8a3a',ult:'awCataclysm',base:'cataclysm',idn:'원소 지배',idd:'주문력 +15% · 재사용 대기시간 -5%',st:{spell:0.15,cdr:0.05},pp:{spell:0.012,cdr:0.003},ppd:'등급당 주문력 +1.2%, 재사용 대기시간 -0.3%',
+  elementalist:{n:'원소의 군주',col:'#ff8a3a',ult:'awCataclysm',base:'cataclysm',idn:'원소 지배',idd:'주문력 +15% · 피해 +20% · 재사용 대기시간 -5%',st:{spell:0.15,dmg:0.2,cdr:0.05},pp:{spell:0.012,cdr:0.003},ppd:'등급당 주문력 +1.2%, 재사용 대기시간 -0.3%',
     sk:[{id:'awTriElement',n:'삼원소 폭발',mp:24,cd:8,desc:'불·얼음·번개 구체 3개를 동시에 발사(각 160%, 폭발)',ops:[{o:'proj',ps:['fire','frostorb','orb'],sp:240,m:1.6,spread:0.22,boom:26,life:1.3}]},
         {id:'awMeteorFall',n:'유성 낙하',mp:30,cd:14,desc:'지정한 곳에 유성 4개가 차례로 떨어진다(각 200%)',ops:[{o:'rain',at:'tgt',r:60,rr:28,n:4,gap:0.3,m:2.0,fx:'boomfire'}]},
         {id:'awElemP',n:'원소의 왕관',pas:1,desc:'네 원소가 한 손에 모인다'}]},
-  astrologer:{n:'성좌의 예언자',col:'#c9a0e8',ult:'awSupernova',base:'supernova',idn:'성좌의 계시',idd:'주문력 +16% · 치명타 +4%',st:{spell:0.16,crit:4},pp:{spell:0.012,crit:0.4},ppd:'등급당 주문력 +1.2%, 치명타 +0.4%',
+  astrologer:{n:'성좌의 예언자',col:'#c9a0e8',ult:'awSupernova',base:'supernova',idn:'성좌의 계시',idd:'주문력 +16% · 피해 +15% · 치명타 +4%',st:{spell:0.16,dmg:0.15,crit:4},pp:{spell:0.012,crit:0.4},ppd:'등급당 주문력 +1.2%, 치명타 +0.4%',
     sk:[{id:'awConstellation',n:'성좌 강림',mp:26,cd:12,desc:'지정한 곳에 별 7개가 떨어지며(각 100%) 별 표식을 새긴다',ops:[{o:'rain',at:'tgt',r:60,rr:16,n:7,gap:0.12,m:1.0,fx:'strike',star:1}]},
         {id:'awStarBeam',n:'별빛 광선',mp:18,cd:6,desc:'커서 방향으로 별빛 광선(300%)',ops:[{o:'beam',len:150,w:12,m:3.0,fx:'laser'}]},
         {id:'awAstroP',n:'운명의 별',pas:1,desc:'별이 길을 비춘다'}]},
-  hierophant:{n:'성자',col:'#fff2b0',ult:'awSanctum',base:'sanctum',idn:'성자의 손',idd:'치유량 +15% · 최대 체력 +5%',st:{heal:0.15,hp:0.05},pp:{heal:0.015,hp:0.008},ppd:'등급당 치유량 +1.5%, 최대 체력 +0.8%',sup:1,
+  hierophant:{n:'성자',col:'#fff2b0',ult:'awSanctum',base:'sanctum',idn:'성자의 손',idd:'치유량 +25% · 피해 +28% · 최대 체력 +5%',st:{heal:0.25,dmg:0.28,hp:0.05},pp:{heal:0.015,hp:0.008},ppd:'등급당 치유량 +1.5%, 최대 체력 +0.8%',sup:1,
     sk:[{id:'awHolyRain',n:'성광의 비',mp:26,cd:12,desc:'주변 파티를 크게 치유(치유력 260%)하고 4초간 계속 치유(1초마다 50%)',ops:[{o:'heal',hp:2.6,r:120},{o:'hot',hp:0.5,n:4,iv:1,r:120}]},
         {id:'awSaintShield',n:'성자의 가호',mp:22,cd:14,desc:'주변 파티 전원에게 보호막(치유력 180%) · 받는 피해 -10%(5초)',ops:[{o:'shield',hp:1.8,r:120},{o:'pbuff',k:'red',v:0.1,t:5,r:110}]},
         {id:'awSaintP',n:'성자의 은총',pas:1,desc:'빛이 끊이지 않는다'}]},
@@ -598,7 +598,7 @@ const AWK={
     sk:[{id:'awSiegeShell',n:'공성 포탄',mp:24,cd:10,desc:'크게 폭발하는 대형 포탄(520%, 폭발)',ops:[{o:'proj',p:'shell',sp:300,m:5.2,boom:52,life:0.9,r:5}]},
         {id:'awBarrage',n:'포화 집중',mp:26,cd:12,desc:'지정한 곳에 포탄 8발이 쏟아진다(각 130%)',ops:[{o:'rain',at:'tgt',r:56,rr:20,n:8,gap:0.15,m:1.3,fx:'boomfire'}]},
         {id:'awCannonP',n:'강철 포신',pas:1,desc:'포신이 식을 틈이 없다'}]},
-  gunkata:{n:'백발귀',col:'#8fd0ff',ult:'awBallet',base:'bulletballet',idn:'백발백중',idd:'피해 +8% · 치명타 +6% · 공격 속도 +6%',st:{dmg:0.08,crit:6,as:0.06},pp:{crit:0.6,as:0.005},ppd:'등급당 치명타 +0.6%, 공격 속도 +0.5%',
+  gunkata:{n:'백발귀',col:'#8fd0ff',ult:'awBallet',base:'bulletballet',idn:'백발백중',idd:'피해 +14% · 치명타 +6% · 공격 속도 +6%',st:{dmg:0.14,crit:6,as:0.06},pp:{crit:0.6,as:0.005},ppd:'등급당 치명타 +0.6%, 공격 속도 +0.5%',
     sk:[{id:'awHundredShot',n:'백발 난사',mp:20,cd:8,desc:'가장 가까운 적에게 총알 12발을 빠르게 난사(각 60%)',ops:[{o:'proj',p:'bullet',sp:540,m:0.6,n:12,gap:0.05,aim:1,life:0.6}]},
         {id:'awPhantomStep',n:'환영 보법',mp:16,cd:6,desc:'잔상을 남기며 돌진(200%) · 0.5초 회피, 공격 속도 +20%(3초)',ops:[{o:'dash',d:72,m:2.0},{o:'dodge',t:0.5},{o:'buff',k:'as',v:0.2,t:3}]},
         {id:'awKataP',n:'귀신의 손놀림',pas:1,desc:'눈으로 좇을 수 없는 속도'}]}};
