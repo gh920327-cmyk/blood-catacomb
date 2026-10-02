@@ -724,6 +724,36 @@ const FAMN={melee:'근접 무기',bow:'활',staff:'지팡이',gun:'총'};
 const SKIN_PRICE=5000;
 /* 의상 외형 (sprites/costumes.png 행 번호 row) · 능력치 변화 없음 */
 const COS_PRICE=5000;
+// 탈것: 마을에서만 타고 다니는 꾸미기 (능력치·속도 변화 없음)
+const MOUNTS={
+  duck:{n:'오리 튜브',d:'노란 고무오리 튜브를 타고 둥둥'},
+  broom:{n:'마녀 빗자루',d:'빗자루에 올라 살짝 떠서 날아다닌다'},
+  cloud:{n:'뭉게구름',d:'폭신한 구름 위에서 둥실둥실'},
+  carpet:{n:'마법 양탄자',d:'술 장식이 펄럭이는 붉은 양탄자'},
+  skate:{n:'스케이트보드',d:'바퀴 소리와 함께 미끄러진다'}};
+const MOUNT_PRICE=15000;
+// 발자국: 걸으면 잠깐 남았다 사라지는 흔적
+const FOOTS={
+  petal:{n:'꽃잎',d:'분홍 꽃잎이 흩날린다'},
+  snow:{n:'눈송이',d:'작은 눈 결정이 내려앉는다'},
+  note:{n:'음표',d:'걸음마다 통통 튀는 음표'},
+  ember:{n:'불씨',d:'발밑에서 불씨가 타오른다'},
+  heart:{n:'하트',d:'사랑스러운 분홍 하트'},
+  star:{n:'별',d:'반짝이는 노란 별'},
+  paw:{n:'고양이 발바닥',d:'말랑한 젤리 발자국'},
+  drop:{n:'물방울',d:'찰박찰박 물웅덩이'}};
+const FOOT_PRICE=3000;
+// 전설 외형: 업적으로만 얻는 효과 (지금 모습 위에 덮어씌움)
+const LEGENDS={
+  shadow:{n:'그림자 군주',d:'새까만 몸에 보랏빛 눈, 움직이면 잔상이 남는다',how:'흑월의 왕좌 하드 클리어'},
+  stars:{n:'별자리 몸',d:'몸 안에 밤하늘이 비치고 별이 반짝인다',how:'거울 미궁 하드 클리어'},
+  ember:{n:'잿불 화신',d:'숯처럼 그을린 몸에서 불씨가 피어오른다',how:'태엽 심장 공장 하드 클리어'},
+  ghost:{n:'종탑의 유령',d:'반투명한 몸으로 둥실둥실 떠다닌다',how:'잊힌 종탑 하드 클리어'},
+  glitch:{n:'글리치',d:'색이 갈라지고 가끔 몸이 지직거린다',how:'격돌 연습 랭킹 1위 달성'},
+  gold:{n:'황금 낚시왕',d:'온몸이 황금으로 빛나고 반짝임이 스쳐 간다',how:'전설급 물고기 낚기'}};
+function legendOk(ch,k){if(!ch||!LEGENDS[k])return false;const H=ch.rclrH||{};
+  if(k==='shadow')return (H.moon|0)>0;if(k==='stars')return (H.mirror|0)>0;if(k==='ember')return (H.clock|0)>0;if(k==='ghost')return (H.bell|0)>0;
+  if(k==='glitch')return !!ch.cprTop1;if(k==='gold')return !!ch.fishLeg;return false;}
 const COSTUMES={
   pumpkin:{n:'호박 머리 기사',row:0,d:'웃는 호박 투구와 덩굴 망토'},
   catninja:{n:'고양이 후드 닌자',row:1,d:'고양이 귀 두건과 줄무늬 꼬리'},
@@ -744,7 +774,31 @@ const COSTUMES={
   paladin:{n:'은빛 성기사',row:16,d:'날개 투구와 태양 문장'},
   cyberninja:{n:'네온 닌자',row:17,d:'청록빛으로 빛나는 전투복'},
   vampire:{n:'흡혈 백작',row:18,d:'붉은 안감의 높은 깃 망토'},
-  wolfhunter:{n:'서리 늑대 사냥꾼',row:19,d:'흰 늑대 가죽을 뒤집어쓴 사냥꾼'}};
+  wolfhunter:{n:'서리 늑대 사냥꾼',row:19,d:'흰 늑대 가죽을 뒤집어쓴 사냥꾼'},
+  lampkeeper:{n:'등불지기의 망토',row:20,d:'허리춤에 작은 등불을 매단 여행자 망토'},
+  mpriest:{n:'흑월 사제',row:21,d:'은빛 초승달을 수놓은 보랏빛 사제복'},
+  clockeng:{n:'태엽 기술자',row:22,d:'황동 고글과 가죽 앞치마, 톱니 어깨받이'},
+  ashwander:{n:'잿빛 방랑자',row:23,d:'붉은 목도리를 휘날리는 잿빛 판초'},
+  skelminer:{n:'카타콤 해골 광부',row:24,d:'헤드램프 안전모를 쓴 명랑한 해골'},
+  moonwitch:{n:'달빛 마녀',row:25,d:'초승달 핀을 꽂은 남색 마녀 모자'},
+  panda:{n:'판다 잠옷',row:26,d:'동글동글 판다 귀 후드'},
+  frog:{n:'개구리 우비',row:27,d:'눈알 달린 초록 우비와 노란 장화'},
+  chick:{n:'병아리 잠옷',row:28,d:'삐약! 노란 병아리 후드'},
+  shark:{n:'상어 후드',row:29,d:'앙 물린 듯한 상어 후드'},
+  raccoon:{n:'너구리 탈',row:30,d:'줄무늬 꼬리가 복슬복슬'},
+  hamster:{n:'햄스터 잠옷',row:31,d:'볼이 빵빵한 햄스터 후드'},
+  doryeong:{n:'한복 도령',row:32,d:'하늘빛 저고리에 검은 갓'},
+  jeoseung:{n:'저승사자',row:33,d:'검은 갓과 도포, 창백한 얼굴'},
+  dokkaebi:{n:'도깨비',row:34,d:'금빛 뿔 하나, 호랑이 무늬 바지'},
+  taekwondo:{n:'태권도복',row:35,d:'검은 띠를 맨 새하얀 도복'},
+  schooluniform:{n:'교복',row:36,d:'금단추 남색 재킷과 빨간 넥타이'},
+  satto:{n:'사또',row:37,d:'날개 달린 사모와 붉은 관복'},
+  elf:{n:'숲의 엘프',row:38,d:'나뭇잎 망토와 뾰족한 귀'},
+  dragonknight:{n:'용기사',row:39,d:'뿔 달린 용 투구와 붉은 비늘 갑옷'},
+  icequeen:{n:'얼음 여왕',row:40,d:'얼음 왕관과 서리 드레스'},
+  astronaut:{n:'우주비행사',row:41,d:'금빛 바이저 헬멧의 우주복'},
+  firefighter:{n:'소방관',row:42,d:'반사띠 방화복과 빨간 헬멧'},
+  detective:{n:'명탐정',row:43,d:'트렌치코트와 중절모, 돋보기'}};
 const SKINS={
   katana:{n:'벚꽃 카타나',fam:'melee',col:0,d:'검은 칼집에서 벚꽃 문양 칼날이 빛난다'},
   tuna:{n:'냉동 참치',fam:'melee',col:1,d:'꽁꽁 언 참치. 맞으면 아프다'},
@@ -985,7 +1039,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={AWK_ULT_N,FISH_GN,FISH_GC,fishGrade,rollFishCm,COSTUMES,COS_PRICE,AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={MOUNTS,MOUNT_PRICE,FOOTS,FOOT_PRICE,LEGENDS,legendOk,AWK_ULT_N,FISH_GN,FISH_GC,fishGrade,rollFishCm,COSTUMES,COS_PRICE,AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,ADV,ADV_OF,ADV_LVL,ADV_VAR,advVar,CLASS_INFO,advOf,ultsOf,advChangeCost,lvCost,itemLvUp,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
