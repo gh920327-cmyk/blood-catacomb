@@ -1520,9 +1520,9 @@ const GM={
 // ================= 레이드 모듈 (공통 훅) =================
 const RAID_DMG=+(process.env.RAID_DMG||1);/* 측정용 추가 배율 */
 /* 레이드별 보스 공격력·체력 배율 (호흡 8~15분, 보통 실력으로는 못 깨는 선) · 흑왕은 절망 난이도 */
-const RAID_TUNE={bell:{dmg:1.35,hp:1.35,enr:780},mirror:{dmg:1.35,hp:1.5,enr:780},clock:{dmg:1.35,hp:1.9,enr:780},moon:{dmg:1.6,hp:3.0,enr:1260}};
-function raidBoss(inst,type,x,y,share){const r=inst.raid;const b=spawnMonster(inst,type,x,y,false);b.boss=true;b.home={x,y};const TU=RAID_TUNE[r.id]||{dmg:1,hp:1};b.maxHp=b.hp=Math.round(SH.MT[type].hp*raidScale(r.def.lvl,r.n,r.hard)*(share||1)*TU.hp);
-  b.dmg*=(r.hard?2.6:1.8)*[0,0.55,0.78,0.9,1,1.04,1.08,1.12,1.15][clamp(r.n,1,PARTY_MAX)]*(r.id==='moon'?1.6:r.id==='clock'?1.15:1)*RAID_DMG*TU.dmg;b.baseDmg=b.dmg;b.r=SH.MT[type].r;b.raidAI=RAID_AI[type];b.bname=SH.MT[type].n;b.tf=r.hard?0.85:1;b.phase=1;b.fightT=0;b.patCd=2.5;b.spdMul=1;return b;}
+const RAID_TUNE={bell:{dmg:1.35,hp:1.35,enr:780},mirror:{dmg:1.35,hp:1.5,enr:780},clock:{dmg:1.35,hp:1.9,enr:780},moon:{dmg:1.6,hp:3.0,enr:1260,hHp:1.6,hDmg:1.6}};/* hHp·hDmg: 하드 전용 추가 배율 · 흑왕 하드는 권장 전투력 12만 기준 (예전 7.56만의 약 1.6배) */
+function raidBoss(inst,type,x,y,share){const r=inst.raid;const b=spawnMonster(inst,type,x,y,false);b.boss=true;b.home={x,y};const TU=RAID_TUNE[r.id]||{dmg:1,hp:1};b.maxHp=b.hp=Math.round(SH.MT[type].hp*raidScale(r.def.lvl,r.n,r.hard)*(share||1)*TU.hp*(r.hard&&TU.hHp||1));
+  b.dmg*=(r.hard?2.6:1.8)*[0,0.55,0.78,0.9,1,1.04,1.08,1.12,1.15][clamp(r.n,1,PARTY_MAX)]*(r.id==='moon'?1.6:r.id==='clock'?1.15:1)*RAID_DMG*TU.dmg*(r.hard&&TU.hDmg||1);b.baseDmg=b.dmg;b.r=SH.MT[type].r;b.raidAI=RAID_AI[type];b.bname=SH.MT[type].n;b.tf=r.hard?0.85:1;b.phase=1;b.fightT=0;b.patCd=2.5;b.spdMul=1;return b;}
 function raidAdds(inst,dt,type,cap){const r=inst.raid;if(r.stage!=='gate')return;r.gT-=dt;if(r.gT>0)return;r.gT=r.hard?6:8;const alive=inst.monsters.filter(m=>!m.dead&&m.type===type).length;if(alive>=(r.hard?cap+2:cap))return;const map=inst.map;
   for(let k=0;k<2;k++){const x=(map.start.x+1+ri(0,map.start.w-3))*TS+8,y=(map.start.y+1+ri(0,2))*TS+8;if(SH.blocked(map,x,y,5))continue;const m=spawnMonster(inst,type,x,y,false);m.alert=true;fx(inst,{k:'blink',x:r1(x),y:r1(y)});}}
 function setTile(inst,tx,ty,v){const i=ty*inst.map.w+tx;if(inst.map.tiles[i]===v)return;inst.map.tiles[i]=v;bcast(inst,{t:'tile',i,v});}

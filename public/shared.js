@@ -1148,7 +1148,7 @@ function power(ch,eqOver){const c=eqOver?Object.assign({},ch,{eq:Object.assign({
   const heal=c.cls==='priest'?S.healPow*4:0;return Math.round((Math.pow(off*10,0.6)*Math.pow(def,0.4)*6+heal+S.maxMp)*(CP_NORM[c.cls]||1));}/* 공격 60% · 생존 40% 비중(곱) · 직업 보정으로 직업끼리 비교 가능 */
 const CP_NORM={guardian:0.76,warrior:0.91,archer:1.12,priest:1.12,mage:1.78,knight:0.8,gunner:1.05};
 /* 레이드 권장 전투력 (파티원 1인 기준) */
-const RAID_CP={bell:10000,mirror:18000,clock:27000,moon:54000};/* 보통 전투력의 1.5~2배 */function raidCP(id,hard){return Math.round((RAID_CP[id]||0)*(hard?1.4:1)/100)*100;}
+const RAID_CP={bell:10000,mirror:18000,clock:27000,moon:54000};/* 보통 전투력의 1.5~2배 */const RAID_CP_HARD={moon:120000};function raidCP(id,hard){if(hard&&RAID_CP_HARD[id])return RAID_CP_HARD[id];return Math.round((RAID_CP[id]||0)*(hard?1.4:1)/100)*100;}
 function potPrice(lvl){return 15+lvl*3;}
 
 // ---------- 저장 코드 ----------
