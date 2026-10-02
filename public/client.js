@@ -897,7 +897,10 @@ function fx0Click(x,y){effects.push({type:'ring',x,y,t:0,max:0.3,r:5,c:'y',c2:'w
 function pickNear(){let b=null,bd=40;for(const d of G.drops.values()){if(d.t<0.45)continue;if(d.kind!=='item'&&d.kind!=='gold')continue;const dd=Math.hypot(d.x-me.x,d.y-me.y);if(dd<bd){bd=dd;b=d;}}
   if(b){net({t:'pick',id:b.id});TUT.saw.pick=1;return;}let f=null,fd=140;for(const d of G.drops.values()){if(d.kind!=='item'||d.t<0.45)continue;const dd=Math.hypot(d.x-me.x,d.y-me.y);if(dd<fd){fd=dd;f=d;}}if(f){me.pickTarget=f;setGoal(f.x,f.y);}}
 function anyPanel(){return showInv||showChar||showShop||showSkills||G.portalMenu||G.escMenu||G.ctxMenu||G.result||G.fac||G.opts||G.talent||G.rec;}
-cv.addEventListener('pointermove',e=>setMouse(e));
+cv.addEventListener('pointermove',e=>{setMouse(e);
+  /* 다른 버튼을 누른 채 좌·우클릭을 추가로 누르거나 떼면 pointerdown/up 대신 pointermove(button=눌린 버튼)로만 들어옴 */
+  if(e.button===0&&scene==='game'){if(e.buttons&1){if(!input.left&&canFight()&&!uiHit()&&!(inDungeon()&&(G.paused||G.selfPause))){input.left=true;pressMode='attack';me.path=null;me.goal=null;me.pickTarget=null;me.evGoal=null;input.rmove=false;}}else input.left=false;}
+  else if(e.button===2&&scene==='game'){if(e.buttons&2){if(!uiHit()&&!(inDungeon()&&(G.paused||G.selfPause))){mouse.wx=mouse.x+camX;mouse.wy=mouse.y+camY;rightMove(true);}}else input.rmove=false;}});
 cv.addEventListener('pointerdown',e=>{e.preventDefault();setMouse(e);initAudio();if(chatBox.style.display==='block'){chatBox.style.display='none';chatBox.value='';}cv.focus();if(scene!=='game')return;
   mouse.wx=mouse.x+camX;mouse.wy=mouse.y+camY;
   if(e.button===2){const r=uiHit();if(r){r.right&&r.right();return;}if(G.ctxMenu){G.ctxMenu=null;return;}if(G.emoWheel){G.emoWheel=false;return;}
@@ -911,7 +914,7 @@ cv.addEventListener('pointerdown',e=>{e.preventDefault();setMouse(e);initAudio()
   if(inDungeon()&&(G.paused||G.selfPause))return;
   const npc=npcAt(mouse.wx,mouse.wy);if(npc){if(nearNpc()===npc)openNpc(npc);else goFac(npc);return;}
   const eo=evAt(mouse.wx,mouse.wy);if(eo){if(Math.hypot(me.x-eo.x,me.y-eo.y)<eo.r)useEv(eo);else{me.evGoal=eo;setGoal(eo.x,eo.y+8);}return;}
-  if(canFight()){input.left=true;pressMode='attack';}});
+  if(canFight()){input.left=true;pressMode='attack';/* 평타를 누르면 이동 취소 → 그 자리에서 멈춰 싸움 */me.path=null;me.goal=null;me.pickTarget=null;me.evGoal=null;input.rmove=false;}});
 window.addEventListener('pointerup',e=>{if(e.button===0)input.left=false;if(e.button===2)input.rmove=false;});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 // 게임 중엔 화면 어디를 우클릭해도 브라우저 메뉴가 뜨지 않게 (캔버스 바깥 여백·겹친 요소 포함)
