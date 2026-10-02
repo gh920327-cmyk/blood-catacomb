@@ -1004,9 +1004,16 @@ const ITEM_LV_CAP=LVL_CAP;
 function itemCapLv(it){if(it&&it.base&&Array.isArray(it.aff)&&(it.L|0)>ITEM_LV_CAP)itemSetLv(it,ITEM_LV_CAP);return it;}
 function itemLvUp(it,n){if(n<=0)return it;return itemSetLv(it,(it.L|0)+n);}
 /* 기본 수치·능력 수치를 굴림 위치(품질) 그대로 새 레벨 범위로 옮긴다 (올리기·내리기 모두) */
+/* 레벨을 바꿀 때마다 반올림이 쌓여, 한 번에 올리느냐 1씩 올리느냐에 따라 최종 수치가 최대 28%까지 달라지던 문제
+   → 처음 수치(기준점 lb)와 능력의 굴림 위치(lt, 반올림 전)를 기억해 두고 항상 그것에서 한 번만 계산한다.
+   기준점과 지금 수치가 맞지 않으면(재련 등으로 바뀜) 지금 수치를 새 기준점으로 삼는다. */
 function itemSetLv(it,L1){const L0=it.L|0;if(L1===L0)return it;
-  if(it.base.dmg)it.base.dmg=Math.max(1,Math.round(it.base.dmg*(3+L1*1.6)/(3+L0*1.6)));if(it.base.armor)it.base.armor=Math.max(1,Math.round(it.base.armor*(4+L1*3)/(4+L0*3)));
-  const old=it.aff.map(a=>affRange(it,a.k));it.L=L1;it.aff.forEach((a,i)=>{const [lo,hi]=old[i],[lo2,hi2]=affRange(it,a.k);if(hi>lo){const t=Math.max(0,Math.min(1,(a.v-lo)/(hi-lo)));a.v=Math.round(lo2+t*(hi2-lo2));}else if(lo>0)a.v=Math.round(a.v*lo2/lo);else a.v=L1>L0?Math.max(a.v,lo2):Math.min(a.v,hi2);});if(it.value)it.value=Math.max(1,Math.round(it.value*(5+L1*3)/(5+L0*3)));return it;}
+  const dP=(b,L)=>Math.max(1,Math.round(b.dmg*(3+L*1.6)/(3+b.L*1.6))),aP=(b,L)=>Math.max(1,Math.round(b.armor*(4+L*3)/(4+b.L*3))),vP=(b,L)=>Math.max(1,Math.round(b.value*(5+L*3)/(5+b.L*3)));
+  let lb=it.lb;if(!lb||typeof lb!=='object'||!(lb.L>0)||(it.base.dmg&&(!(lb.dmg>0)||dP(lb,L0)!==it.base.dmg))||(it.base.armor&&(!(lb.armor>0)||aP(lb,L0)!==it.base.armor))||(it.value&&(!(lb.value>0)||vP(lb,L0)!==it.value)))lb={L:L0,dmg:it.base.dmg||0,armor:it.base.armor||0,value:it.value||0};
+  if(it.base.dmg)it.base.dmg=dP(lb,L1);if(it.base.armor)it.base.armor=aP(lb,L1);if(it.value)it.value=vP(lb,L1);it.lb=lb;
+  const old=it.aff.map(a=>affRange(it,a.k));const lt=Array.isArray(it.lt)?it.lt:[];const nlt=[];it.L=L1;
+  it.aff.forEach((a,i)=>{const [lo,hi]=old[i],[lo2,hi2]=affRange(it,a.k);if(hi>lo){let t=Math.max(0,Math.min(1,(a.v-lo)/(hi-lo)));const q=lt[i];if(q&&q.k===a.k&&typeof q.t==='number'&&q.t>=0&&q.t<=1&&Math.round(lo+q.t*(hi-lo))===a.v)t=q.t;a.v=Math.round(lo2+t*(hi2-lo2));nlt[i]={k:a.k,t};}else{if(lo>0)a.v=Math.round(a.v*lo2/lo);else a.v=L1>L0?Math.max(a.v,lo2):Math.min(a.v,hi2);nlt[i]=null;}});
+  it.lt=nlt;return it;}
 function rollAff(it,k,R){R=R||Math.random;return affScale(it,AFF[k].r(it.L|0,R));}
 function rerollCost(it,swap){const n=it.rc|0,L=it.L|0,leg=it.rar>=3;if(it.rar===4){const g=Math.round((30+L*10)*(1+n*0.5)*(swap?2:1));return swap?{gold:g,dust:3,ess:2+n,myth:1}:{gold:g,dust:2+Math.floor(n/3),myth:1};}const g=Math.round((15+L*6)*(1+n*0.5)*(swap?2:1)*(leg?2:1));
   if(swap)return leg?{gold:g,dust:2,ess:2+n}:{gold:g,dust:2+Math.floor(n/3)};return{gold:g,dust:(leg?2:1)+Math.floor(n/3)};}
