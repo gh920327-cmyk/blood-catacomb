@@ -1436,11 +1436,11 @@ function drawCosPanel(x,y,w,h){const ch=G.ch,own=ch.cst||[],on=ch.cstOn||null;co
   txt(has?(on===sel?'입는 중':'보유 중'):`${SH.COS_PRICE.toLocaleString()} 골드`,ix,iy+52,10,has?(on===sel?'#7fd05a':'#bfe3ff'):'#ffd35a');
   if(has){if(on===sel)button(ix,iy+60,50,13,'벗기',()=>{net({t:'cson',id:null});sfx('equip');},{size:9});else button(ix,iy+60,50,13,'입기',()=>{net({t:'cson',id:sel});sfx('equip');},{size:9,main:true});}
   else button(ix,iy+60,64,13,'구입',()=>{if(ch.gold<SH.COS_PRICE){msg('골드가 부족해요','#ff6a5a');return;}net({t:'csbuy',id:sel});sfx('pick');},{size:9,main:true,tip:[['상인 근처에서 살 수 있어요','#ffd35a',11],['의상은 캐릭터마다 따로 모아요','#9e937a',10]]});
-  const gx=x+w/2-77,gy=y+108;list.forEach((k,i)=>{const sx=gx+i*26,sy=gy;const hov=mouse.x>=sx&&mouse.x<sx+24&&mouse.y>=sy&&mouse.y<sy+24;const hv=own.includes(k);
-    pr(sx,sy,24,24,k===sel?PAL.y:hov?PAL.G:PAL.k);pr(sx+1,sy+1,22,22,hv?'#2a2233':'#15111a');const fr=SPR.cost&&SPR.cost[SH.COSTUMES[k].row];const s=fr?fr[0].r:null;
-    if(s&&s.c){if(!hv)ctx.globalAlpha=0.4;ctx.save();ctx.beginPath();ctx.rect((sx+1)*SC,(sy+1)*SC,22*SC,22*SC);ctx.clip();pimg(s.c,sx+12-s.w/2,sy+23-s.h);ctx.restore();ctx.globalAlpha=1;}
-    if(on===k){pr(sx+17,sy+2,5,5,PAL.k);pr(sx+18,sy+3,3,3,'#7fd05a');}
-    uiRects.push({x:sx,y:sy,w:24,h:24,click:()=>{G.skSel=k;sfx('pick');},tip:[[SH.COSTUMES[k].n,hv?'#ffd35a':'#e6dcc3',12],[hv?(on===k?'입는 중':'보유 중'):`${SH.COS_PRICE.toLocaleString()} 골드 · 상인에게서 구입`,'#9e937a',11]]});});}
+  const gx=x+7,gy=y+115;list.forEach((k,i)=>{const sx=gx+(i%8)*21,sy=gy+((i/8)|0)*21;const hov=mouse.x>=sx&&mouse.x<sx+20&&mouse.y>=sy&&mouse.y<sy+20;const hv=own.includes(k);
+    pr(sx,sy,20,20,k===sel?PAL.y:hov?PAL.G:PAL.k);pr(sx+1,sy+1,18,18,hv?'#2a2233':'#15111a');const fr=SPR.cost&&SPR.cost[SH.COSTUMES[k].row];const s=fr?fr[0].r:null;
+    if(s&&s.c){if(!hv)ctx.globalAlpha=0.4;ctx.save();ctx.beginPath();ctx.rect((sx+1)*SC,(sy+1)*SC,18*SC,18*SC);ctx.clip();pimg(s.c,sx+10-s.w/2,sy+22-s.h);ctx.restore();ctx.globalAlpha=1;}
+    if(on===k){pr(sx+14,sy+1,5,5,PAL.k);pr(sx+15,sy+2,3,3,'#7fd05a');}
+    uiRects.push({x:sx,y:sy,w:20,h:20,click:()=>{G.skSel=k;sfx('pick');},tip:[[SH.COSTUMES[k].n,hv?'#ffd35a':'#e6dcc3',12],[hv?(on===k?'입는 중':'보유 중'):`${SH.COS_PRICE.toLocaleString()} 골드 · 상인에게서 구입`,'#9e937a',11]]});});}
 function drawSkinTab(x,y,w,h){const ch=G.ch;const myF=CLASSES[ch.cls].fam;const fam=G.skFam||myF;const own=ch.skins||[],on=(ch.skinOn||{})[fam]||null;
   const FT=[['cos','의상'],['melee','근접'],['bow','활'],['staff','지팡이'],['gun','총']];FT.forEach(([f,l],i)=>button(x+6+i*34,y+20,32,13,l,()=>{G.skFam=f;G.skSel=null;sfx('pick');},{size:9,main:fam===f}));
   if(fam==='cos'){drawCosPanel(x,y,w,h);return;}
