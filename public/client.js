@@ -1474,16 +1474,18 @@ function drawSkinTab(x,y,w,h){const ch=G.ch;const myF=CLASSES[ch.cls].fam;const 
       else if(ws)pimg(ws.c,bx+27-ws.c.width,by+8,2);}
     else if(ws)pimg(ws.c,bx+27-ws.c.width,by+32-ws.c.height,2);}
   // 정보
-  const ix=x+66,iy=y+38;if(sel){const K=SH.SKINS[sel];const has=own.includes(sel);txt(K.n,ix,iy+3,12,has?'#ffd35a':'#e6dcc3');let ly=iy+17;for(const l of wrapTxt(K.d,10,w-74).slice(0,3)){txt(l,ix,ly,10,'#9e937a');ly+=11;}
-    txt(has?(on===sel?'장착 중':'보유 중'):`${SH.SKIN_PRICE.toLocaleString()} 골드`,ix,iy+52,10,has?(on===sel?'#7fd05a':'#bfe3ff'):'#ffd35a');
-    if(has){if(on===sel)button(ix,iy+60,50,13,'해제',()=>{net({t:'skon',f:fam,id:null});sfx('equip');},{size:9});else button(ix,iy+60,50,13,'장착',()=>{net({t:'skon',f:fam,id:sel});sfx('equip');},{size:9,main:true});}
-    else button(ix,iy+60,64,13,'구입',()=>{if(ch.gold<SH.SKIN_PRICE){msg('골드가 부족해요','#ff6a5a');return;}net({t:'skbuy',id:sel});sfx('pick');},{size:9,main:true,tip:[['상인 근처에서 살 수 있어요','#ffd35a',11],['외형은 캐릭터마다 따로 모아요','#9e937a',10]]});}
+  const ix=x+66,iy=y+38;if(sel){const K=SH.SKINS[sel];const has=own.includes(sel);txt(K.n,ix,iy+3,12,has?'#ffd35a':'#e6dcc3');let ly=iy+17;for(const l of wrapTxt(K.d,10,w-74).slice(0,2)){txt(l,ix,ly,10,'#9e937a');ly+=11;}
+    txt(has?(on===sel?'장착 중':'보유 중'):`${SH.SKIN_PRICE.toLocaleString()} 골드`,ix,iy+42,10,has?(on===sel?'#7fd05a':'#bfe3ff'):'#ffd35a');
+    if(has){if(on===sel)button(ix,iy+50,50,13,'해제',()=>{net({t:'skon',f:fam,id:null});sfx('equip');},{size:9});else button(ix,iy+50,50,13,'장착',()=>{net({t:'skon',f:fam,id:sel});sfx('equip');},{size:9,main:true});}
+    else button(ix,iy+50,64,13,'구입',()=>{if(ch.gold<SH.SKIN_PRICE){msg('골드가 부족해요','#ff6a5a');return;}net({t:'skbuy',id:sel});sfx('pick');},{size:9,main:true,tip:[['상인 근처에서 살 수 있어요','#ffd35a',11],['외형은 캐릭터마다 따로 모아요','#9e937a',10]]});}
   // 칸
-  const gx=x+w/2-64,gy=y+108;list.forEach((k,i)=>{const c=i%5,r=(i/5)|0,sx=gx+c*26,sy=gy+r*26;const hov=mouse.x>=sx&&mouse.x<sx+24&&mouse.y>=sy&&mouse.y<sy+24;const has=own.includes(k);
-    pr(sx,sy,24,24,k===sel?PAL.y:hov?PAL.G:PAL.k);pr(sx+1,sy+1,22,22,has?'#2a2233':'#15111a');const ws=SPR.skins&&skinSprite(k,0);
-    if(ws){if(!has)ctx.globalAlpha=0.35;const sc=Math.min(1,20/Math.max(ws.c.width,ws.c.height));pimg(ws.c,sx+12-ws.c.width*sc/2,sy+12-ws.c.height*sc/2,sc);ctx.globalAlpha=1;}
-    if(on===k){pr(sx+17,sy+2,5,5,PAL.k);pr(sx+18,sy+3,3,3,'#7fd05a');}
-    uiRects.push({x:sx,y:sy,w:24,h:24,click:()=>{G.skSel=k;sfx('pick');},tip:[[SH.SKINS[k].n,has?'#ffd35a':'#e6dcc3',12],[has?(on===k?'장착 중':'보유 중'):`${SH.SKIN_PRICE.toLocaleString()} 골드 · 상인에게서 구입`,'#9e937a',11]]});});
+  const PER=16,np=Math.max(1,Math.ceil(list.length/PER));if(G.skPgF!==fam){G.skPgF=fam;G.skPg=sel&&list.indexOf(sel)>=0?(list.indexOf(sel)/PER)|0:0;}const pg=Math.max(0,Math.min(np-1,G.skPg|0));G.skPg=pg;
+  const gx=x+w/2-84,gy=y+106;list.slice(pg*PER,pg*PER+PER).forEach((k,i)=>{const c=i%8,r=(i/8)|0,sx=gx+c*21,sy=gy+r*21;const hov=mouse.x>=sx&&mouse.x<sx+20&&mouse.y>=sy&&mouse.y<sy+20;const has=own.includes(k);
+    pr(sx,sy,20,20,k===sel?PAL.y:hov?PAL.G:PAL.k);pr(sx+1,sy+1,18,18,has?'#2a2233':'#15111a');const ws=SPR.skins&&skinSprite(k,0);
+    if(ws){if(!has)ctx.globalAlpha=0.35;const sc=Math.min(1,17/Math.max(ws.c.width,ws.c.height));pimg(ws.c,sx+10-ws.c.width*sc/2,sy+10-ws.c.height*sc/2,sc);ctx.globalAlpha=1;}
+    if(on===k){pr(sx+14,sy+1,5,5,PAL.k);pr(sx+15,sy+2,3,3,'#7fd05a');}
+    uiRects.push({x:sx,y:sy,w:20,h:20,click:()=>{G.skSel=k;sfx('pick');},tip:[[SH.SKINS[k].n,has?'#ffd35a':'#e6dcc3',12],[has?(on===k?'장착 중':'보유 중'):`${SH.SKIN_PRICE.toLocaleString()} 골드 · 상인에게서 구입`,'#9e937a',11]]});});
+  if(np>1){const py=gy+45;button(x+w/2-44,py,18,12,'◀',()=>{G.skPg=(pg+np-1)%np;sfx('pick');},{size:9});txt(`${pg+1} / ${np}`,x+w/2,py+7,10,'#e6dcc3','center');button(x+w/2+26,py,18,12,'▶',()=>{G.skPg=(pg+1)%np;sfx('pick');},{size:9});}
   if(!list.length)txt('이 계열 외형은 아직 없어요',x+w/2,gy+10,10,'#6b6275','center');
   if(fam!==myF)txt(`※ 내 직업은 ${SH.FAMN[myF]} 계열이에요`,x+w/2,y+h-26,9,'#9e937a','center');
   pimg(GOLD,x+10,y+h-15);txt(String(ch.gold),x+21,y+h-12,12,'#ffd35a');txt(`보유 ${own.length} / ${Object.keys(SH.SKINS).length}`,x+w-8,y+h-12,10,'#9e937a','right');}
