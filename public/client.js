@@ -1114,6 +1114,7 @@ function drawPlayer0(p,icx,icy,isMe){const cls=isMe?myCls():(p.cls||'warrior');c
   if(look.cs&&COS_WING[look.cs])drawCosWings(src,look.cs,bx,by,e.face);
   if(LG&&!(flash>0)){const mv=isMe?me.moving:p.moving;drawLegend(LG,s,sx,sy,e.face,mv,isMe?me.x:p.dx,isMe?me.y:p.dy,!!(p&&p.selPv));}
   else blitS(flash>0?s.fc:s.c,s,sx-(flash>0&&s.ai?e.face:0),sy,flash);
+  if(look.cs&&COS_WING[look.cs]&&!(flash>0))drawCosWingsFront(src);
   if(riding)drawMount(look.mt,bx,by,e.face,src.animT,isMe?me.moving:p.moving,1);
   const hideW=G.kind==='hub'&&look.cp===0&&!(src.atkAnim>0);
   if(hideW){}else if(s.bare&&SPR.weap){drawHeldGear(cls,src,s,sx,sy,e,look);}
@@ -1153,7 +1154,10 @@ function wingCanvas(pi,lv,dir){const key=pi+'|'+lv+'|'+dir;if(WING_C[key])return
   const col={1:'#fff6dc',2:'#ffffff',3:'#ffe08a',4:'#d9c69a',11:'#efe5ca',12:'#e4d9bb',13:'#d9b766',14:'#b9a576'};
   if(dir<0){x.translate(W,0);x.scale(-1,1);}
   for(let y=0;y<H;y++)for(let xx=0;xx<W;xx++){const v=g[y*W+xx];if(v){x.fillStyle=col[v];x.fillRect(xx,y,1,1);}else{let n=0;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const X=xx+dx,Y=y+dy;if(X>=0&&Y>=0&&X<W&&Y<H&&g[Y*W+X])n=1;}if(n){x.fillStyle='#7a4e0c';x.fillRect(xx,y,1,1);}}}
-  return(WING_C[key]={c,ox:dir<0?W-ox:ox,oy});}
+  // 뿌리 덮개: 앞날개 뿌리(어깨뼈 깃털)만 테두리 없이 따로 — 캐릭터 위에 덧그려 등 테두리를 가림
+  const cp=document.createElement('canvas');cp.width=W;cp.height=H;const xc=cp.getContext('2d');if(dir<0){xc.translate(W,0);xc.scale(-1,1);}
+  for(let y=oy-7;y<=oy+6;y++)for(let xx=ox-6;xx<=ox;xx++){if(y<0||y>=H||xx<0)continue;const v=g[y*W+xx];if(v&&v<10&&(xx-ox)*(xx-ox)+(y-oy)*(y-oy)<=34){xc.fillStyle=col[v===4?1:v];xc.fillRect(xx,y,1,1);}}
+  return(WING_C[key]={c,cap:cp,ox:dir<0?W-ox:ox,oy});}
 function drawCosWings(src,cs,bx,by,face){if(!COS_WING[cs])return;const now=time,d=Math.max(0,Math.min(0.1,now-(src._wt||now)));src._wt=now;const f=face<0?-1:1;
   const ultW=(src._wUlt||0)>now;const atk=src.atkAnim>0||ultW;const mv=!!src.moving||(src===me&&me.moving);
   const tgt=atk?1:0;src._wk=src._wk==null?tgt:(src._wk<tgt?Math.min(tgt,src._wk+d*8):Math.max(tgt,src._wk-d*2));const k=src._wk;
@@ -1163,9 +1167,10 @@ function drawCosWings(src,cs,bx,by,face){if(!COS_WING[cs])return;const now=time,
   const pulse=0.5+0.5*Math.sin(now*2.6);const ga=0.22+0.14*pulse+0.15*k,gr0=16+k*12,gx=bkx-f*12,gy=bky-6;
   wx.save();wx.globalAlpha=ga;const gr=wx.createRadialGradient(gx,gy,1,gx,gy,gr0);gr.addColorStop(0,'#fff6c8');gr.addColorStop(0.5,'rgba(255,224,138,0.55)');gr.addColorStop(1,'rgba(255,214,90,0)');wx.fillStyle=gr;wx.fillRect(gx-gr0,gy-gr0,gr0*2,gr0*2);wx.restore();
   if(ultW){wx.save();wx.globalAlpha=0.22+0.12*Math.sin(now*9);const g2=wx.createRadialGradient(bkx-f*12,bky-8,1,bkx-f*12,bky-8,36);g2.addColorStop(0,'#ffffff');g2.addColorStop(1,'rgba(255,224,138,0)');wx.fillStyle=g2;wx.fillRect(bkx-f*12-36,bky-44,72,72);wx.restore();}
-  const w=wingCanvas(pi,lv,f);wx.drawImage(w.c,bkx-w.ox,bky-w.oy);
+  const w=wingCanvas(pi,lv,f);wx.drawImage(w.c,bkx-w.ox,bky-w.oy);src._wcap={c:w.cap,x:bkx-w.ox,y:bky-w.oy,t:now};
   // 내려칠 때 깃털이 흩날림
   const dnp=src._wph<0.6;if(R()<(ultW?0.6:atk?0.3:dnp?0.06:0.02))part(bkx-f*rf(8,24),bky-rf(-4,12),-f*rf(4,12),rf(-2,8),R()<0.6?'#ffffff':'#ffe08a',rf(0.5,0.9),{glow:true,z:rf(6,12),vz:rf(-8,2)});}
+function drawCosWingsFront(src){const q=src._wcap;if(q&&q.t===time)wx.drawImage(q.c,q.x,q.y);}
 /* ===== 탈것 · 전설 외형 · 발자국 (전부 코드로 그림) ===== */
 function fr_(x,y,w,h,c){wx.fillStyle=c;wx.fillRect(x,y,w,h);}
 function mountLift(k,t,mv){t=t||0;if(k==='duck')return 1+Math.round(Math.sin(t*4)*0.8);if(k==='broom')return 7+Math.round(Math.sin(t*3)*1.2);if(k==='cloud')return 6+Math.round(Math.sin(t*2.5)*1);if(k==='carpet')return 6+Math.round(Math.sin(t*3.5)*0.8);if(k==='skate')return 3;return 0;}
