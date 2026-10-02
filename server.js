@@ -8,11 +8,17 @@ const SH=require('./public/shared.js');
 const {TS,CLASSES,SKILLS}=SH;
 const PORT=process.env.PORT||3000;
 const PUB=path.join(__dirname,'public');
+const DATA_DIR=process.env.BC_DATA||path.join(__dirname,'data');
+/* 서버 이전: 옛 주소로 들어오면 브라우저 저장 데이터를 챙겨 새 주소로 보낸다 (MOVE_TO가 비어 있으면 꺼짐) */
+const MOVE_TO=process.env.BC_MOVE_TO||(process.env.RENDER?(()=>{try{return fs.readFileSync(path.join(__dirname,'deploy','move_to.txt'),'utf8').trim();}catch(e){return '';}})():'');
+const MOVE_PAGE=u=>`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>달 없는 밤 · 새 서버로 이동</title><style>body{background:#0e0b12;color:#e6dcc3;font:16px sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}</style></head><body><div>새 서울 서버로 이동하는 중… 캐릭터는 그대로 옮겨져요.</div><script>(function(){var u=${JSON.stringify(u)};var d='';try{if(!localStorage.getItem('bc_moved')){var o={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('bc_')===0)o[k]=localStorage.getItem(k);}if(Object.keys(o).length)d='#mig='+btoa(unescape(encodeURIComponent(JSON.stringify(o))));localStorage.setItem('bc_moved','1');}}catch(e){}location.replace(u+d);})();</script></body></html>`;
 const MIME={'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.json':'application/json','.ico':'image/x-icon','.webp':'image/webp','.jpg':'image/jpeg'};
 
 const server=http.createServer((req,res)=>{
   let u;try{u=decodeURIComponent(req.url.split('?')[0]);}catch(e){res.writeHead(400);res.end();return;}
   if(u==='/health'){res.end('ok');return;}
+  if(u==='/api/export'){res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify({ranks:RANKS,fame:FAME}));return;}
+  if(MOVE_TO&&(u==='/'||u==='/index.html')&&!/[?&]stay=1/.test(req.url)){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(MOVE_PAGE(MOVE_TO));return;}
   if(u==='/raidlog'){const q=new URLSearchParams(req.url.split('?')[1]||'');if(q.get('k')!==(process.env.RAIDLOG_KEY||'moonless')){res.writeHead(403);res.end();return;}res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(RAIDLOG));return;}
   if(u==='/')u='/index.html';
   const f=path.normalize(path.join(PUB,u));
@@ -20,7 +26,7 @@ const server=http.createServer((req,res)=>{
   fs.readFile(f,(e,d)=>{if(e){res.writeHead(404);res.end('not found');return;}res.writeHead(200,{'Content-Type':MIME[path.extname(f)]||'application/octet-stream','Cache-Control':'no-cache'});res.end(d);});
 });
 /* 레이드 기록: 끝날 때마다 한 줄씩 저장(밸런스 패치 근거). 파일은 재배포 때 초기화될 수 있어 로그에도 남김 */
-const RAIDLOG_F=path.join(__dirname,'data','raidlog.jsonl');const RAIDLOG=[];
+const RAIDLOG_F=path.join(DATA_DIR,'raidlog.jsonl');const RAIDLOG=[];
 try{for(const l of fs.readFileSync(RAIDLOG_F,'utf8').split('\n'))if(l.trim())RAIDLOG.push(JSON.parse(l));}catch(e){}
 function raidLog(inst,result,why){try{const r=inst.raid;if(!r||r.logged)return;r.logged=1;const boss=inst.monsters.find(m=>m.boss&&!m.add);
   const rec={ts:new Date().toISOString(),raid:r.id,mode:r.practice?'practice':r.hard?'hard':'normal',result,why:why||null,time:Math.round(inst.time),bossT:Math.round(r.bossT||0),deathsLeft:r.deaths,bossHp:boss?Math.round(Math.max(0,boss.hp)/boss.maxHp*1000)/10:null,hl:r.hl||null,
@@ -28,9 +34,9 @@ function raidLog(inst,result,why){try{const r=inst.raid;if(!r||r.logged)return;r
   RAIDLOG.push(rec);if(RAIDLOG.length>2000)RAIDLOG.shift();console.log('[RAIDLOG]'+JSON.stringify(rec));
   fs.mkdir(path.dirname(RAIDLOG_F),{recursive:true},()=>fs.appendFile(RAIDLOG_F,JSON.stringify(rec)+'\n',()=>{}));}catch(e){console.error('raidlog',e);}}
 /* 명예의 전당: 흑왕 처치 파티 */
-const FAME_F=path.join(__dirname,'data','fame.json');let FAME=[];try{FAME=JSON.parse(fs.readFileSync(FAME_F,'utf8'))||[];}catch(e){}
+const FAME_F=path.join(DATA_DIR,'fame.json');let FAME=[];try{FAME=JSON.parse(fs.readFileSync(FAME_F,'utf8'))||[];}catch(e){}
 /* 마을 랭킹 게시판: 격돌 무한 연습 · 낚시 대어 (캐릭터마다 최고 기록 1개 · 상위 20) — 배포로 파일이 지워져도 접속하는 캐릭터의 최고 기록으로 다시 채워짐 */
-const RANK_F=path.join(__dirname,'data','ranks.json');const RANKS={cpr:[],fish:[]};try{const o=JSON.parse(fs.readFileSync(RANK_F,'utf8'));for(const k of['cpr','fish'])if(o&&Array.isArray(o[k]))RANKS[k]=o[k].slice(0,20);}catch(e){}
+const RANK_F=path.join(DATA_DIR,'ranks.json');const RANKS={cpr:[],fish:[]};try{const o=JSON.parse(fs.readFileSync(RANK_F,'utf8'));for(const k of['cpr','fish'])if(o&&Array.isArray(o[k]))RANKS[k]=o[k].slice(0,20);}catch(e){}
 let rankSaveT=null;function rankSave(){if(rankSaveT)return;rankSaveT=setTimeout(()=>{rankSaveT=null;try{fs.mkdirSync(path.dirname(RANK_F),{recursive:true});fs.writeFileSync(RANK_F,JSON.stringify(RANKS));}catch(e){}},1500);}
 function rankPut(board,ent,quiet){const L=RANKS[board];const i=L.findIndex(e=>e.id===ent.id);if(i>=0){if(L[i].s>=ent.s){if(L[i].n!==ent.n){L[i].n=ent.n;rankSave();}return -1;}L.splice(i,1);}const top=L[0];L.push(ent);L.sort((a,b)=>b.s-a.s||a.ts-b.ts);if(L.length>20)L.length=20;const pos=L.indexOf(ent);if(pos<0)return -1;rankSave();
   if(!quiet&&pos===0&&(!top||top.id!==ent.id)){const m=board==='cpr'?`${ent.n}님이 격돌 무한 연습 ${ent.s.toLocaleString()}점으로 랭킹 1위!`:`${ent.n}님이 ${SH.FISH_GN[ent.g]} '${(SH.FISH.find(f=>f.id===ent.f)||{}).n||'물고기'}' ${ent.s}cm로 낚시 랭킹 1위!`;for(const q of players.values())if(q.ch)send(q,{t:'msg',m,c:'#ffd35a'});}return pos;}
