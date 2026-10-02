@@ -759,7 +759,7 @@ const LEGENDS={
   ember:{n:'잿불 화신',d:'숯처럼 그을린 몸에서 불씨가 피어오른다',how:'태엽 심장 공장 하드 클리어'},
   ghost:{n:'종탑의 유령',d:'반투명한 몸으로 둥실둥실 떠다닌다',how:'잊힌 종탑 하드 클리어'},
   glitch:{n:'글리치',d:'색이 갈라지고 가끔 몸이 지직거린다',how:'격돌 연습 랭킹 1위 달성'},
-  gold:{n:'황금 낚시왕',d:'온몸이 황금으로 빛나고 반짝임이 스쳐 간다',how:'전설급 물고기 낚기'}};
+  gold:{n:'황금 낚시왕',d:'온몸이 황금으로 빛나고 반짝임이 스쳐 간다',how:'전설 물고기 낚기 (전설급 크기도 OK)'}};
 function legendOk(ch,k){if(!ch||!LEGENDS[k])return false;const H=ch.rclrH||{};
   if(k==='shadow')return (H.moon|0)>0;if(k==='stars')return (H.mirror|0)>0;if(k==='ember')return (H.clock|0)>0;if(k==='ghost')return (H.bell|0)>0;
   if(k==='glitch')return !!ch.cprTop1;if(k==='gold')return !!ch.fishLeg;return false;}
