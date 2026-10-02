@@ -1131,7 +1131,7 @@ const COS_WING={archangel:1};const WING_C={};const WING_PH=16,WING_LV=4;
    - 올리기(40%, 빠르게): 손목을 접어 날개 끝이 아래로 늘어진 채 끌려 올라감, 깃털을 모음 */
 function wingPose(p,lv){p=((p%1)+1)%1;const L=lv/(WING_LV-1),amp=0.85+0.15*L;
   // 키 포즈: [위치, 팔 각도, 손 각도, 손 길이, 깃털 벌림]  (0=맨 위 · 0.3=활짝 아치 · 0.6=맨 아래 · 0.8=손목 접고 올리는 중)
-  const K=[[0,0.05,0.3,0.92,0.85],[0.3,0.6,1.35,1,1.05],[0.6,1.5,1.9,1,0.95],[0.8,0.95,2.3,0.78,0.72],[1,0.05,0.3,0.92,0.85]];
+  const K=[[0,0.15,0.95,0.7,0.6],[0.3,0.6,1.35,1,1.05],[0.6,1.5,1.9,1,0.95],[0.8,0.85,2.75,0.5,0.4],[1,0.15,0.95,0.7,0.6]];
   let i=0;while(i<K.length-2&&p>=K[i+1][0])i++;const A=K[i],B=K[i+1];const t=(p-A[0])/(B[0]-A[0]),e=(1-Math.cos(Math.PI*t))/2;
   const H=K[1],v=j=>{const x=A[j]+(B[j]-A[j])*e;return H[j]+(x-H[j])*amp;};
   const dn=p<0.6?Math.sin(Math.PI*p/0.6):0,up=p>=0.6?Math.sin(Math.PI*(p-0.6)/0.4):0;
@@ -1145,7 +1145,7 @@ function wingCanvas(pi,lv,dir){const key=pi+'|'+lv+'|'+dir;if(WING_C[key])return
     const m=a1/(a1+a2);const edge=u=>u<m?[lerp(S[0],Wp[0],u/m),lerp(S[1],Wp[1],u/m),P.t1]:[lerp(Wp[0],T[0],(u-m)/(1-m)),lerp(Wp[1],T[1],(u-m)/(1-m)),P.t2];
     const feather=(u,len,beta,fill,shade,tip)=>{const[ex,ey,te]=edge(u);const a=Math.min(3.1,te+beta);const[vx,vy]=dirv(a);
       for(const pass of[0,1])for(let r=0;r<=len;r+=0.4){const q=r/len;const w=lerp(1.45,1.0,u)*(q<0.7?1:Math.sqrt(Math.max(0,1-Math.pow((q-0.7)/0.3,2))))+0.25;disc(ex+vx*r,ey+vy*r,pass?w:w+0.7,pass?(q>0.82&&tip?tip:fill):shade);}};
-    const NF=14;for(let i=NF-1;i>=0;i--){const u=0.04+0.96*i/(NF-1);feather(u,(9+16*Math.pow(u,1.5))*sc*(0.85+0.15*P.c),lerp(2.6,0.5,Math.pow(u,1.3))*P.fan,2+D,4+D,u>0.5?3+D:0);}
+    const NF=14;for(let i=NF-1;i>=0;i--){const u=0.04+0.96*i/(NF-1);feather(u,(9+16*Math.pow(u,1.5))*sc*(0.55+0.45*P.c),lerp(2.6,0.5,Math.pow(u,1.3))*P.fan,2+D,4+D,u>0.5?3+D:0);}
     for(let i=9;i>=0;i--){const u=0.03+0.92*i/9;feather(u,(4+5*u)*sc,lerp(2.4,0.6,u)*P.fan,1+D,4+D,0);}
     for(let u=0;u<=1;u+=0.02){const[ex,ey]=edge(u);disc(ex,ey,lerp(1.9,1.1,u),2+D);}};
   const ph=pi/WING_PH;wing(wingPose(ph-0.05,lv),3,-2,0.86,1);wing(wingPose(ph,lv),0,0,1,0);
