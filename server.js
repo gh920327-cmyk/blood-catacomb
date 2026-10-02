@@ -248,17 +248,31 @@ function bossAI(inst,m,T,d,dt,sm){if(!m.bossInit)initBoss(inst,m);if(!(m.faceLoc
   if(d<m.r+4+18&&m.cd<=0){m.cd=m.d.cd*(m.corrupt?0.8:1);m.busy=BP.swipe(inst,m,T);return;}
   chase(inst,m,T,dt,sm*m.spdMul*(m.corrupt?1.2:1));}
 // ---- 카운터: 보스가 파랗게 빛나는 동안 '카운터 가능' 스킬을 맞히면 저지 → 그로기, 못 막으면 강공격 ----
-const CTR_WIN=1.15;
-function counterWindow(inst,m,T){const win=CTR_WIN*(inst.raid&&inst.raid.hard?0.8:1);m.cwEnd=inst.time+win;m.face=T.x<m.x?-1:1;m.faceLock=inst.time+win+0.4;const id=m.ctrId=(m.ctrId|0)+1;m.atkT=win;
-  fx(inst,{k:'ctrwin',id:m.id,d:win});fx(inst,{k:'tele',x:r1(m.x),y:r1(m.y),r:82,d:win+0.35,c:'c'});
-  later(inst,win+0.35,()=>{if(m.dead||m.ctrId!==id||m.countered===id)return;m.cwEnd=0;
-    fx(inst,{k:'boom',x:r1(m.x),y:r1(m.y),r:82});fx(inst,{k:'shake',v:6});fx(inst,{k:'msg',m:`${m.bname||'보스'}의 강공격! (카운터 실패)`,c:'#ff6a5a'});
-    for(const p of livingPlayers(inst)){const d=Math.hypot(p.x-m.x,p.y-m.y);if(d<86){hurtPlayer(inst,p,m.dmg*2.4,m,{what:`${m.bname||'보스'}의 강공격`});if(!p.downed){const a=Math.atan2(p.y-m.y,p.x-m.x);send(p,{t:'force',vx:Math.cos(a)*220,vy:Math.sin(a)*220,d:0.25});}}}
-    if(inst.allies)for(const a of inst.allies)if(!a.downed&&Math.hypot(a.x-m.x,a.y-m.y)<86)hurtAlly(inst,a,m.dmg*1.5);});
-  return win+0.75;}
+const CTR_WIN=1.15,CTR_GRACE=0.15;/* 경고 표시 시간 = 판정 시간 · 서버 지연 보정 0.15초 */
+function counterWindow(inst,m,T){const moon=m.ctrMode==='moon',hard=!!(inst.raid&&inst.raid.hard);const win=CTR_WIN*(hard?0.8:1)*(moon?0.9:1);m.cwEnd=inst.time+win;m.face=T.x<m.x?-1:1;m.faceLock=inst.time+win+0.4;const id=m.ctrId=(m.ctrId|0)+1;m.atkT=win;
+  const FR=moon?(hard?175:150):82;fx(inst,{k:'ctrwin',id:m.id,d:win});fx(inst,{k:'tele',x:r1(m.x),y:r1(m.y),r:FR,d:win,c:'c'});
+  later(inst,win+CTR_GRACE,()=>{if(m.dead||m.ctrId!==id||m.countered===id)return;m.cwEnd=0;
+    fx(inst,{k:'boom',x:r1(m.x),y:r1(m.y),r:FR});fx(inst,{k:'shake',v:moon?10:6});fx(inst,{k:'msg',m:`${m.bname||'보스'}의 강공격! (카운터 실패)`,c:'#ff6a5a'});
+    if(moon)fx(inst,{k:'sv',s:'awnova',x:r1(m.x),y:r1(m.y),r:FR,c:'#9a7ad8',sid:'awAbyssBind',d:0.9});
+    const mul=moon?(hard?3.6:3.0):2.4,kb=moon?300:220;
+    for(const p of livingPlayers(inst)){const d=Math.hypot(p.x-m.x,p.y-m.y);if(d<FR+4){hurtPlayer(inst,p,m.dmg*mul,m,{what:`${m.bname||'보스'}의 강공격`});if(!p.downed){const a=Math.atan2(p.y-m.y,p.x-m.x);send(p,{t:'force',vx:Math.cos(a)*kb,vy:Math.sin(a)*kb,d:0.25});}}}
+    if(inst.allies)for(const a of inst.allies)if(!a.downed&&Math.hypot(a.x-m.x,a.y-m.y)<FR)hurtAlly(inst,a,m.dmg*1.5);
+    if(moon)moonCtrChain(inst,m);});
+  return win+CTR_GRACE+0.4;}
+/* 흑왕: 2페이즈부터 연속 카운터 (성공·실패와 상관없이 이어서 한 번 더) */
+function moonCtrChain(inst,m){if(m.phase<2||m.dead||m.chainLeft===0)return;if(m.chainLeft==null){if(R()>(m.phase>2?0.55:0.4))return;m.chainLeft=1;}m.chainLeft--;later(inst,0.55,()=>{if(m.dead||m.hidden)return;const ps=livingPlayers(inst);if(!ps.length)return;fx(inst,{k:'bsay',id:m.id,m:'한 번 더!'});m.busy=counterWindow(inst,m,pick(ps));});}
+/* 흑왕 카운터 성공: 무력화되지 않고 튕겨낸 뒤 카운터한 사람에게 약한 반격 (짧은 경고 → 피해야 함) */
+function moonRetaliate(inst,m,P){const hard=!!(inst.raid&&inst.raid.hard),t=hard?0.42:0.5,dm=m.dmg*(hard?1.0:0.8);const v=pick(['slash','drop','cross']);m.busy=t+0.5;
+  fx(inst,{k:'bsay',id:m.id,m:pick(['가소롭다!','그 정도로는 안 된다.','흑월은 꺾이지 않는다!'])});
+  if(v==='slash'){const a=Math.atan2(P.y-m.y,P.x-m.x),L=170,x2=m.x+Math.cos(a)*L,y2=m.y+Math.sin(a)*L;fx(inst,{k:'teleline',x1:r1(m.x),y1:r1(m.y),x2:r1(x2),y2:r1(y2),w:12,d:t});
+    later(inst,t,()=>{if(m.dead)return;fx(inst,{k:'sv',s:'awbeam',x1:r1(m.x),y1:r1(m.y-6),x2:r1(x2),y2:r1(y2-6),w:12,c:'#9a7ad8',sid:'',d:0.4});for(const p of livingPlayers(inst))if(distSeg(p.x,p.y,m.x,m.y,x2,y2)<14)hurtPlayer(inst,p,dm,m,{what:'흑왕의 반격 베기'});});}
+  else if(v==='drop'){const x=P.x,y=P.y;fx(inst,{k:'tele',x:r1(x),y:r1(y),r:34,d:t,c:'p'});later(inst,t,()=>{if(m.dead)return;fx(inst,{k:'sv',s:'awnova',x:r1(x),y:r1(y),r:34,c:'#9a7ad8',sid:'',d:0.6});hitCircle(inst,x,y,34,dm,m,{what:'흑왕의 반격'});});}
+  else{const a0=Math.atan2(P.y-m.y,P.x-m.x),L=150;const segs=[0,Math.PI/2].map(o=>[m.x-Math.cos(a0+o)*L,m.y-Math.sin(a0+o)*L,m.x+Math.cos(a0+o)*L,m.y+Math.sin(a0+o)*L]);for(const g of segs)fx(inst,{k:'teleline',x1:r1(g[0]),y1:r1(g[1]),x2:r1(g[2]),y2:r1(g[3]),w:10,d:t+0.08});
+    later(inst,t+0.08,()=>{if(m.dead)return;for(const g of segs)fx(inst,{k:'sv',s:'awbeam',x1:r1(g[0]),y1:r1(g[1]-6),x2:r1(g[2]),y2:r1(g[3]-6),w:10,c:'#9a7ad8',sid:'',d:0.4});for(const p of livingPlayers(inst))if(segs.some(g=>distSeg(p.x,p.y,g[0],g[1],g[2],g[3])<12))hurtPlayer(inst,p,dm,m,{what:'흑왕의 십자 반격'});});}
+  later(inst,t+0.2,()=>moonCtrChain(inst,m));}
 // 보스 기준 플레이어 위치: 1 헤드(앞), -1 백(뒤), 0 옆
-function bossSide(m,P){const f=m.face<0?-1:1;const dx=P.x-m.x,dy=P.y-m.y,d=Math.hypot(dx,dy)||1;const c=dx*f/d;return c>0.5?1:c<-0.5?-1:0;}
-function counterHit(inst,m,P){if(P.S&&P.S.set3&&P.S.set3.includes('moon')){buff(P,'sdmg',0.35,10);P.ctrT=0;send(P,{t:'ctrReset'});fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-34),s:'흑월 각성!',c:'#c9a0e8'});}if(inst.raid){const s=rst(inst,P);if(s)s.ctr++;}m.cwEnd=0;m.countered=m.ctrId;m.busy=0;m.wind=0;m.atkT=0;m.stun=Math.max(m.stun||0,1.8);m.grog=inst.time+1.8;
+function bossSide(m,P){const f=m.face<0?-1:1;const dx=P.x-m.x,dy=P.y-m.y,d=Math.hypot(dx,dy)||1;const c=dx*f/d;return c>0.3?1:c<-0.5?-1:0;}
+function counterHit(inst,m,P){if(P.S&&P.S.set3&&P.S.set3.includes('moon')){buff(P,'sdmg',0.35,10);P.ctrT=0;send(P,{t:'ctrReset'});fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-34),s:'흑월 각성!',c:'#c9a0e8'});}if(inst.raid){const s=rst(inst,P);if(s)s.ctr++;}m.cwEnd=0;m.countered=m.ctrId;m.busy=0;m.wind=0;m.atkT=0;if(m.ctrMode==='moon'){fx(inst,{k:'counter',id:m.id,x:r1(m.x),y:r1(m.y),by:P.ch.name});stInc(P,'ctr');later(inst,0.22,()=>{if(!m.dead)moonRetaliate(inst,m,P);});m.busy=0.9;for(const q of instPlayers(inst))msg(q,`${P.ch.name}님의 카운터! 흑왕이 튕겨내고 반격한다 — 피하세요!`,'#c9a0e8');return;}m.stun=Math.max(m.stun||0,1.8);m.grog=inst.time+1.8;
   fx(inst,{k:'counter',id:m.id,x:r1(m.x),y:r1(m.y),by:P.ch.name});fx(inst,{k:'shake',v:3});stInc(P,'ctr');
   for(const q of instPlayers(inst))msg(q,`${P.ch.name}님의 카운터! 보스가 그로기 상태입니다`,'#8fd0ff');}
 
@@ -425,7 +439,7 @@ function hitMonster(inst,m,P,mult,o){if(m.dead)return;o=o||{};if(m.mirrorOf){mir
   if(m.fake){if(P&&P.ch&&(!m.rflT||inst.time-m.rflT>0.3)){m.rflT=inst.time;m.flash=0.15;fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-26),s:'허상! 피해 반사',c:'#c9a0e8'});hurtPlayer(inst,P,P.S.maxHp*0.02*clamp(mult,0.5,2),m,{what:'허상의 반사',noMit:1});}return;}
   if(m.type==='shadow'&&m.sa){m.sa.dmgIn=(m.sa.dmgIn||0)+1;if(m.drT&&inst.time<m.drT)mult*=0.3;}
   const pos=(m.boss||m.ctrable)?bossSide(m,P):0;
-  if(m.cwEnd&&inst.time<m.cwEnd&&(o.ctr||inst._ctr)&&!m.hidden){if(pos===1)counterHit(inst,m,P);else if(!P._ctrWarn||inst.time-P._ctrWarn>0.8){P._ctrWarn=inst.time;fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-28),s:'헤드에서 쳐야 해요!',c:'#ffb03a'});}}
+  if(m.cwEnd&&inst.time<m.cwEnd+CTR_GRACE&&(o.ctr||inst._ctr)&&!m.hidden){const cp=o.px!=null?bossSide(m,{x:o.px,y:o.py}):pos;if(cp===1)counterHit(inst,m,P);else if(!P._ctrWarn||inst.time-P._ctrWarn>0.8){P._ctrWarn=inst.time;fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-28),s:'헤드에서 쳐야 해요!',c:'#ffb03a'});}}
   if(inst._um)mult*=inst._um;if(m.grog>inst.time)mult*=1.3;if(m.lmarkT>inst.time)mult*=1.25;if(pos===-1)mult*=1.1;if(m.hidden)return;if(m.invul>0){if(!o.dotHit&&R()<0.3)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-(m.boss?34:18)),s:'무적',c:'#9e937a'});return;}if(m.vuln>0)mult*=2;if(o.exec&&m.hp<m.maxHp*0.3)mult*=2;if(m.boss&&mythOn(P,'wrath'))mult*=1.2;if(m.boss&&P.S.bossDmg)mult*=1+P.S.bossDmg;/* 전직 효과 */if(m.starT>inst.time)mult*=1.1;if(m.curseT>inst.time)mult*=1.15;if(P.S.adv==='berserker'){const lost=1-P.hp/Math.max(1,P.S.maxHp);mult*=1+Math.min(0.4,lost*0.6);}if(P.combo&&inst._sk&&P.comboT>inst.time)mult*=1+0.06*P.combo;if(o.dotHit&&P.S.dotMul)mult*=P.S.dotMul;if(inst.raid&&RAIDX[inst.raid.id].dmgMod)mult*=RAIDX[inst.raid.id].dmgMod(inst,m,P);if(m.brk>inst.time)mult*=1.15;if(P.ch&&P.ch.cls==='gunner'){if((P.steam||0)>=70)mult*=1+(P.S.hiP||0.1);if(o.boom&&P.S.boomMul)mult*=P.S.boomMul;}const r=rollDmg(P,mult);if(o.fcrit&&!r.crit){r.crit=true;r.d=Math.round(r.d*P.S.critMul);}let v=r.d;if(m.shV>0&&m.shT>0){const ab=Math.min(m.shV,v);m.shV-=ab;v-=ab;if(v<=0){if(R()<0.4)fx(inst,{k:'txt',x:r1(m.x),y:r1(m.y-20),s:'보호막',c:'#8fd0ff'});return;}}const real=Math.min(v,m.hp);m.hp-=v;m.flash=0.09;if(!m.alert)alertPack(inst,m);
   addMeter(inst,P,'dmg',real);{const src=o.src||inst._src||'etc';anAdd(P,src,v,r.crit,o.dotHit);if(P.S.exoHeal&&real>0&&P.ch){let lo=null;for(const q of livingPlayers(inst))if(!lo||q.hp/q.S.maxHp<lo.hp/lo.S.maxHp)lo=q;if(lo&&lo.hp<lo.S.maxHp)healPlayer(inst,lo,real*P.S.exoHeal,P);}
   if(inst.raid){const A=inst.raid.an||(inst.raid.an={});const a=A[P.id]||(A[P.id]={});a[src]=(a[src]||0)+v;if(inst.raid.gm)gmHit(inst,m,P,real);}}const el=o.el||inst._el||baseEl(P);fx(inst,{k:'dmg',x:r1(m.x),y:r1(m.y-(m.boss?32:17)),v,c:o.dotHit?2:r.crit?1:0,e:SH.EL_LIST.indexOf(el),p:P.id,id:m.id,sk:inst._sk?1:0});
@@ -1076,7 +1090,7 @@ function updateProjs(inst,dt){const map=inst.map;
       if(p.owner==='p'){const P=p.mir?p.mir.Q:players.get(p.pid);if(!P||P.inst!==inst||P.downed&&p.mir){dead=true;break;}
         for(const m of (p.mir?[p.mir.tp]:inst.monsters)){if(m.dead||p.hit.has(m.id)||(m.pvp&&!foe(inst,P,m)))continue;if(Math.hypot(m.x-p.x,m.y-(p.y+2))<m.r+p.r+3){
           if(p.boom){dead=true;if(p.mir)withMirror(inst,p.mir,()=>explode(inst,p));else explode(inst,p);break;}
-          p.hit.add(m.id);hitMonster(inst,m,P,p.mult,{kb:p.pierce?0:1,dot:p.dot,slow:p.slow,el:p.el||PROJ_EL[p.type],ctr:p.ctr,src:p.src||'atk'});if(p.st)addSteam(inst,P,p.st);
+          p.hit.add(m.id);hitMonster(inst,m,P,p.mult,{kb:p.pierce?0:1,dot:p.dot,slow:p.slow,el:p.el||PROJ_EL[p.type],ctr:p.ctr,src:p.src||'atk',px:p.ctr?p.x-p.vx*0.06:undefined,py:p.ctr?p.y-p.vy*0.06:undefined});if(p.st)addSteam(inst,P,p.st);
           if(p.pierce)continue;
           if(p.bounce>0){p.bounce--;let nx=null,nd=90;for(const o of (p.mir?[]:inst.monsters)){if(o.dead||p.hit.has(o.id))continue;const d=Math.hypot(o.x-p.x,o.y-p.y);if(d<nd){nd=d;nx=o;}}
             if(nx){const sp=Math.hypot(p.vx,p.vy),a=Math.atan2(nx.y-p.y,nx.x-p.x);p.vx=Math.cos(a)*sp;p.vy=Math.sin(a)*sp;p.life=Math.max(p.life,0.8);break;}}
@@ -1360,9 +1374,10 @@ function near2(P,o,r){return Math.hypot(P.x-o.x,P.y-o.y)<=r;}
 function bossList(inst){return inst.monsters.filter(m=>m.boss&&!m.dead);}
 // 공통 보스 AI 틀: 패턴 목록·카운터·추적
 function raidAIcore(inst,m,T,d,dt,sm,o){const r=inst.raid;if(m.invul>0&&m.invul<90){m.invul-=dt;if(m.invul<0)m.invul=0;}if(!(m.faceLock>inst.time))m.face=T.x<m.x?-1:1;m.fightT+=dt;
+  const CB=o.ctrBase||[15,20];if(o.ctrBase&&m.ctrCd!=null&&!m.hidden)m.ctrCd-=dt;/* 흑왕: 패턴 중에도 카운터 쿨이 돈다 */
   if(m.busy>0){m.busy-=dt;return;}if(m.hidden||m.invul>=90){if(o.idle)o.idle();return;}
-  m.ctrCd=(m.ctrCd==null?rf(9,14)*(o.ctrMul||1):m.ctrCd)-dt;if(m.ctrCd<=0){m.ctrCd=rf(15,20)*(m.phase>1?0.85:1)*(o.ctrMul||1);m.busy=counterWindow(inst,m,T);return;}
-  m.patCd-=dt;if(m.patCd<=0){let pool=o.pool(m).filter(p=>p!==m.last);const name=pick(pool);m.last=name;m.busy=(o.P[name]||BP[name])(inst,m,T)||0.5;m.patCd=rf(1.9,2.9)*(r.hard?0.8:1)*(m.phase>1?0.85:1)*(o.tempo?o.tempo(m):1);return;}
+  m.ctrCd=(m.ctrCd==null?rf(CB[0]*0.6,CB[1]*0.7)*(o.ctrMul||1):m.ctrCd)-(o.ctrBase?0:dt);if(m.ctrCd<=0){m.ctrCd=rf(CB[0],CB[1])*(m.phase>1?0.85:1)*(o.ctrMul||1);m.chainLeft=null;m.busy=counterWindow(inst,m,T);return;}
+  m.patCd-=dt;if(m.patCd<=0){let pool=o.pool(m).filter(p=>p!==m.last);const name=pick(pool);m.last=name;m.busy=(o.P[name]||BP[name])(inst,m,T)||0.5;m.patCd=rf(1.9,2.9)*(r.hard?0.8:1)*(m.phase>1?0.85:1)*(o.tempo?o.tempo(m):1)*(o.patMul||1);return;}
   if(d<m.r+4+18&&m.cd<=0){m.cd=m.d.cd;m.busy=BP.swipe(inst,m,T);return;}
   chase(inst,m,T,dt,sm*(r.enraged?1.5:1)*(o.spd||1));}
 
@@ -1510,9 +1525,9 @@ RAIDX.moon={init(inst){const r=inst.raid;const b=raidBoss(inst,'r_karnas',inst.m
     if(pz.inp.includes(i))return;if(ph!==want){hintUp(inst,'moonpz');fx(inst,{k:'msg',m:'달의 순서가 틀렸다! 흑월 망령이 깨어난다',c:'#ff6a5a'});for(const p of livingPlayers(inst))hurtPlayer(inst,p,p.S.maxHp*(r.hard?0.4:0.22),null,{what:'어긋난 달빛',nododge:true});for(let k=0;k<2;k++){const m=spawnMonster(inst,'wraith',a.x+rf(-20,20),a.y+rf(-10,10),false);m.alert=true;}pz.inp=[];moonRound(inst);return;}
     pz.inp.push(i);rst(inst,P).gim++;if(pz.inp.length>=4){pz.st='ok';fx(inst,{k:'msg',m:'달이 차올랐다!',c:'#c9a0e8'});raidState(inst);later(inst,1.4,()=>{if(r.doorOpen)return;pz.round++;if(pz.round>=pz.rounds){for(const a2 of r.alt)setTile(inst,Math.floor(a2.x/TS),Math.floor(a2.y/TS),1);pz.st='done';openRaidDoor(inst);}else moonRound(inst);});}else raidState(inst);},
   pub(inst){const r=inst.raid,pz=r.pz;return{alt:r.doorOpen?[]:r.alt.map((a,i)=>[a.x,a.y,pz.ph[i],pz.inp.includes(i)?1:0]),round:pz.round,total:pz.rounds,rev:pz.rev?1:0,n:pz.inp.length,ella:r.ella?1:0};}};
-function karnasAI(inst,m,T,d,dt,sm){const r=inst.raid;if(m.busy>=90||m.hidden)return;if(m.phase===1&&m.hp/m.maxHp<0.5){m.phase=2;fx(inst,{k:'bsay',id:m.id,m:'흑월이 차오른다… 이제부터가 진짜다'});}
+function karnasAI(inst,m,T,d,dt,sm){const r=inst.raid;m.ctrMode='moon';if(m.busy>=90||m.hidden)return;if(m.phase===1&&m.hp/m.maxHp<0.5){m.phase=2;fx(inst,{k:'bsay',id:m.id,m:'흑월이 차오른다… 이제부터가 진짜다'});}
   const hpf=m.hp/m.maxHp;if(m.phase===2&&hpf<0.26){m.phase=3;fx(inst,{k:'bsay',id:m.id,m:'절망하라. 새벽은 오지 않는다.'});}
-  raidAIcore(inst,m,T,d,dt,sm,{pool:m2=>m2.phase>2?['lungeFar','sweep','circles','half','markSpread','half','circles','homing','portals','meteorRain','doom','collapse','stackMark']:m2.phase>1?['swipe','lungeFar','sweep','circles','half','half','markSpread','chainMark','collapse','stackMark','voidOrb']:['swipe','lungeFar','sweep','circles','half','voidOrb','meteorRain'],P:{half:(i,mm)=>RAIDX.moon.half(i,mm)},tempo:m2=>{const f=m2.hp/m2.maxHp;return f<0.26?0.45+f*1.6:1;},ctrMul:hpf<0.26?0.75:1});}
+  raidAIcore(inst,m,T,d,dt,sm,{pool:m2=>m2.phase>2?['lungeFar','sweep','circles','half','markSpread','half','circles','homing','portals','meteorRain','doom','collapse','stackMark']:m2.phase>1?['swipe','lungeFar','sweep','circles','half','half','markSpread','chainMark','collapse','stackMark','voidOrb']:['swipe','lungeFar','sweep','circles','half','voidOrb','meteorRain'],P:{half:(i,mm)=>RAIDX.moon.half(i,mm)},tempo:m2=>{const f=m2.hp/m2.maxHp;return f<0.26?0.45+f*1.6:1;},ctrBase:[7,10],ctrMul:(hpf<0.26?0.7:1)*(r.hard?0.85:1),patMul:0.8});}
 
 // ---- 클리어 · 경매 ----
 function raidClear(inst,m){const r=inst.raid;if(r.done)return;r.done=true;raidLog(inst,'clear');
