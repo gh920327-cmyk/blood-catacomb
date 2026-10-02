@@ -1833,6 +1833,7 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
   ch.fps=Array.isArray(o.fps)?[...new Set(o.fps.filter(k=>typeof k==='string'&&SH.FOOTS[k]))]:[];ch.fpOn=typeof o.fpOn==='string'&&ch.fps.includes(o.fpOn)?o.fpOn:null;
   ch.cprTop1=o.cprTop1?1:0;ch.fishLeg=o.fishLeg?1:0;ch.lgOn=typeof o.lgOn==='string'&&SH.LEGENDS[o.lgOn]?o.lgOn:null;
   ch.skins=Array.isArray(o.skins)?[...new Set(o.skins.filter(k=>typeof k==='string'&&SH.SKINS[k]))]:[];ch.skinOn={};if(o.skinOn&&typeof o.skinOn==='object')for(const f in SH.FAMN){const k=o.skinOn[f];if(typeof k==='string'&&ch.skins.includes(k)&&SH.SKINS[k].fam===f)ch.skinOn[f]=k;}/* 꾸미기 무기 외형 */
+  /* 이름 중복 수정: 예전엔 '천사의 날개 활'이 'angelbow'(천상의 활)와 같은 이름이라 구분 불가 → 'angelbow' 보유자에게 두 활 모두 한 번만 지급 */if(!o.wbfix&&ch.skins.includes('angelbow')&&!ch.skins.includes('wingbow'))ch.skins.push('wingbow');ch.wbfix=1;
   ch.trl={b:Math.max(0,(o.trl&&o.trl.b)|0),n:Math.max(0,(o.trl&&o.trl.n)|0),d:o.trl&&typeof o.trl.d==='string'?o.trl.d.slice(0,10):''};/* 그림자 시험 기록 */
   return ch;}
 function okItem(it){return !!(it&&typeof it==='object'&&['weapon','armor','ring'].includes(it.slot)&&Number.isInteger(it.rar)&&it.rar>=0&&it.rar<=4&&(it.rar<4||SH.MYTH[it.myth])&&(!it.set||SH.SETS[it.set])&&it.base&&typeof it.base==='object'&&Array.isArray(it.aff)&&typeof it.name==='string');}

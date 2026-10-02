@@ -184,7 +184,10 @@ function weapSprite(kind,rar,id){if(GUN_TPL[kind])return gunSprite(kind,rar);if(
 const SKSPR=new Map();
 function skinOk(id,cls){const K=id&&SH.SKINS[id];return !!(K&&SPR.skins&&(!cls||K.fam===CLASSES[cls].fam));}
 function skinSprite(id,rar){const K=SH.SKINS[id];if(!K||!SPR.skins)return null;rar=Math.max(0,Math.min(4,rar|0));const key=id+'|'+rar;let w=SKSPR.get(key);if(w)return w;
-  const [c0,x0c]=mk(24,24);x0c.drawImage(SPR.skins,K.col*24,0,24,24,0,0,24,24);const d=x0c.getImageData(0,0,24,24).data;let x0=24,x1=-1,y0=24,y1=-1;for(let j=0;j<24;j++)for(let i=0;i<24;i++)if(d[(j*24+i)*4+3]>0){if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j;}if(x1<0)return null;
+  let [c0,x0c]=mk(24,24);x0c.drawImage(SPR.skins,K.col*24,0,24,24,0,0,24,24);
+  if(K.fy||K.mx){/* 뒤집어 쥐기: 손잡이 쪽이 아래로 오게(fy) · 활 등이 앞쪽으로 휘게(mx) — 뒤집은 뒤에도 그림 바닥을 원래 바닥 줄에 맞춤 */const od=x0c.getImageData(0,0,24,24).data;let oy0=24,oy1=-1;for(let j=0;j<24;j++)for(let i=0;i<24;i++)if(od[(j*24+i)*4+3]>0){if(j<oy0)oy0=j;if(j>oy1)oy1=j;}
+    const [c1,x1c]=mk(24,24);x1c.save();x1c.translate(K.mx?24:0,K.fy?(oy0+oy1+1):0);x1c.scale(K.mx?-1:1,K.fy?-1:1);x1c.drawImage(c0,0,0);x1c.restore();c0=c1;x0c=x1c;}
+  const d=x0c.getImageData(0,0,24,24).data;let x0=24,x1=-1,y0=24,y1=-1;for(let j=0;j<24;j++)for(let i=0;i<24;i++)if(d[(j*24+i)*4+3]>0){if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j;}if(x1<0)return null;
   const glowCol=rar===4?'#ff3a5a':rar===3?'#ff8a1f':rar===2?'#ffd35a':rar===1?'#7aa2ff':null;
   if(K.fam==='gun'){const ww=x1-x0+1,hh=y1-y0+1;const [c,x]=mk(ww,hh);x.drawImage(c0,x0,y0,ww,hh,0,0,ww,hh);let g=null;if(glowCol){const [gc,gx]=mk(ww,hh);gx.drawImage(c,0,0);gx.globalCompositeOperation='source-in';gx.fillStyle=glowCol;gx.fillRect(0,0,ww,hh);g=gc;}
     w={c,g,px:Math.round(ww*0.28),py:Math.round(hh*0.62),h:hh,x0:0,x1:ww-1,y0:0,gun:1,ai:1,col:glowCol,skin:1};SKSPR.set(key,w);return w;}
@@ -1096,7 +1099,7 @@ function drawTiles(icx,icy){const map=G.map,hub=!!map.hub;const TA=hub?null:them
       if(nb){wx.fillStyle=PAL.k;wx.fillRect(sx,sy,16,16);wx.fillStyle=PAL.m;if(SH.tileAt(map,tx-1,ty)>0)wx.fillRect(sx,sy,1,16);if(SH.tileAt(map,tx+1,ty)>0)wx.fillRect(sx+15,sy,1,16);if(SH.tileAt(map,tx,ty-1)>0)wx.fillRect(sx,sy,16,1);
         wx.fillStyle=PAL.D;if(SH.tileAt(map,tx-1,ty)>0)wx.fillRect(sx+1,sy,1,16);if(SH.tileAt(map,tx+1,ty)>0)wx.fillRect(sx+14,sy,1,16);if(SH.tileAt(map,tx,ty-1)>0)wx.fillRect(sx,sy+1,16,1);}}}}
 function pickFrame(e,fr){let set,idx;if(e.atkAnim>0){set=fr.atk;idx=Math.min(2,Math.floor((1-e.atkAnim/e.atkDur)*3));}else if(e.moving){set=fr.walk;idx=Math.floor(e.animT*(e.fast?16:8))%4;}else{set=fr.idle;idx=Math.floor(e.animT*2)%2;}const f=set[idx];return e.face<0?f.l:f.r;}
-function drawPlayer0(p,icx,icy,isMe){const cls=isMe?myCls():(p.cls||'warrior');const src=isMe?me:p;const look=isMe?lookOfMe():(p.look||{});const fr=playerFrames(cls,look);
+function drawPlayer0(p,icx,icy,isMe){WFX_IC[0]=icx;WFX_IC[1]=icy;const cls=isMe?myCls():(p.cls||'warrior');const src=isMe?me:p;const look=isMe?lookOfMe():(p.look||{});const fr=playerFrames(cls,look);
   const riding=look.mt&&SH.MOUNTS[look.mt]&&(G.kind==='hub'||(p&&p.selPv))&&!(src.atkAnim>0)&&!(p&&p.downed);
   const e={atkAnim:src.atkAnim,atkDur:src.atkDur,moving:riding?false:(isMe?me.moving:p.moving),animT:src.animT,face:isMe?me.face:p.face};const s=pickFrame(e,fr);
   const bx=Math.round(isMe?me.x:p.dx)-icx,by0=Math.round(isMe?me.y:p.dy)-icy;const lift=riding?mountLift(look.mt,src.animT,isMe?me.moving:p.moving):0;const LG=look.lg&&SH.LEGENDS[look.lg]&&!(p&&p.downed)?look.lg:null;const by=by0-lift-(LG==='ghost'?Math.round(2+Math.sin(time*3)*1.5):0);
@@ -1173,6 +1176,64 @@ function drawCosWings(src,cs,bx,by,face){if(!COS_WING[cs])return;const now=time,
   if(o>0.6&&R()<(ultW?0.6:0.25))part(bkx-f*rf(8,24),bky-rf(-4,12),-f*rf(4,12),rf(-2,8),R()<0.6?'#ffffff':'#ffe08a',rf(0.5,0.9),{glow:true,z:rf(6,12),vz:rf(-8,2)});
   else if(o<0.1&&R()<0.03)part(bkx-f*rf(1,5),bky-rf(2,10),rf(-3,3),rf(-14,-6),R()<0.5?'#ffffff':'#ffe08a',rf(0.5,0.9),{glow:true});}
 function drawCosWingsFront(src){const q=src._wcap;if(q&&q.t===time)wx.drawImage(q.c,q.x,q.y);}
+/* ===== 무기 외형 이펙트 (전부 코드로 그림) =====
+   무기 끝(총은 총구)에서 평소엔 은은하게, 공격할 땐 터지듯 · 휘두르는 동안엔 궤적처럼 뿜어 나옴 */
+const WFX=[],WFX_IC=[0,0];
+const WFX_SH={note:['..111','..1.1','..1..','111..','111..'],heart:['11.11','13111','11111','.111.','..1..'],star:['..1..','.121.','12321','.121.','..1..'],spark:['.1.','131','.1.'],
+  flake:['1.1.1','.121.','12321','.121.','1.1.1'],petal:['.11','131','11.'],leaf:['..11','.131','131.','1...'],drop:['.1.','111','131','.1.'],bubble:['.111.','13..1','1...1','1...1','.111.'],
+  gear:['.1.1.','11111','11.11','11111','.1.1.'],moon:['.11','1..','1..','.11'],feather:['..1','.13','.1.','13.','1..'],bolt:['..1','.1.','111','.1.','1..'],wisp:['.1.','131','111','1.1'],
+  puff:['.1.','121','.1.'],conf:['12'],bone:['1...1','.111.','1...1']};
+const WFX_TH={
+  petal:{sh:['petal','petal','spark'],c:[['#ffb7d0','#ff7aa8','#ffffff']],mv:'drift',idle:3,atk:7,trail:22},
+  rose:{sh:['petal','petal','leaf'],c:[['#e83a4a','#8a1020','#ff9aa8'],['#3f8a2c','#7ad84a','#c8f08a']],mv:'drift',idle:2.5,atk:7,trail:16},
+  frost:{sh:['flake','spark','spark'],c:[['#bfe9ff','#5ad8ff','#ffffff']],mv:'drift',idle:3,atk:8,trail:22},
+  flame:{sh:['spark','spark','puff'],c:[['#ffb03a','#ff5a1f','#fff3b0']],mv:'rise',idle:6,atk:10,trail:30,fl:1},
+  lava:{sh:['spark','puff','spark'],c:[['#ff6a2a','#c8201a','#ffd35a']],mv:'rise',idle:6,atk:10,trail:30,fl:1},
+  steam:{sh:['puff','puff','spark'],c:[['#ffffff','#f0e6d0','#ffffff'],['#ffd35a','#ff9a3a','#fff3b0']],mv:'rise',idle:2.5,atk:6,trail:12,al:0.75},
+  leaf:{sh:['leaf','leaf','spark'],c:[['#7ad84a','#3f8a2c','#c8f08a']],mv:'drift',idle:2.5,atk:7,trail:16},
+  rain:{sh:['drop','drop','spark'],c:[['#8fd0ff','#3a6fb8','#ffffff']],mv:'fall',idle:4,atk:8,trail:24},
+  witch:{sh:['star','spark','puff'],c:[['#c77ad8','#7a3a8c','#ffffff'],['#ffd35a','#c77ad8','#ffffff']],mv:'float',idle:3,atk:7,trail:20},
+  candy:{sh:['star','conf','heart','spark'],c:[['#ff9ad0','#8fd0ff','#ffffff'],['#8fd0ff','#ff9ad0','#ffffff'],['#ffe08a','#ff9ad0','#ffffff']],mv:'float',idle:3,atk:8,trail:20},
+  heart:{sh:['heart','heart','spark'],c:[['#ff5a8a','#c8204a','#ffd0e0'],['#ff9ad0','#ff5a8a','#ffffff']],mv:'float',idle:2.5,atk:7,trail:16},
+  star:{sh:['star','spark'],c:[['#ffd35a','#ff9a3a','#ffffff'],['#fff3b0','#ffd35a','#ffffff']],mv:'float',idle:3.5,atk:8,trail:24},
+  bubble:{sh:['bubble','bubble','spark'],c:[['#9ae8ff','#5ad8ff','#ffffff'],['#ffb7e8','#ff9ad0','#ffffff']],mv:'float',idle:2.5,atk:8,trail:16},
+  moon:{sh:['moon','puff','spark'],c:[['#b07ae8','#5a2a8a','#ffffff'],['#5a2a8a','#2a1040','#b07ae8']],mv:'float',idle:3,atk:8,trail:24},
+  bone:{sh:['bone','spark','puff'],c:[['#f0e0c8','#c8b8a0','#ffffff'],['#ff5a3a','#c8201a','#ffd35a']],mv:'drift',idle:2.5,atk:7,trail:18},
+  gear:{sh:['gear','spark','spark'],c:[['#e0b040','#8a5a18','#fff3b0']],mv:'drift',idle:2.5,atk:7,trail:18,spin:1},
+  holy:{sh:['feather','star','spark'],c:[['#ffffff','#ffe08a','#ffffff'],['#ffd35a','#fff3b0','#ffffff']],mv:'drift',idle:3,atk:8,trail:24},
+  music:{sh:['note','note','spark'],c:[['#ff5a5a'],['#ffd35a'],['#5aff8a'],['#5ad8ff'],['#c77ad8']],mv:'float',idle:2.5,atk:8,trail:14},
+  bolt:{sh:['bolt','spark','spark'],c:[['#ffe84a','#ffffff','#ffffff'],['#ffffff','#ffe84a','#ffffff']],mv:'zap',idle:3.5,atk:10,trail:26,fl:1},
+  ghost:{sh:['wisp','wisp','spark'],c:[['#7aff9a','#2a8a4a','#e0ffe8']],mv:'float',idle:3,atk:7,trail:18,al:0.85},
+  prism:{sh:['spark','star'],c:[['#ff5a5a','#ffffff','#ffffff'],['#ffd35a','#ffffff','#ffffff'],['#5aff8a','#ffffff','#ffffff'],['#5ad8ff','#ffffff','#ffffff'],['#c77ad8','#ffffff','#ffffff']],mv:'float',idle:4,atk:10,trail:26},
+  paper:{sh:['conf','conf','spark'],c:[['#ffffff','#d8d0c0'],['#ff9ad0','#ffffff'],['#8fd0ff','#ffffff'],['#ffe84a','#ffffff']],mv:'drift',idle:2.5,atk:8,trail:18},
+  dust:{sh:['puff','puff','spark'],c:[['#e8e0d0','#b8a890','#ffffff']],mv:'drift',idle:2.5,atk:8,trail:16,al:0.8},
+  banana:{sh:['spark','star'],c:[['#ffe84a','#ffd35a','#ffffff']],mv:'float',idle:3,atk:8,trail:20}};
+const SKIN_FX={katana:'petal',tuna:'frost',pan:'steam',leek:'leaf',umbrella:'rain',baguette:'steam',broom:'witch',lollipop:'candy',catpaw:'heart',starwand:'star',heartbow:'heart',watergun:'rain',
+  lampsword:'flame',lampbow:'flame',lampstaff:'flame',lampgun:'flame',tteok:'steam',friedbow:'steam',hotdog:'steam',bungeo:'steam',bmblade:'moon',bmbow:'moon',bmstaff:'moon',bmgun:'moon',
+  bonesword:'bone',bonebow:'bone',bonestaff:'bone',bonegun:'bone',icesword:'frost',icebow:'frost',icestaff:'frost',icegun:'frost',clocksword:'gear',clockbow:'gear',clockstaff:'gear',clockgun:'gear',
+  angelsword:'holy',angelbow:'holy',angelstaff:'holy',angelgun:'holy',pencil:'paper',rubberbow:'paper',pen:'paper',tapegun:'paper',cottoncandy:'candy',bananabow:'banana',carousel:'candy',bubblegun:'bubble',
+  duster:'dust',brushbow:'dust',plunger:'bubble',spraygun:'bubble',guitar:'music',rosebow:'rose',boltumb:'bolt',crystalgun:'prism',lavabread:'lava',ghostlamp:'ghost',
+  holysword:'holy',wingbow:'holy',haloscepter:'holy',holypistol:'holy'};
+const WFX_CC=new Map();
+function wfxShape(sh,cs){const key=sh+'|'+cs.join(',');let c=WFX_CC.get(key);if(c)return c;const rows=WFX_SH[sh];const w=rows[0].length,h=rows.length;const[cv,x]=mk(w,h);
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){const ch=rows[j][i];if(ch==='.')continue;x.fillStyle=cs[(+ch-1)%cs.length]||cs[0];x.fillRect(i,j,1,1);}WFX_CC.set(key,cv);return cv;}
+function wfxSpawn(th,x,y,o){if(WFX.length>520)return;const T=WFX_TH[th];o=o||{};const sh=o.sh||pick(T.sh);const cs=pick(T.c);const mv=T.mv;let vx=rf(-5,5),vy=0,g=0;
+  if(mv==='drift'){vy=rf(3,9);}else if(mv==='float'){vy=rf(-14,-6);}else if(mv==='rise'){vy=rf(-24,-12);vx=rf(-3,3);}else if(mv==='fall'){vy=rf(2,10);g=70;}else if(mv==='zap'){vx=rf(-14,14);vy=rf(-14,6);}
+  if(o.burst){const a=o.a!=null?o.a+rf(-0.5,0.5):R()*Math.PI*2,sp=rf(22,52)*(o.k||1);vx+=Math.cos(a)*sp;vy+=Math.sin(a)*sp;}
+  const life=o.life||rf(0.6,1.2)*(mv==='rise'?0.8:1);WFX.push({x,y,vx,vy,g,life,max:life,cv:wfxShape(sh,cs),sw:rf(0,6.3),sa:mv==='drift'?rf(4,9):mv==='float'?rf(2,5):0,dr:o.burst?3.2:0,fl:!!T.fl,al:T.al||1,spin:T.spin&&sh==='gear'});}
+function wfxDraw(icx,icy){const now=time,dt=Math.max(0,Math.min(0.05,now-(WFX.t||now)));WFX.t=now;
+  for(let i=WFX.length-1;i>=0;i--){const p=WFX[i];p.life-=dt;if(p.life<=0){WFX.splice(i,1);continue;}if(p.dr){const k=Math.max(0,1-p.dr*dt);p.vx*=k;p.vy=p.vy*k+(1-k)*(p.g?p.vy:0);}p.vy+=p.g*dt;p.x+=(p.vx+Math.sin(now*3+p.sw)*p.sa)*dt;p.y+=p.vy*dt;
+    const q=p.life/p.max;let a=(q<0.4?q/0.4:1)*p.al;if(p.fl)a*=0.65+0.35*Math.sin(now*30+p.sw*7);wx.globalAlpha=Math.max(0,Math.min(1,a));const w=p.cv.width,h=p.cv.height;
+    if(p.spin){wx.save();wx.translate(Math.round(p.x-icx),Math.round(p.y-icy));wx.rotate(Math.round(now*6)%4*Math.PI/4);wx.drawImage(p.cv,-(w>>1),-(h>>1));wx.restore();}else wx.drawImage(p.cv,Math.round(p.x-icx-(w>>1)),Math.round(p.y-icy-(h>>1)));}
+  wx.globalAlpha=1;}
+// 무기 끝 위치(화면 좌표)를 받아 그 무기 외형의 이펙트를 뿜음. a: 공격 방향(총)
+function skinFx(src,sk,tx,ty,o){const th=SKIN_FX[sk];if(!th)return;const T=WFX_TH[th];const now=time,dt=Math.max(0,Math.min(0.05,now-(src._fxT||now)));src._fxT=now;o=o||{};
+  const wx0=tx+WFX_IC[0],wy0=ty+WFX_IC[1];const atk=src.atkAnim>0;
+  const shot=o.gun&&src.gunT&&src.gunT!==src._fxG;if(o.gun)src._fxG=src.gunT;
+  if((atk&&!src._fxA&&!o.gun)||shot){const n=T.atk;for(let i=0;i<n;i++)wfxSpawn(th,wx0+rf(-2,2),wy0+rf(-2,2),{burst:1,a:o.gun?o.a:null,k:o.gun?1.1:1});}
+  src._fxA=atk;
+  if(atk&&!o.gun){if(R()<T.trail*dt)wfxSpawn(th,wx0+rf(-1,1),wy0+rf(-1,1));}
+  else if(R()<T.idle*dt){const sx=o.spread||2;wfxSpawn(th,wx0+rf(-sx,sx),wy0+rf(-sx,sx));}}
 /* ===== 탈것 · 전설 외형 · 발자국 (전부 코드로 그림) ===== */
 function fr_(x,y,w,h,c){wx.fillStyle=c;wx.fillRect(x,y,w,h);}
 function mountLift(k,t,mv){t=t||0;if(k==='duck')return 1+Math.round(Math.sin(t*4)*0.8);if(k==='broom')return 7+Math.round(Math.sin(t*3)*1.2);if(k==='cloud')return 6+Math.round(Math.sin(t*2.5)*1);if(k==='carpet')return 6+Math.round(Math.sin(t*3.5)*0.8);if(k==='skate')return 3;return 0;}
@@ -1267,6 +1328,8 @@ function drawHeldGear(cls,src,s,sx,sy,e,look){const fam=CLASSES[cls].fam;const k
   if(cls==='guardian'&&look.sh!==0){const shW=weapSprite('shield',Math.max(0,look.ar|0),'s'+(look.ar|0));const scx=sx+(f>0?Math.round(s.w/2)+5:Math.round(s.w/2)-5),scy=sy+s.h-7;
     drawHeld(ws,ax,ay,ang,f,rar,time,skin?'skin':kind);if(shW)drawHeld(shW,atk?ax+(f>0?3:-3):scx,atk?ay+1:scy,0,f,Math.max(0,look.ar|0),time+1,'shield');}
   else drawHeld(ws,ax,ay,ang,f,rar,time,skin?'skin':kind);
+  if(skin&&ws&&SKIN_FX[skin]){const sc=W_SCALE.skin||1,bw=fam==='bow';const lx=bw?rf(ws.x0,ws.x1+1)-ws.px:(ws.x0+ws.x1+1)/2-ws.px,ly=bw?rf(ws.y0,ws.py*2-ws.y0)-ws.py:ws.y0+1-ws.py;const ca=Math.cos(ang),sa=Math.sin(ang);
+    skinFx(src,skin,ax+f*sc*(lx*ca-ly*sa),ay+sc*(lx*sa+ly*ca),{spread:bw?1:2});}
   if(rar===3&&ws&&R()<0.5){const L=ws.h*0.7,aa=ang*(f<0?-1:1);part(ax+Math.sin(aa)*rf(2,L)*(f<0?-1:1)+ (0),ay-Math.cos(aa)*rf(2,L),rf(-6,6),rf(-6,6),pick(['o','y','w','r']),rf(.3,.6),{z:0,glow:true});}
   else if(rar===2&&ws&&R()<0.12)part(ax+rf(-2,2),ay-rf(2,ws.h*0.8),0,rf(-8,-3),'y',0.4,{glow:true});
   if(fam==='melee'&&atk&&src.atkKind==='swing'&&prog>0.25&&prog<0.85){const L=(ws?ws.h:12)-2;wx.globalAlpha=0.45;for(let k=0;k<8;k++){const aa=-1.3+(prog-k*0.035)*3.1;const px=ax+Math.sin(aa)*L*f,py=ay-Math.cos(aa)*L;wpx(Math.round(px),Math.round(py),rar===3?'o':rar===2?'y':k<3?'w':'s');}wx.globalAlpha=1;}}
@@ -1432,7 +1495,7 @@ function renderWorld(){const shk=shake*OPT.shake;const sx=shk>0.5?Math.round(rf(
   computeLights(icx,icy);drawEyes(icx,icy);
   if(G.kind==='hub')drawPortal(icx,icy,true);
   if(G.zones.some(z=>z.vis===29&&!z.arm)){wx.fillStyle='rgba(140,190,230,0.12)';wx.fillRect(0,0,W,H);}
-  for(const d of G.drops.values())drawBeam(d,icx,icy);for(const p of G.projs.values())drawProj(p,icx,icy,true);drawParts(icx,icy,true);drawUltWorld(icx,icy);drawKnightFx(icx,icy);drawGunFx(icx,icy);drawHitFx(icx,icy);drawUltStreaks(icx,icy);drawRaid2World(icx,icy);drawRaid2Marks(icx,icy);drawGMWorld(icx,icy);
+  for(const d of G.drops.values())drawBeam(d,icx,icy);for(const p of G.projs.values())drawProj(p,icx,icy,true);drawParts(icx,icy,true);wfxDraw(icx,icy);drawUltWorld(icx,icy);drawKnightFx(icx,icy);drawGunFx(icx,icy);drawHitFx(icx,icy);drawUltStreaks(icx,icy);drawRaid2World(icx,icy);drawRaid2Marks(icx,icy);drawGMWorld(icx,icy);
   for(const t of torches){const x=t.x-icx-3,y=t.y-icy-4;if(x<-10||y<-14||x>W||y>H)continue;wx.drawImage(curTorch()[(Math.floor(time*8+t.ph))&1],0,0,7,5,x,y,7,5);}
   if(screenFlash>0){wx.fillStyle=`rgba(255,246,234,${Math.min(0.6,screenFlash)})`;wx.fillRect(0,0,W,H);screenFlash-=1/60;}
   if(G.hurtT&&time-G.hurtT<0.3){const a=(1-(time-G.hurtT)/0.3)*(G.hurtK||0.35);const g=wx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,W*0.62);g.addColorStop(0,'rgba(180,20,20,0)');g.addColorStop(1,`rgba(180,20,20,${a})`);wx.fillStyle=g;wx.fillRect(0,0,W,H);}
@@ -2856,7 +2919,8 @@ function gunIcon(it){const ws=gunSprite(it.kind,it.rar);return pcan(16,16,(q,x)=
 function drawGunHeld(cls,src,bx,by,f,kind,wr,look,hand){const g=src.gunT&&time-src.gunT<0.7?src.gunG:null;const kd=g==='p'||g==='k'?'pistol':g==='c'||g==='x'?'handcannon':g?'rifle':kind;const gs=(look&&skinOk(look.sk,cls)&&skinSprite(look.sk,wr))||gunSprite(kd,wr);
   const hx=hand?hand.x:bx+(f>0?3:-4),hy=hand?hand.y:by-5;const aim=src.atkAnim>0||g;let a=aim?src.atkAngle:(f>0?0.25:Math.PI-0.25);if(a==null)a=f>0?0:Math.PI;const left=Math.cos(a)<0;const rec=src.atkAnim>0?Math.min(1,src.atkAnim/Math.max(0.05,src.atkDur)):0;const ra=a+(left?1:-1)*rec*0.45;
   const gsc=gs.ai?0.72:1;const draw=(ox,oy)=>{wx.save();wx.translate(hx+ox-Math.cos(a)*rec*2,hy+oy-Math.sin(a)*rec*2);wx.rotate(ra);wx.scale(gsc,left?-gsc:gsc);if(gs.g&&wr>=1){wx.globalAlpha=wr>=3?0.4+0.25*Math.sin(time*7):wr===2?0.3:0.18;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])wx.drawImage(gs.g,-gs.px+dx,-gs.py+dy);wx.globalAlpha=1;}wx.drawImage(gs.c,-gs.px,-gs.py);wx.restore();};
-  if(look&&look.adv==='gunkata'&&kd==='pistol')draw(f>0?-3:3,2);draw(0,0);}
+  if(look&&look.adv==='gunkata'&&kd==='pistol')draw(f>0?-3:3,2);draw(0,0);
+  if(gs.skin&&look&&SKIN_FX[look.sk]){const lx=(gs.x1+1-gs.px)*gsc,ly=(Math.round(gs.h*0.3)-gs.py)*(left?-gsc:gsc);const c=Math.cos(ra),s2=Math.sin(ra);skinFx(src,look.sk,hx+lx*c-ly*s2,hy+lx*s2+ly*c,{gun:1,a:ra});}}
 
 /* ---- 효과 ---- */
 const GFX=[],GSMOKE=[],GLIGHT=[];function gfx(o){o.t0=time;GFX.push(o);return o;}
