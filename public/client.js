@@ -1097,14 +1097,15 @@ function drawCape(bx,by,face,ar,moving,animT){const c1=ar===3?'r':'R',c2=ar===3?
 // 동작 그림을 쓸 때: 무기는 그림에 있으니 휘두르는 궤적만 그린다
 // 맨손 캐릭터 + 장착 무기 그림
 function drawHeldGear(cls,src,s,sx,sy,e,look){const fam=CLASSES[cls].fam;const kind=look.w||(fam==='melee'?'sword':fam==='bow'?'shortbow':'staff');const rar=Math.max(0,look.wr|0);
-  const skin=skinOk(look.sk,cls)?look.sk:null;const ws=skin?skinSprite(skin,rar):weapSprite(kind,rar,look.wid);const f=e.face;const ks=s.ks||1,kh=s.kh||1;const ax=sx+Math.round(s.hx*ks+(s.w-s.w*ks)/2),ay=sy+Math.round(s.hy*kh+s.h*(1-kh));
+  const skin=skinOk(look.sk,cls)?look.sk:null;const ws=skin?skinSprite(skin,rar):weapSprite(kind,rar,look.wid);const f=e.face;const ks=s.ks||1,kh=s.kh||1;let ax=sx+Math.round(s.hx*ks+(s.w-s.w*ks)/2),ay=sy+Math.round(s.hy*kh+s.h*(1-kh));
+  if(fam!=='gun'){ax+=f>0?3:-3;ay+=2;}/* 무기를 얼굴에서 떼어 몸 바깥·아래쪽으로 쥠 */
   if(fam==='gun'){drawGunHeld(cls,src,0,0,f,GUN_TPL[kind]?kind:'rifle',rar,look,{x:ax,y:ay});return;}
   const atk=src.atkAnim>0,prog=atk?1-src.atkAnim/src.atkDur:0,bob=e.moving?Math.sin(src.animT*10)*0.12:0;let ang;
   if(src.spin>0)ang=(1-src.spin/0.3)*Math.PI*2.4;
-  else if(fam==='melee'){ang=atk&&src.atkKind==='swing'?-1.3+prog*3.1:atk?1.35:0.35+bob;}
+  else if(fam==='melee'){ang=atk&&src.atkKind==='swing'?-1.3+prog*3.1:atk?1.35:0.78+bob;}
   else if(kind==='crossbow'){ang=0;}
-  else if(fam==='bow'){ang=atk?0:0.12+bob*0.5;}
-  else{ang=atk?0.95:0.12+bob*0.5;}
+  else if(fam==='bow'){ang=atk?0:0.3+bob*0.5;}
+  else{ang=atk?0.95:0.3+bob*0.5;}
   if(cls==='guardian'){const shW=weapSprite('shield',Math.max(0,look.ar|0),'s'+(look.ar|0));const scx=sx+(f>0?Math.round(s.w/2)+5:Math.round(s.w/2)-5),scy=sy+s.h-7;
     drawHeld(ws,ax,ay,ang,f,rar,time,skin?'skin':kind);if(shW)drawHeld(shW,atk?ax+(f>0?3:-3):scx,atk?ay+1:scy,0,f,Math.max(0,look.ar|0),time+1,'shield');}
   else drawHeld(ws,ax,ay,ang,f,rar,time,skin?'skin':kind);
