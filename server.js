@@ -539,7 +539,7 @@ const HINTS={
   clockpz:[v=>`태엽 장치 ${v.i}/${v.n}: 등불들은 이웃과 함께 깜빡인다`,v=>`태엽 장치 ${v.i}/${v.n}: 레버 하나가 제 등불과 양옆을 함께 뒤집는다`,v=>`태엽 장치 ${v.i}/${v.n}: 레버(F)는 자기와 양옆 등불을 바꿉니다. 등불을 모두 켜세요`],
   plates:[v=>'증기 보호막! 바닥의 판들이 무게를 기다린다',v=>`증기 보호막! 판 ${v.need}개가 한꺼번에 눌려야 한다`,v=>`증기 보호막! 압력판 ${v.need}개를 동시에 밟고 버티세요`],
   moonpz:[v=>`달의 제단 ${v.i}/${v.n}: ${v.rev?'이번엔 달이 거꾸로 흐른다…':'달은 차오르고 이지러진다…'}`,v=>`달의 제단 ${v.i}/${v.n}: ${v.rev?'달이 이지러지는 순서대로':'달이 차오르는 순서대로'} 제단을 깨워라`,v=>`달의 제단 ${v.i}/${v.n}: ${v.rev?'보름달부터 그믐 순서로':'초승달부터 보름달 순서로'} 제단을 활성화하세요 (F)`],
-  clash:[v=>`격돌! 흑왕의 검이 내려온다${v.n>1?` (${v.n}번)`:''}`,v=>`격돌! 칼날이 맞닿는 순간을 노려라${v.n>1?` (${v.n}번)`:''}`,v=>`격돌! 바깥 원이 안쪽 원에 겹치는 순간, 원 안에 표시된 키를 누르세요${v.n>1?` (${v.n}연속)`:''}`],
+  clash:[v=>`격돌! 흑왕의 검이 내려온다${v.n>1?` (${v.n}번)`:''}`,v=>`격돌! 칼날이 맞닿는 순간을 노려라${v.n>1?` (${v.n}번)`:''}`,v=>`격돌! 바깥 원이 안쪽 원에 겹치는 순간, 원 안에 표시된 키를 누르세요${v.n>1?` (${v.n}연속)`:''} · 실패하면 전멸`],
   clones:[()=>'흑왕이 넷으로 갈라졌다! 진짜 칼날은 하나씩 날아든다',()=>'흑왕이 넷으로 갈라졌다! 푸르게 빛나는 분신이 진짜 공격이다',()=>'흑왕이 넷으로 갈라졌다! 파랗게 빛나는 분신을 앞에서 카운터하세요'],
   chain:[v=>`${v.who}이(가) 쇠사슬에 묶였다!`,v=>`${v.who}이(가) 쇠사슬에 묶였다! 사슬이 팽팽해지면 끊어진다`,v=>`${v.who}이(가) 쇠사슬에 묶였다! 멀리 떨어지세요`],
   funeral:[v=>`장례의 종! 관 자리가 ${v.txt||''} 로 나뉘었다… 빈자리도, 넘치는 자리도 용서받지 못한다`,v=>`장례의 종! 원 위의 숫자만큼만 서야 한다 (${v.txt||''})`,v=>`장례의 종! 원마다 적힌 인원이 정확히 서세요 (${v.txt||''}) · 원 밖에 있으면 안 돼요`],
@@ -1505,22 +1505,23 @@ RAIDX.moon={init(inst){const r=inst.raid;const b=raidBoss(inst,'r_karnas',inst.m
     if(r.clash){const c=r.clash;c.t-=dt;if(c.t<=0)RAIDX.moon.clashEnd(inst,b);}
     if(r.beat){r.beat.t-=dt;if(r.beat.t<=0)RAIDX.moon.rhythmEnd(inst,b);}},
   clash(inst,b,n){const r=inst.raid;const br=inst.map.bossRoom;b.x=(br.x+br.w/2)*TS;b.y=(br.y+3)*TS;b.busy=99;b.invul=99;fx(inst,{k:'tp',x:r1(b.x),y:r1(b.y)});b.face=1;
-    if(n>1)n=r.hard?5:4;const fin=n>1?1:0;const dur=fin?(r.hard?0.95:1.1):(r.hard?1.25:1.45);let tol=r.hard?0.11:0.16;if(r.ella&&!r.hard)tol+=0.04;const zone=[1-tol/dur,1+tol/dur];const nk=r.hard?8:4;
+    {const L=livingPlayers(inst).filter(P=>!P.downed);const offs=[0,-20,20,-40,40,-60,60,-80];L.forEach((P,i)=>{let x=b.x+46+(i>2?14:0),y=b.y+(offs[i]||0);if(SH.blocked(inst.map,x,y,3)){x=b.x+46;y=b.y;}P.x=x;P.y=y;P.face=-1;P.moving=false;P.gmLock=inst.time+40;P.clashLk=1;send(P,{t:'tp',x:P.x,y:P.y});});}
+    if(n>1)n=r.hard?5:4;const fin=n>1?1:0;const dur=fin?(r.hard?0.48:0.55):(r.hard?0.62:0.72);let tol=r.hard?0.11:0.16;if(r.ella&&!r.hard)tol+=0.04;const zone=[1-tol/dur,1+tol/dur];const nk=r.hard?8:4;
     r.clash={n,i:0,dur,zone,tol,nk,key:(Math.random()*nk)|0,t:dur+tol+0.3,ok:new Set(),bad:new Set(),need:r.hard?Math.max(1,Math.ceil(livingPlayers(inst).length/2)):1,res:[]};const c=r.clash;
-    bcast(inst,{t:'clash',n,i:0,dur,zone,k:c.key,fin,delay:fin?0.6:0.5});c.t+=fin?0.6:0.5;fx(inst,{k:'bsay',id:b.id,m:n>1?'이것이 마지막이다! 흑월이여, 모든 것을 삼켜라!':'격돌하라, 필멸자여!'});hint(inst,'clash','#c9a0e8',{n});fx(inst,{k:'sfx',n:'boss'});},
+    bcast(inst,{t:'clash',n,i:0,dur,zone,k:c.key,fin,delay:fin?0.45:0.35});c.t+=fin?0.45:0.35;fx(inst,{k:'bsay',id:b.id,m:n>1?'이것이 마지막이다! 흑월이여, 모든 것을 삼켜라!':'격돌하라, 필멸자여!'});hint(inst,'clash','#c9a0e8',{n});fx(inst,{k:'sfx',n:'boss'});},
   clashPress(inst,P,v,ki){const r=inst.raid,c=r.clash;if(!c||P.downed)return;const b=bossList(inst)[0];if(!b)return;if(Math.hypot(P.x-b.x,P.y-b.y)>200)return;if(c.ok.has(P.id)||c.bad.has(P.id))return;
     const say=(s,col)=>fx(inst,{k:'txt',x:r1(P.x),y:r1(P.y-30),s,c:col});
     if(ki!==c.key){c.bad.add(P.id);say('다른 키!','#e0574a');return;}
     if(v>=c.zone[0]&&v<=c.zone[1]){c.ok.add(P.id);rst(inst,P).ctr++;say(Math.abs(v-1)*c.dur<=c.tol*0.45?'완벽!':'격돌 성공!','#ffe9a8');}else{c.bad.add(P.id);say(v<c.zone[0]?'너무 빨라':'늦었다','#9e937a');}},
   clashEnd(inst,b){const r=inst.raid,c=r.clash;const win=c.ok.size>=c.need;c.res.push(win);
     if(win&&c.i<c.n-1){c.i++;c.ok=new Set();c.bad=new Set();let k=(Math.random()*(c.nk-1))|0;if(k>=c.key)k++;c.key=k;c.t=c.dur+c.tol+0.3+0.15;bcast(inst,{t:'clash',n:c.n,i:c.i,dur:c.dur,zone:c.zone,k:c.key,fin:1,delay:0.15});fx(inst,{k:'shake',v:4});return;}
-    r.clash=null;b.busy=0.5;b.invul=0;bcast(inst,{t:'clash',end:1,win});
+    r.clash=null;b.busy=win?0.5:1.2;b.invul=0;for(const P of instPlayers(inst))if(P.clashLk){P.clashLk=0;P.gmLock=Math.min(P.gmLock||0,inst.time+0.9);}bcast(inst,{t:'clash',end:1,win,bid:b.id});
     if(win){fx(inst,{k:'counter',id:b.id,x:r1(b.x),y:r1(b.y),by:''});fx(inst,{k:'shake',v:10});b.stun=4;b.grog=inst.time+5;
       if(c.n>1){b.hp=Math.max(1,Math.round(b.maxHp*0.01));fx(inst,{k:'msg',m:'최후의 격돌에서 이겼다! 흑왕에게 마지막 일격을!',c:'#ffd35a'});fx(inst,{k:'bsay',id:b.id,m:'이럴 수가… 빛이… 흑월을…'});}else{b.hp=Math.max(1,b.hp-Math.round(b.maxHp*0.06));fx(inst,{k:'msg',m:'격돌 성공! 흑왕이 무너진다',c:'#ffd35a'});}}
-    else{fx(inst,{k:'boom',x:r1(b.x),y:r1(b.y),r:220});fx(inst,{k:'shake',v:12});hintUp(inst,'clash');fx(inst,{k:'msg',m:c.n>1?'최후의 격돌 실패…':'격돌 실패! 흑월의 일격',c:'#ff4a3a'});
-      if(r.hard){for(const p of livingPlayers(inst))hurtPlayer(inst,p,p.S.maxHp*3,b,{what:'흑월의 일격',nododge:true});}
-      else{for(const p of livingPlayers(inst))hurtPlayer(inst,p,p.S.maxHp*0.45,b,{what:'흑월의 일격',nododge:true});if(!r.practice){r.deaths-=c.n>1?2:1;fx(inst,{k:'msg',m:`데스 카운트 -${c.n>1?2:1} (남은 ${Math.max(0,r.deaths)})`,c:'#ff6a5a'});if(r.deaths<0)raidFail(inst,'격돌에서 패배했습니다');}
-        if(c.n>1&&!r.fail){r.ev.done.fin=0;}}}
+    else{hintUp(inst,'clash');fx(inst,{k:'bsay',id:b.id,m:'흑월이여, 모든 것을 삼켜라.'});fx(inst,{k:'msg',m:c.n>1?'최후의 격돌 실패… 흑월이 모든 것을 삼킨다':'격돌 실패! 흑월의 일격',c:'#ff4a3a'});
+      /* 격돌 실패 = 파티 전멸 + 데스 카운트 소멸(연습은 전멸만, 7초 뒤 부활) */
+      if(!r.practice)r.deaths=0;groupWipe(inst,r.practice?'흑월의 일격 (연습: 7초 뒤 다시 일어납니다)':'흑월의 일격 · 데스 카운트가 모두 사라졌습니다');
+      if(c.n>1&&r.practice)r.ev.done.fin=0;}
     raidState(inst);},
   half(inst,b){const r=inst.raid;const a=b.face<0?Math.PI:0;const ang=pick([0,Math.PI/2,Math.PI,-Math.PI/2]);const t=1.7*b.tf;r.half={a:ang,x:b.x,y:b.y};bcast(inst,{t:'half',a:ang,x:r1(b.x),y:r1(b.y),d:t});
     later(inst,t,()=>{if(b.dead)return;r.half=null;fx(inst,{k:'shake',v:7});for(const p of livingPlayers(inst)){const dx=p.x-b.x,dy=p.y-b.y;if(dx*Math.cos(ang)+dy*Math.sin(ang)>-6)hurtPlayer(inst,p,p.S.maxHp*(r.hard?3:0.75),b,{what:'반월 베기',nododge:true});}});return t+0.5;},
