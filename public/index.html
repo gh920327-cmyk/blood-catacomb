@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>달 없는 밤: 등불을 든 자</title>
+<link rel="icon" type="image/png" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Brush+Script&family=Nanum+Gothic:wght@400;800&family=Nanum+Myeongjo:wght@400;800&family=Silkscreen&display=swap">
@@ -20,6 +21,8 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-famil
 h1{margin:0;font:800 48px "Nanum Myeongjo","Noto Serif KR",serif;color:#efe6d2;letter-spacing:.08em;text-shadow:0 0 18px rgba(255,211,90,.18),3px 3px 0 #1b0508;text-align:center;}
 h1 small{display:block;margin-top:6px;font-size:22px;letter-spacing:.3em;color:var(--gold);text-shadow:0 0 12px rgba(255,190,80,.45),2px 2px 0 #1b0508;}
 .introBtn{align-self:center;margin-top:-8px;}
+.topBtns{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:-8px}.topBtns .introBtn{margin-top:0}
+.pcDl{display:inline-block;padding:6px 14px;border:1px solid #b38a3a;color:#ffd35a;text-decoration:none;font-size:13px;background:#1a1410}.pcDl:hover{background:#2a2014}
 #cine{position:fixed;inset:0;z-index:20;background:#000;display:none;overflow:hidden;cursor:pointer;user-select:none;}
 #cine.on{display:block;}
 #cine .img{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.2s ease;}
@@ -91,7 +94,7 @@ textarea{width:100%;min-height:60px;resize:vertical;font-weight:400;font-size:12
   <div class="wrap">
     <h1>달 없는 밤<small>등불을 든 자</small></h1>
     <p class="sub">끝나지 않는 밤, 최대 4명이 등불을 들고 내려가는 100층 지하묘지</p>
-    <button class="introBtn" id="introBtn">이야기 다시 보기</button>
+    <div class="topBtns"><button class="introBtn" id="introBtn">이야기 다시 보기</button><a class="pcDl" id="pcDl" href="https://github.com/gh920327-cmyk/blood-catacomb/releases/latest/download/DalNight-Setup.exe">PC 버전 다운로드 (Windows)</a></div>
     <div class="box">
       <h2>내 캐릭터</h2>
       <div class="slots" id="slots"></div>
@@ -112,8 +115,10 @@ textarea{width:100%;min-height:60px;resize:vertical;font-weight:400;font-size:12
       <div id="synOut" class="synOut"></div>
     </div>
     <div class="box">
-      <h2>저장 코드로 불러오기</h2>
-      <p class="note">캐릭터는 이 브라우저에 자동 저장됩니다. 다른 컴퓨터로 옮길 때는 캐릭터의 "저장 코드 복사"로 코드를 복사해 여기에 붙여 넣으세요.</p>
+      <h2>캐릭터 옮기기</h2>
+      <p class="note">캐릭터는 이 브라우저(또는 PC 실행기)에 자동 저장됩니다. 브라우저 ↔ PC 실행기, 다른 컴퓨터로 옮길 때는 <b>전체 내보내기</b>로 받은 파일을 옮긴 곳에서 <b>파일에서 가져오기</b>로 여세요. 캐릭터·공유 창고·설정이 한 번에 옮겨집니다.</p>
+      <div class="row" style="margin-bottom:12px"><button class="main" id="exportAllBtn">전체 내보내기 (파일)</button><button id="importFileBtn">파일에서 가져오기</button><input type="file" id="importFile" accept=".json,application/json" hidden></div>
+      <p class="note">캐릭터 하나만 옮길 때는 캐릭터의 "저장 코드 복사"로 받은 코드를 아래에 붙여 넣으세요.</p>
       <textarea id="importCode" placeholder="BC1:..."></textarea>
       <div class="row" style="margin-top:8px"><button id="importBtn">불러오기</button><span class="err" id="importErr"></span></div>
     </div>

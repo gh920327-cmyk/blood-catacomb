@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>달 없는 밤</title>
+<style>
+  :root { --bg:#050407; --fg:#e6dcc3; --dim:#9e937a; --gold:#ffd35a; --vio:#c9a0e8; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; overflow:hidden; user-select:none; -webkit-app-region:drag; }
+  .wrap { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    background:radial-gradient(ellipse at 50% 58%, rgba(255,170,70,.16), rgba(80,40,120,.12) 38%, transparent 70%); border:1px solid #2a2232; box-sizing:border-box; }
+  img { width:96px; height:96px; image-rendering:pixelated; animation:flick 2.4s infinite; filter:drop-shadow(0 0 18px rgba(255,180,80,.45)); }
+  h1 { margin:6px 0 0; font-size:26px; letter-spacing:4px; color:var(--fg); font-weight:700; }
+  h1 small { display:block; text-align:center; font-size:13px; letter-spacing:6px; color:var(--vio); margin-top:4px; font-weight:400; }
+  #m { font-size:13px; color:var(--dim); min-height:18px; }
+  .bar { width:180px; height:3px; background:#1c1622; overflow:hidden; border-radius:2px; }
+  .bar i { display:block; width:40%; height:100%; background:linear-gradient(90deg,transparent,var(--gold),transparent); animation:run 1.4s linear infinite; }
+  .ver { position:absolute; right:10px; bottom:8px; font-size:11px; color:#4a4152; }
+  @keyframes run { from { transform:translateX(-100%);} to { transform:translateX(260%);} }
+  @keyframes flick { 0%,100% { filter:drop-shadow(0 0 16px rgba(255,180,80,.4)); } 45% { filter:drop-shadow(0 0 24px rgba(255,190,90,.6)); } 70% { filter:drop-shadow(0 0 12px rgba(255,170,70,.35)); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <img src="icon.png" alt="">
+  <h1>달 없는 밤<small>등불을 든 자</small></h1>
+  <div class="bar"><i></i></div>
+  <div id="m">등불을 밝히는 중…</div>
+</div>
+<div class="ver" id="v"></div>
+<script>
+  function setMsg(t){ document.getElementById('m').textContent = t; }
+  const v = new URLSearchParams(location.search).get('v'); if (v) document.getElementById('v').textContent = 'v' + v;
+  setTimeout(() => setMsg('서버에 연결하는 중… (잠들어 있으면 최대 1분)'), 2500);
+</script>
+</body>
+</html>

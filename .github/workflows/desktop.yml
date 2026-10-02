@@ -1,0 +1,26 @@
+# PC 실행기(exe) 빌드 · GitHub Releases에 올리기
+# desktop/package.json 의 version 을 올린 뒤 "desktop-v<버전>" 태그를 push 하면 실행됨
+name: desktop
+on:
+  push:
+    tags: ['desktop-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-win:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

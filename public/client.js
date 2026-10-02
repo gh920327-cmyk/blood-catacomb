@@ -640,7 +640,7 @@ document.getElementById('createBtn').onclick=()=>{const name=document.getElement
 document.getElementById('importBtn').onclick=()=>{const e=document.getElementById('importErr');const ch=SH.decodeSave(document.getElementById('importCode').value);if(!ch||!SH.validChar(ch)){e.textContent='올바른 저장 코드가 아닙니다';return;}
   const a=loadChars();const i=a.findIndex(c=>c.id===ch.id);if(i>=0)a[i]=ch;else a.push(ch);saveChars(a);e.textContent='';document.getElementById('importCode').value='';toast(`${ch.name} 캐릭터를 불러왔습니다`);renderSelect();};
 
-let conn={t0:0,recon:false,tries:0};
+let conn={t0:0,recon:false,tries:0};let BC_VER=null;const IS_DESKTOP=/BCDesktop\//.test(navigator.userAgent);
 function startGame(id){const ch=loadChars().find(c=>c.id===id);if(!ch)return;if(CINE.on)cineStop(true);curSlot=id;initAudio();selEl.hidden=true;scene='connecting';cv.focus();conn={t0:performance.now(),recon:false,tries:0};openWs();}
 function openWs(){const ch=loadChars().find(c=>c.id===curSlot);if(!ch){backToSelect('캐릭터를 찾을 수 없습니다');return;}
   const proto=location.protocol==='https:'?'wss':'ws';let s2;try{s2=new WebSocket(`${proto}://${location.host}/ws`);}catch(e){retryWs();return;}ws=s2;let opened=false;
@@ -657,7 +657,7 @@ function resetWorld(){G.block=null;me.inBoss=false;G.bossLive=null;G.players.cle
 // ================= 네트워크 메시지 =================
 function ensurePlayer(id){let p=G.players.get(id);if(!p){p={id,x:0,y:0,dx:0,dy:0,face:1,hp:1,maxHp:1,downed:false,dodge:false,moving:false,shield:false,rev:0,animT:R()*3,atkAnim:0,atkDur:0.3,atkKind:'',atkAngle:0,spin:0,flash:0};G.players.set(id,p);}return p;}
 function handle(d){switch(d.t){
-  case 'welcome':myId=d.id;scene='game';G.ultOk=d.ultok?new Set(d.ultok):null;break;
+  case 'welcome':if(d.ver){if(!BC_VER)BC_VER=d.ver;else if(BC_VER!==d.ver){try{sessionStorage.setItem('bc_rejoin',JSON.stringify({id:curSlot,pp:conn.prevParty||null}));}catch(e){}scene='connecting';location.reload();return;}}myId=d.id;scene='game';G.ultOk=d.ultok?new Set(d.ultok):null;break;
   case 'ucd':ultEnd=time+d.left;break;
   case 'ctrReset':ctrCdEnd=0;break;
   case 'err':toast(d.m);break;
@@ -3544,7 +3544,19 @@ function playIntro(){playCine(CINE_INTRO,{key:'bc_intro'});}
   window.addEventListener('keydown',e=>{if(!CINE.on)return;if(e.code==='Escape'){cineStop();}else if(e.code==='Space'||e.code==='Enter'||e.code==='ArrowRight'){cineNext();}e.preventDefault();e.stopImmediatePropagation();},true);
   const b=cineEl('introBtn');if(b)b.addEventListener('click',playIntro);
   let seen=false;try{seen=!!localStorage.getItem('bc_intro');}catch(e){}if(!seen)setTimeout(()=>{if(scene==='select')playIntro();},300);})();
+// ===== 캐릭터 옮기기: 이 기기의 캐릭터·창고·설정을 파일 하나로 내보내고 가져오기 (브라우저 ↔ PC 실행기) =====
+function exportAll(){const data={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('bc_'))data[k]=localStorage.getItem(k);}}catch(e){}
+  const n=loadChars().length;if(!n){toast('내보낼 캐릭터가 없습니다');return;}const d=new Date(),pad=x=>String(x).padStart(2,'0');
+  const blob=new Blob([JSON.stringify({app:'dalnight',v:1,ts:Date.now(),data})],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`달없는밤_캐릭터_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);toast(`캐릭터 ${n}명을 파일로 내보냈어요`);}
+function importAllFile(file){const r=new FileReader();r.onload=()=>{let o;try{o=JSON.parse(r.result);}catch(e){o=null;}const err=document.getElementById('importErr');if(!o||o.app!=='dalnight'||!o.data||typeof o.data!=='object'){if(err)err.textContent='달 없는 밤 캐릭터 파일이 아닙니다';return;}
+    let inc=[];try{inc=JSON.parse(o.data[SAVE_KEY]||'[]').filter(SH.validChar);}catch(e){}const fresh=loadChars().length===0;
+    try{for(const k in o.data){if(!k.startsWith('bc_')||k===SAVE_KEY)continue;if(fresh||localStorage.getItem(k)==null)localStorage.setItem(k,String(o.data[k]));}}catch(e){}
+    const a=loadChars();for(const ch of inc){const i=a.findIndex(c=>c.id===ch.id);if(i>=0)a[i]=ch;else a.push(ch);}saveChars(a);if(err)err.textContent='';toast(`캐릭터 ${inc.length}명을 가져왔어요`);setTimeout(()=>location.reload(),900);};r.readAsText(file);}
+(()=>{const ex=document.getElementById('exportAllBtn'),im=document.getElementById('importFileBtn'),fi=document.getElementById('importFile'),pc=document.getElementById('pcDl');
+  if(ex)ex.onclick=exportAll;if(im&&fi){im.onclick=()=>fi.click();fi.onchange=()=>{if(fi.files&&fi.files[0])importAllFile(fi.files[0]);fi.value='';};}
+  if(pc&&IS_DESKTOP)pc.hidden=true;})();
 renderSelect();
+try{const rj=JSON.parse(sessionStorage.getItem('bc_rejoin')||'null');if(rj&&rj.id){sessionStorage.removeItem('bc_rejoin');setTimeout(()=>{if(scene!=='select')return;startGame(rj.id);if(rj.pp)conn.prevParty=rj.pp;toast('새 버전으로 업데이트되었어요');},500);}}catch(e){}
 loadImg('art/adv_portraits.jpg').then(im=>{if(im)SPR.advPort=im;});loadImg('sprites/costumes.png').then(im=>{if(!im)return;SPR.cost=sliceBare(im,40,24);for(const k in PF_CACHE)delete PF_CACHE[k];});loadImg('sprites/skins.png').then(im=>{if(!im)return;SPR.skins=im;SKSPR.clear();});loadImg('sprites/guns.png').then(im=>{if(!im)return;SPR.guns=im;GSPR.clear();for(const k of [...ICONS.keys()])if(k.startsWith('gi|'))ICONS.delete(k);});loadImg('sprites/heroes_adv.png').then(im=>{if(!im)return;SPR.heroAdv=sliceBare(im,40,24);for(const k in PF_CACHE)delete PF_CACHE[k];});
 Promise.all([loadImg('sprites/heroes_anim.png'),loadImg('sprites/bosses_anim.png'),loadImg('sprites/heroes_bare.png'),loadImg('sprites/weapons.png'),loadImg('sprites/mons_anim.png')]).then(([h,b,hb,wp,ma])=>{if(h)SPR.heroAnim=sliceAnim(h,40,24);if(ma)SPR.monAnim=sliceAnim(ma,36,24);if(hb&&wp){SPR.heroBare=sliceBare(hb,40,24);SPR.weap=wp;ICONS.clear();}if(b)SPR.bossAnim=sliceAnim(b,72,48);for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
 Promise.all([loadImg('sprites/lobby.png'),loadImg('sprites/hubtiles.png'),loadImg('sprites/npcs.png'),loadImg('sprites/pets.png')]).then(([a,b,c,d])=>{LOB.img=a;LOB.tiles=b;LOB.npc=c;LOB.pets=d;LOB.ftex=null;NPC_FR=null;PET_FR=null;});
