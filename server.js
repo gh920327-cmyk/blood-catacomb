@@ -532,7 +532,7 @@ const HINTS={
   clockpz:[v=>`태엽 장치 ${v.i}/${v.n}: 등불들은 이웃과 함께 깜빡인다`,v=>`태엽 장치 ${v.i}/${v.n}: 레버 하나가 제 등불과 양옆을 함께 뒤집는다`,v=>`태엽 장치 ${v.i}/${v.n}: 레버(F)는 자기와 양옆 등불을 바꿉니다. 등불을 모두 켜세요`],
   plates:[v=>'증기 보호막! 바닥의 판들이 무게를 기다린다',v=>`증기 보호막! 판 ${v.need}개가 한꺼번에 눌려야 한다`,v=>`증기 보호막! 압력판 ${v.need}개를 동시에 밟고 버티세요`],
   moonpz:[v=>`달의 제단 ${v.i}/${v.n}: ${v.rev?'이번엔 달이 거꾸로 흐른다…':'달은 차오르고 이지러진다…'}`,v=>`달의 제단 ${v.i}/${v.n}: ${v.rev?'달이 이지러지는 순서대로':'달이 차오르는 순서대로'} 제단을 깨워라`,v=>`달의 제단 ${v.i}/${v.n}: ${v.rev?'보름달부터 그믐 순서로':'초승달부터 보름달 순서로'} 제단을 활성화하세요 (F)`],
-  clash:[v=>`격돌! 흑왕의 검이 내려온다${v.n>1?` (${v.n}번)`:''}`,v=>`격돌! 칼날이 맞닿는 순간을 노려라${v.n>1?` (${v.n}번)`:''}`,v=>`격돌! 게이지가 노란 칸에 올 때 카운터(Z)를 누르세요${v.n>1?` (${v.n}연속)`:''}`],
+  clash:[v=>`격돌! 흑왕의 검이 내려온다${v.n>1?` (${v.n}번)`:''}`,v=>`격돌! 칼날이 맞닿는 순간을 노려라${v.n>1?` (${v.n}번)`:''}`,v=>`격돌! 게이지가 노란 칸에 올 때 카운터 스킬를 누르세요${v.n>1?` (${v.n}연속)`:''}`],
   clones:[()=>'흑왕이 넷으로 갈라졌다! 진짜 칼날은 하나씩 날아든다',()=>'흑왕이 넷으로 갈라졌다! 푸르게 빛나는 분신이 진짜 공격이다',()=>'흑왕이 넷으로 갈라졌다! 파랗게 빛나는 분신을 앞에서 카운터하세요'],
   chain:[v=>`${v.who}이(가) 쇠사슬에 묶였다!`,v=>`${v.who}이(가) 쇠사슬에 묶였다! 사슬이 팽팽해지면 끊어진다`,v=>`${v.who}이(가) 쇠사슬에 묶였다! 멀리 떨어지세요`],
   funeral:[v=>`장례의 종! 관 자리가 ${v.txt||''} 로 나뉘었다… 빈자리도, 넘치는 자리도 용서받지 못한다`,v=>`장례의 종! 원 위의 숫자만큼만 서야 한다 (${v.txt||''})`,v=>`장례의 종! 원마다 적힌 인원이 정확히 서세요 (${v.txt||''}) · 원 밖에 있으면 안 돼요`],
@@ -1624,7 +1624,8 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
   const cs=C.skills.concat(ch.adv?SH.ADV[ch.adv].sk:[]).concat(ch.awk?SH.AWK[ch.adv].ids:[]),def=SH.defaultSkills(o.cls);let sk={};if(o.sk&&typeof o.sk==='object')for(const s of cs){const r=clamp(o.sk[s]|0,0,SH.MAX_RANK);if(r>0&&SKILLS[s].lvl<=ch.lvl)sk[s]=r;}
   for(const s in def.sk)if(!sk[s])sk[s]=1;const spent=Object.values(sk).reduce((a,b)=>a+b,0)-2,total=SH.spTotal(ch);
   if(spent>total){sk=def.sk;ch.spts=total;}else ch.spts=total-spent;ch.sk=sk;
-  ch.bar=new Array(SH.BAR_SIZE).fill(null);const src=Array.isArray(o.bar)?o.bar:def.bar;const used=new Set();for(let i=0;i<SH.BAR_SIZE;i++){const s=src[i];if(s&&sk[s]&&!SKILLS[s].pas&&!used.has(s)){ch.bar[i]=s;used.add(s);}}
+  ch.bar=new Array(SH.BAR_SIZE).fill(null);const src=Array.isArray(o.bar)?o.bar:def.bar;const used=new Set();for(let i=0;i<SH.BAR_SIZE;i++){const s=src[i];if(s==='ctr'&&!used.has(s)){ch.bar[i]=s;used.add(s);continue;}if(s&&sk[s]&&!SKILLS[s].pas&&!used.has(s)){ch.bar[i]=s;used.add(s);}}
+  ch.ctrb=1;if(!o.ctrb&&!used.has('ctr')){const e=ch.bar.indexOf(null);if(e>=0)ch.bar[e]='ctr';}/* 카운터 스킬을 단축키 칸으로: 예전 캐릭터는 빈 칸에 자동 배치 (한 번만) */
   if(!ch.bar.some(Boolean))ch.bar=def.bar.slice();
   ch.rmb=null;{const rm=(typeof o.rmb==='string'&&sk[o.rmb]&&SKILLS[o.rmb]&&!SKILLS[o.rmb].pas)?o.rmb:null;if(rm&&!ch.bar.includes(rm)){const e=ch.bar.indexOf(null);if(e>=0)ch.bar[e]=rm;}}/* 우클릭 전용 칸은 이동으로 바뀌어 폐지 → 빈 단축키 칸으로 옮김 *//* 우클릭 전용 스킬 */
   const mt=o.mats||{};ch.mats={iron:clamp(mt.iron|0,0,99999),dust:clamp(mt.dust|0,0,99999),ess:clamp(mt.ess|0,0,99999),myth:clamp(mt.myth|0,0,99999)};
@@ -1776,7 +1777,7 @@ const H={
   learn(P,d){const sid=d.sid;const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.ult)return;if(sk.adv&&sk.adv!==P.ch.adv){msg(P,`${SH.ADV[sk.adv].n}으로 전직해야 배울 수 있어요`,'#ff6a5a');return;}if(sk.awk&&!SH.awkOf(P.ch)){msg(P,`각성의 시련을 넘어 ${SH.AWK[sk.adv].n}(으)로 각성해야 배울 수 있어요`,'#ff6a5a');return;}if(P.ch.lvl<sk.lvl){msg(P,`레벨 ${sk.lvl}에 해금됩니다`,'#ff6a5a');return;}if((P.ch.spts|0)<=0){msg(P,'스킬 포인트가 없습니다','#ff6a5a');return;}
     const r=P.ch.sk[sid]|0;if(r>=SH.MAX_RANK)return;P.ch.sk[sid]=r+1;P.ch.spts--;if(r===0&&!sk.pas&&!P.ch.bar.includes(sid)){const e=P.ch.bar.indexOf(null);if(e>=0)P.ch.bar[e]=sid;}recalc(P);send(P,{t:'fxp',k:'learn'});},
   rmb(P,d){const sid=d.sid||null;if(sid){const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.pas||!(P.ch.sk[sid]>0))return;}P.ch.rmb=sid;markDirty(P);},
-  bar(P,d){const i=d.i|0;if(i<0||i>=SH.BAR_SIZE)return;const sid=d.sid||null;if(sid){const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.pas||!(P.ch.sk[sid]>0))return;const j=P.ch.bar.indexOf(sid);if(j>=0)P.ch.bar[j]=P.ch.bar[i];}P.ch.bar[i]=sid;markDirty(P);},
+  bar(P,d){const i=d.i|0;if(i<0||i>=SH.BAR_SIZE)return;const sid=d.sid||null;if(sid&&sid!=='ctr'){const sk=SKILLS[sid];if(!sk||sk.cls!==P.ch.cls||sk.pas||!(P.ch.sk[sid]>0))return;}if(sid){const j=P.ch.bar.indexOf(sid);if(j>=0)P.ch.bar[j]=P.ch.bar[i];}P.ch.bar[i]=sid;markDirty(P);},
   shop(P){if(P.inst!==hub||!near(P,hub.map.merchant,48))return;const lvl=P.ch.lvl;if(!P.stock||P.stockLvl!==lvl||Date.now()-P.stockT>300000){P.stock=[];const fam=CLASSES[P.ch.cls].fam;for(let i=0;i<6;i++){const it=SH.genItem(lvl+ri(0,2),fam,i<2?1:0,i===5?15:5,R,2);it.price=it.value*4;P.stock.push(it);}P.stockLvl=lvl;P.stockT=Date.now();}
     send(P,{t:'shop',items:P.stock,refresh:Math.max(0,Math.round((300000-(Date.now()-P.stockT))/1000)),respec:30*lvl});},
   shopbuy(P,d){if(P.inst!==hub||!near(P,hub.map.merchant,48)||!P.stock)return;const i=P.stock.findIndex(x=>x.id===d.id);if(i<0)return;const it=P.stock[i];if(P.ch.gold<it.price){msg(P,'골드가 부족합니다','#ff6a5a');return;}
