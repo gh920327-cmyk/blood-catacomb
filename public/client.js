@@ -684,6 +684,7 @@ function handle(d){switch(d.t){
     else if(d.field){G.arena=null;G.arenaRes=null;G.map=SH.genField();G.field=d.field;G.fReg=-1;G.ftpMenu=false;G.floor=SH.FIELD_FLOOR[0];G.stairsOpen=false;(d.field.l||[]).forEach((o,i)=>{if(o)for(const k of G.map.lairs[i].door)G.map.tiles[k]=1;});banner={t:0,a:'4막 · 잿빛 황야',b:'꺼진 화로에 다시 불을 붙여라'};}
     else if(d.arena){G.map=SH.genArena(d.seed);G.floor=d.floor;G.stairsOpen=false;banner={t:0,a:'결투장',b:'상대 팀을 모두 쓰러뜨리세요'};}
     else{G.arena=null;G.arenaRes=null;G.map=SH.genFloor(d.seed,d.floor);G.floor=d.floor;G.stairsOpen=!!d.stairs;if(d.stairs)SH.openStairs(G.map);const th=SH.themeOf(d.floor);banner=d.trial&&SH.ADV[d.trial.adv]?{t:0,a:d.trial.aw&&SH.AWK[d.trial.adv]?`각성의 시련 · ${SH.AWK[d.trial.adv].n}`:`${d.trial.re?'그림자 재도전':'전직 시험'} · ${SH.ADV[d.trial.adv].n}`,b:'가장 깊은 곳에서 너의 그림자가 기다린다'}:{t:0,a:`지하 ${d.floor}층 · ${th.corrupt?'타락한 ':''}${th.t.n}`,b:G.map.boss?`${SH.bossOf(d.floor).n}이(가) 기다린다`:pick(th.t.lines)};}
+    if(Array.isArray(d.tm))for(const [i,v] of d.tm)G.map.tiles[i]=v;/* 서버에서 바뀐 타일(레버·거울·제단·문) */
     torches=G.map.torches;G.explored=new Uint8Array(G.map.w*G.map.h);me.x=d.x;me.y=d.y;me.path=null;me.pickTarget=null;me.goal=null;me.dodgeT=0;
     G.ev=d.ev||null;G.pings=[];if(G.ev&&G.ev.secret&&G.ev.secret.open&&G.map.secret)G.map.tiles[G.map.secret.door]=1;
     for(const o of d.drops||[])addDropC(o,true);
@@ -693,6 +694,7 @@ function handle(d){switch(d.t){
   case 'party':G.party=d;break;
   case 'shop':G.shop=d;break;
   case 'cdr':localCd[d.sid]=0;break;
+  case 'scd':localCd[d.sid]=time+(+d.left||0);break;
   case 's':onSnap(d);break;
   case 'ch':{const firstCh=!G.ch;const old=G.ch;G.ch=d.ch;G.S=d.S;if(old&&!((old.rclr||{}).clock|0)&&((d.ch.rclr||{}).clock|0)>0&&!clsUnlocked('gunner'))onGunnerUnlock();if(old&&d.ch.lvl>old.lvl){}
     {const cp=SH.power(d.ch);const eqk=c=>['weapon','armor','ring'].map(s=>c.eq[s]?c.eq[s].id+'.'+(c.eq[s].up|0)+'.'+(c.eq[s].L|0)+'.'+(c.eq[s].so||[]).join(''):'-').join('|');if(old&&G.cp!=null&&cp!==G.cp&&eqk(old)!==eqk(d.ch)){const dv=cp-G.cp;msg(`전투력 ${dv>0?'+':''}${dv.toLocaleString()} ${dv>0?'▲':'▼'}  (${cp.toLocaleString()})`,dv>0?'#7fd05a':'#e0574a');}G.cp=cp;}
