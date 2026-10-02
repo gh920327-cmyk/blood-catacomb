@@ -719,6 +719,15 @@ const SLOTN={weapon:'무기',armor:'갑옷',ring:'반지'};
 const FAMN={melee:'근접 무기',bow:'활',staff:'지팡이',gun:'총'};
 /* 꾸미기 무기 외형: 능력치 변화 없음 · sprites/skins.png 24x24 칸(col) · 무기 계열(fam)마다 하나씩 장착 */
 const SKIN_PRICE=5000;
+/* 의상 외형 (sprites/costumes.png 행 번호 row) · 능력치 변화 없음 */
+const COS_PRICE=5000;
+const COSTUMES={
+  pumpkin:{n:'호박 머리 기사',row:0,d:'웃는 호박 투구와 덩굴 망토'},
+  catninja:{n:'고양이 후드 닌자',row:1,d:'고양이 귀 두건과 줄무늬 꼬리'},
+  dino:{n:'공룡 잠옷',row:2,d:'어흥! 폭신한 초록 공룡 잠옷'},
+  bee:{n:'꿀벌 신사',row:3,d:'줄무늬 연미복과 작은 날개'},
+  penguin:{n:'펭귄 털옷',row:4,d:'뒤뚱뒤뚱 펭귄 후드와 파란 목도리'},
+  bungeo:{n:'붕어빵 탈',row:5,d:'갓 구운 붕어빵 속에 쏙'}};
 const SKINS={
   katana:{n:'벚꽃 카타나',fam:'melee',col:0,d:'검은 칼집에서 벚꽃 문양 칼날이 빛난다'},
   tuna:{n:'냉동 참치',fam:'melee',col:1,d:'꽁꽁 언 참치. 맞으면 아프다'},
@@ -913,7 +922,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={COSTUMES,COS_PRICE,AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,ADV,ADV_OF,ADV_LVL,ADV_VAR,advVar,CLASS_INFO,advOf,ultsOf,advChangeCost,lvCost,itemLvUp,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;

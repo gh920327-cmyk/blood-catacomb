@@ -56,9 +56,9 @@ const TRIM={warrior:'g',guardian:'y',archer:'G',mage:'y',priest:'y',knight:'y',g
 const RTRIM=[null,'C','y','o'];
 const HELM={plate:{s:'w',S:'s'},leather:{s:'b',S:'B'},robe:{s:'p',S:'P'}};
 const PF_CACHE={};
-function lookOfMe(){const e=G.ch?G.ch.eq:{};return{w:e.weapon?e.weapon.kind:null,wr:e.weapon?e.weapon.rar:-1,wid:e.weapon?e.weapon.id:null,a:e.armor?e.armor.kind:null,ar:e.armor?e.armor.rar:-1,rr:e.ring?e.ring.rar:-1,dy:G.ch?G.ch.dye|0:0,cp:G.ch&&G.ch.cos&&G.ch.cos.cape===0?0:1,gl:G.ch&&G.ch.cos&&G.ch.cos.glow===0?0:1,adv:G.ch&&SH.advOf(G.ch)?G.ch.adv:null,aw:G.ch&&SH.awkOf(G.ch)?1:0,sk:G.ch&&G.ch.skinOn?G.ch.skinOn[CLASSES[G.ch.cls].fam]||null:null};}
+function lookOfMe(){const e=G.ch?G.ch.eq:{};return{w:e.weapon?e.weapon.kind:null,wr:e.weapon?e.weapon.rar:-1,wid:e.weapon?e.weapon.id:null,a:e.armor?e.armor.kind:null,ar:e.armor?e.armor.rar:-1,rr:e.ring?e.ring.rar:-1,dy:G.ch?G.ch.dye|0:0,cp:G.ch&&G.ch.cos&&G.ch.cos.cape===0?0:1,gl:G.ch&&G.ch.cos&&G.ch.cos.glow===0?0:1,adv:G.ch&&SH.advOf(G.ch)?G.ch.adv:null,aw:G.ch&&SH.awkOf(G.ch)?1:0,sk:G.ch&&G.ch.skinOn?G.ch.skinOn[CLASSES[G.ch.cls].fam]||null:null,cs:G.ch&&G.ch.cstOn||null};}
 const ADV_KEYS=Object.keys(SH.ADV);
-function playerFrames(cls,look){look=look||{};const ar=Math.max(0,look.ar|0),a=look.a||'';const dy=look.dy|0;const adv=look.adv&&SH.ADV[look.adv]&&SH.ADV[look.adv].cls===cls?look.adv:'';const key=(SPR.ready?'ai|':'')+cls+'|'+a+'|'+ar+'|'+dy+'|'+(SPR.heroAdv?adv:'');if(PF_CACHE[key])return PF_CACHE[key];
+function playerFrames(cls,look){look=look||{};if(look.cs&&SPR.cost&&SH.COSTUMES[look.cs]){const ck='cs|'+look.cs;if(PF_CACHE[ck])return PF_CACHE[ck];const row=SPR.cost[SH.COSTUMES[look.cs].row];if(row){const fr=animFrames(row);PF_CACHE[ck]=fr;return fr;}}const ar=Math.max(0,look.ar|0),a=look.a||'';const dy=look.dy|0;const adv=look.adv&&SH.ADV[look.adv]&&SH.ADV[look.adv].cls===cls?look.adv:'';const key=(SPR.ready?'ai|':'')+cls+'|'+a+'|'+ar+'|'+dy+'|'+(SPR.heroAdv?adv:'');if(PF_CACHE[key])return PF_CACHE[key];
   if(dy>0&&SH.DYES[dy]){const base=playerFrames(cls,Object.assign({},look,{dy:0}));const fr2=dyeFrames(base,SH.DYES[dy]);PF_CACHE[key]=fr2;return fr2;}
   if(SPR.ready&&adv&&SPR.heroAdv){const ai=ADV_KEYS.indexOf(adv)*4+Math.min(3,ar);if(SPR.heroAdv[ai]){const fr=animFrames(SPR.heroAdv[ai]);PF_CACHE[key]=fr;return fr;}}
   const hi0=SH.CLASS_ORDER.indexOf(cls)*4+Math.min(3,ar);if(SPR.ready&&((SPR.heroBare&&SPR.heroBare[hi0])||(SPR.heroAnim&&SPR.heroAnim[hi0])||(SPR.heroes&&SPR.heroes[hi0]))){const hi=hi0;const fr=SPR.heroBare&&SPR.heroBare[hi]?animFrames(SPR.heroBare[hi]):SPR.heroAnim&&SPR.heroAnim[hi]?animFrames(SPR.heroAnim[hi]):aiFrames(SPR.heroes[hi]);PF_CACHE[key]=fr;return fr;}
@@ -1427,8 +1427,23 @@ function drawInv(){const ch=G.ch;if(!ch)return;const x=294,y=38,w=180,h=194;pane
     itemSlot(gx+c*26,gy+r*26,24,ch.bag[i],click,right,'bag');if(F==='forge'&&selR&&selR.w==='bag'&&selR.i===i)selBox(gx+c*26,gy+r*26,24);if(G.trade&&ch.bag[i]&&G.trade.me.items.some(t=>t.id===ch.bag[i].id))selBox(gx+c*26,gy+r*26,24);}
   pimg(GOLD,x+10,y+h-15);txt(String(ch.gold),x+21,y+h-12,12,'#ffd35a');txt(G.trade?'클릭: 거래창에 올리기·내리기':F==='forge'?'클릭: 대장간에 올리기':F==='vault'?'클릭: 창고에 넣기':showShop?'우클릭·Shift+클릭: 판매':'우클릭·Shift+클릭: 버리기',x+w-8,y+h-12,10,'#9e937a','right');}
 // ---- 외형 탭: 계열 탭 · 미리보기 · 칸 · 장착/해제/구입 ----
+// 의상 외형 탭: 캐릭터 전체 모습을 바꾼다 (무기·무기 외형은 그대로)
+function drawCosPanel(x,y,w,h){const ch=G.ch,own=ch.cst||[],on=ch.cstOn||null;const list=Object.keys(SH.COSTUMES);const sel=G.skSel&&SH.COSTUMES[G.skSel]?G.skSel:(on||list[0]);
+  const bx=x+6,by=y+37;pr(bx,by,54,64,PAL.k);pr(bx+1,by+1,52,62,'#1d1824');
+  {const fr=playerFrames(ch.cls,Object.assign(lookOfMe(),{cs:sel}));const ph=Math.floor(time*6)%4;const seq=fr&&fr.walk?fr.walk:null;const s0=seq?seq[ph%seq.length]:null;const s=s0?(s0.r||s0):null;
+    if(s&&s.c){const sc=2,sx=bx+27-Math.round(s.w*sc/2),sy=by+60-s.h*sc;pimg(s.c,sx,sy,sc);const ws=SPR.skins&&lookOfMe().sk?skinSprite(lookOfMe().sk,Math.max(0,(ch.eq.weapon&&ch.eq.weapon.rar)|0)):null;if(ws){const hx=sx+(s.hx!=null?s.hx:s.w*0.7)*sc,hy=sy+(s.hy!=null?s.hy:s.h*0.55)*sc;pimg(ws.c,hx-ws.px*sc*0.9,hy-ws.py*sc*0.9,sc*0.9);}}}
+  const ix=x+66,iy=y+38,K=SH.COSTUMES[sel],has=own.includes(sel);txt(K.n,ix,iy+3,12,has?'#ffd35a':'#e6dcc3');let ly=iy+17;for(const l of wrapTxt(K.d,10,w-74).slice(0,2)){txt(l,ix,ly,10,'#9e937a');ly+=11;}txt('능력치 변화 없음 · 무기는 그대로',ix,ly,9,'#6b6275');
+  txt(has?(on===sel?'입는 중':'보유 중'):`${SH.COS_PRICE.toLocaleString()} 골드`,ix,iy+52,10,has?(on===sel?'#7fd05a':'#bfe3ff'):'#ffd35a');
+  if(has){if(on===sel)button(ix,iy+60,50,13,'벗기',()=>{net({t:'cson',id:null});sfx('equip');},{size:9});else button(ix,iy+60,50,13,'입기',()=>{net({t:'cson',id:sel});sfx('equip');},{size:9,main:true});}
+  else button(ix,iy+60,64,13,'구입',()=>{if(ch.gold<SH.COS_PRICE){msg('골드가 부족해요','#ff6a5a');return;}net({t:'csbuy',id:sel});sfx('pick');},{size:9,main:true,tip:[['상인 근처에서 살 수 있어요','#ffd35a',11],['의상은 캐릭터마다 따로 모아요','#9e937a',10]]});
+  const gx=x+w/2-77,gy=y+108;list.forEach((k,i)=>{const sx=gx+i*26,sy=gy;const hov=mouse.x>=sx&&mouse.x<sx+24&&mouse.y>=sy&&mouse.y<sy+24;const hv=own.includes(k);
+    pr(sx,sy,24,24,k===sel?PAL.y:hov?PAL.G:PAL.k);pr(sx+1,sy+1,22,22,hv?'#2a2233':'#15111a');const fr=SPR.cost&&SPR.cost[SH.COSTUMES[k].row];const s=fr?fr[0].r:null;
+    if(s&&s.c){if(!hv)ctx.globalAlpha=0.4;ctx.save();ctx.beginPath();ctx.rect((sx+1)*SC,(sy+1)*SC,22*SC,22*SC);ctx.clip();pimg(s.c,sx+12-s.w/2,sy+23-s.h);ctx.restore();ctx.globalAlpha=1;}
+    if(on===k){pr(sx+17,sy+2,5,5,PAL.k);pr(sx+18,sy+3,3,3,'#7fd05a');}
+    uiRects.push({x:sx,y:sy,w:24,h:24,click:()=>{G.skSel=k;sfx('pick');},tip:[[SH.COSTUMES[k].n,hv?'#ffd35a':'#e6dcc3',12],[hv?(on===k?'입는 중':'보유 중'):`${SH.COS_PRICE.toLocaleString()} 골드 · 상인에게서 구입`,'#9e937a',11]]});});}
 function drawSkinTab(x,y,w,h){const ch=G.ch;const myF=CLASSES[ch.cls].fam;const fam=G.skFam||myF;const own=ch.skins||[],on=(ch.skinOn||{})[fam]||null;
-  const FT=[['melee','근접'],['bow','활'],['staff','지팡이'],['gun','총']];FT.forEach(([f,l],i)=>button(x+6+i*42,y+20,40,13,l,()=>{G.skFam=f;G.skSel=null;sfx('pick');},{size:9,main:fam===f}));
+  const FT=[['cos','의상'],['melee','근접'],['bow','활'],['staff','지팡이'],['gun','총']];FT.forEach(([f,l],i)=>button(x+6+i*34,y+20,32,13,l,()=>{G.skFam=f;G.skSel=null;sfx('pick');},{size:9,main:fam===f}));
+  if(fam==='cos'){drawCosPanel(x,y,w,h);return;}
   const list=Object.keys(SH.SKINS).filter(k=>SH.SKINS[k].fam===fam);const sel=G.skSel&&SH.SKINS[G.skSel]&&SH.SKINS[G.skSel].fam===fam?G.skSel:(on||list[0]||null);
   // 미리보기: 내 직업 계열이면 내 캐릭터가 든 모습, 아니면 무기만 크게
   const bx=x+6,by=y+37;pr(bx,by,54,64,PAL.k);pr(bx+1,by+1,52,62,'#1d1824');
@@ -3405,7 +3420,7 @@ function playIntro(){playCine(CINE_INTRO,{key:'bc_intro'});}
   const b=cineEl('introBtn');if(b)b.addEventListener('click',playIntro);
   let seen=false;try{seen=!!localStorage.getItem('bc_intro');}catch(e){}if(!seen)setTimeout(()=>{if(scene==='select')playIntro();},300);})();
 renderSelect();
-loadImg('art/adv_portraits.jpg').then(im=>{if(im)SPR.advPort=im;});loadImg('sprites/skins.png').then(im=>{if(!im)return;SPR.skins=im;SKSPR.clear();});loadImg('sprites/guns.png').then(im=>{if(!im)return;SPR.guns=im;GSPR.clear();for(const k of [...ICONS.keys()])if(k.startsWith('gi|'))ICONS.delete(k);});loadImg('sprites/heroes_adv.png').then(im=>{if(!im)return;SPR.heroAdv=sliceBare(im,40,24);for(const k in PF_CACHE)delete PF_CACHE[k];});
+loadImg('art/adv_portraits.jpg').then(im=>{if(im)SPR.advPort=im;});loadImg('sprites/costumes.png').then(im=>{if(!im)return;SPR.cost=sliceBare(im,40,24);for(const k in PF_CACHE)delete PF_CACHE[k];});loadImg('sprites/skins.png').then(im=>{if(!im)return;SPR.skins=im;SKSPR.clear();});loadImg('sprites/guns.png').then(im=>{if(!im)return;SPR.guns=im;GSPR.clear();for(const k of [...ICONS.keys()])if(k.startsWith('gi|'))ICONS.delete(k);});loadImg('sprites/heroes_adv.png').then(im=>{if(!im)return;SPR.heroAdv=sliceBare(im,40,24);for(const k in PF_CACHE)delete PF_CACHE[k];});
 Promise.all([loadImg('sprites/heroes_anim.png'),loadImg('sprites/bosses_anim.png'),loadImg('sprites/heroes_bare.png'),loadImg('sprites/weapons.png'),loadImg('sprites/mons_anim.png')]).then(([h,b,hb,wp,ma])=>{if(h)SPR.heroAnim=sliceAnim(h,40,24);if(ma)SPR.monAnim=sliceAnim(ma,36,24);if(hb&&wp){SPR.heroBare=sliceBare(hb,40,24);SPR.weap=wp;ICONS.clear();}if(b)SPR.bossAnim=sliceAnim(b,72,48);for(const k in THEME_CACHE)THEME_CACHE[k].mon={};for(const k in PF_CACHE)delete PF_CACHE[k];if(scene==='select')renderSelect();});
 Promise.all([loadImg('sprites/lobby.png'),loadImg('sprites/hubtiles.png'),loadImg('sprites/npcs.png'),loadImg('sprites/pets.png')]).then(([a,b,c,d])=>{LOB.img=a;LOB.tiles=b;LOB.npc=c;LOB.pets=d;LOB.ftex=null;NPC_FR=null;PET_FR=null;});
 loadImg('sprites/tiles.png').then(t=>{if(!t)return;SPR.tiles=t;for(const k in THEME_CACHE)delete THEME_CACHE[k];});
