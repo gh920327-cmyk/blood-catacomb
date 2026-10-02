@@ -1126,19 +1126,30 @@ function drawPlayer0(p,icx,icy,isMe){const cls=isMe?myCls():(p.cls||'warrior');c
 /* ===== 의상 연출: 대천사 — 공격할 때 등 뒤의 큰 날개가 펼쳐짐 ===== */
 const COS_WING={archangel:1};const WING_C={};const WING_N=10;
 // 옆모습 날개: 오른쪽을 볼 때 기준으로 왼쪽(등 뒤)으로 뻗음. dir<0 이면 좌우 반전. 뒷날개(어둡게·조금 위)를 먼저, 앞날개를 덮어 그림
-function wingCanvas(st,dir){const key=st+'|'+dir;if(WING_C[key])return WING_C[key];const k=st/(WING_N-1),W=60,H=50,ox=46,oy=34;const g=new Uint8Array(W*H);
+function wingCanvas(st,dir){const key=st+'|'+dir;if(WING_C[key])return WING_C[key];const k=st/(WING_N-1),W=74,H=58,ox=58,oy=36;const g=new Uint8Array(W*H);
   const put=(x,y,v)=>{x=Math.round(x);y=Math.round(y);if(x<0||y<0||x>=W||y>=H)return;g[y*W+x]=v;};
-  const wing=(dx,dy,da,ls,base)=>{const A=i=>0.22+da+k*(0.18+i*0.3),L=i=>(6+k*22)*ls*(1-i*0.07);const X0=ox+dx,Y0=oy+dy;
-    for(let a=A(0);a<=A(4);a+=0.025){const t=(a-A(0))/Math.max(0.01,A(4)-A(0));const Lc=(L(0)*(1-t)+L(4)*t)*0.8;for(let r=0;r<=Lc;r+=0.5)put(X0-Math.sin(a)*r,Y0-Math.cos(a)*r,base);}
-    for(let i=0;i<5;i++){const a=A(i),l=L(i);for(let r=0;r<=l;r+=0.5){const v=base+(r>l*0.8?2:1);const x=X0-Math.sin(a)*r,y=Y0-Math.cos(a)*r;put(x,y,v);if(r<l*0.75){put(x,y+1,v);put(x-0.6,y,v);}}}};
-  wing(3,-3,-0.2,0.9,4);wing(0,0,0,1,1);
-  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');const col=['','#fff1c8','#ffffff','#ffe08a','#d8c79c','#ebe0c2','#d2ad5c'];
+  const disc=(cx,cy,r,v)=>{const R2=r*r,n=Math.ceil(r);for(let dy=-n;dy<=n;dy++)for(let dx=-n;dx<=n;dx++)if(dx*dx+dy*dy<=R2)put(cx+dx,cy+dy,v);};
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  // 천사 날개(옆모습): 어깨→손목→날개 끝으로 이어지는 윗선에서 깃털이 아래·뒤로 늘어짐. 바깥 깃털(칼깃)일수록 길고 끝이 둥글다
+  const wing=(dx,dy,da,sc,dim)=>{const D=dim?10:0;
+    const t1=lerp(0.12,0.45,k)+da,t2=lerp(0.25,1.25,k)+da,a1=lerp(10,17,k)*sc,a2=lerp(7,16,k)*sc;
+    const S=[ox+dx,oy+dy],Wp=[S[0]-Math.sin(t1)*a1,S[1]-Math.cos(t1)*a1],T=[Wp[0]-Math.sin(t2)*a2,Wp[1]-Math.cos(t2)*a2];
+    const edge=u=>{const m=a1/(a1+a2);if(u<m){const t=u/m;return[lerp(S[0],Wp[0],t),lerp(S[1],Wp[1],t)];}const t=(u-m)/(1-m);return[lerp(Wp[0],T[0],t),lerp(Wp[1],T[1],t)];};
+    const feather=(u,len,fill,shade,tip)=>{const[ex,ey]=edge(u);const ph=lerp(0.1,lerp(0.4,1.4,k),Math.pow(u,1.3));const vx=-Math.sin(ph),vy=Math.cos(ph);
+      for(const pass of[0,1])for(let r=0;r<=len;r+=0.4){const q=r/len;const w=lerp(1.45,1.0,u)*(q<0.7?1:Math.sqrt(Math.max(0,1-Math.pow((q-0.7)/0.3,2))))+0.25;disc(ex+vx*r,ey+vy*r,pass?w:w+0.7,pass?(q>0.82&&tip?tip:fill):shade);}};
+    const NF=14;for(let i=NF-1;i>=0;i--){const u=0.04+0.96*i/(NF-1);feather(u,(9+16*Math.pow(u,1.5))*(0.5+0.5*k)*sc,2+D,4+D,u>0.5?3+D:0);}
+    for(let i=9;i>=0;i--){const u=0.03+0.92*i/9;feather(u,(4+5*u)*(0.6+0.4*k)*sc,1+D,4+D,0);}
+    for(let u=0;u<=1;u+=0.02){const[ex,ey]=edge(u);disc(ex,ey,lerp(1.9,1.1,u),2+D);}
+    {const[ex,ey]=edge(0.42);disc(ex,ey-0.5,0.8,5+D);}};
+  wing(3,-2,-0.12,0.64,1);wing(0,0,0,0.74,0);
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  const col={1:'#fff6dc',2:'#ffffff',3:'#ffe08a',4:'#d9c69a',5:'#fff8e0',11:'#efe5ca',12:'#e4d9bb',13:'#d9b766',14:'#b9a576',15:'#efe5ca'};
   if(dir<0){x.translate(W,0);x.scale(-1,1);}
   for(let y=0;y<H;y++)for(let xx=0;xx<W;xx++){const v=g[y*W+xx];if(v){x.fillStyle=col[v];x.fillRect(xx,y,1,1);}else{let n=0;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const X=xx+dx,Y=y+dy;if(X>=0&&Y>=0&&X<W&&Y<H&&g[Y*W+X])n=1;}if(n){x.fillStyle='#7a4e0c';x.fillRect(xx,y,1,1);}}}
   return(WING_C[key]={c,ox:dir<0?W-ox:ox,oy});}
 function drawCosWings(src,cs,bx,by,face){if(!COS_WING[cs])return;const now=time,d=Math.max(0,Math.min(0.1,now-(src._wt||now)));src._wt=now;const f=face<0?-1:1;
-  const atk=src.atkAnim>0;src._wk=atk?Math.min(1,(src._wk||0)+d*10):Math.max(0,(src._wk||0)-d*3.3);const k=src._wk;
-  const bkx=bx-f*3,bky=by-14;
+  const ultW=(src._wUlt||0)>now;const atk=src.atkAnim>0||ultW;src._wk=atk?Math.min(1,(src._wk||0)+d*10):Math.max(0,(src._wk||0)-d*3.3);const k=src._wk;
+  const bkx=bx-f*3,bky=by-10;
   // 평소에도 등 뒤 날개가 은은하게 빛남 (숨 쉬듯), 펼칠수록 더 밝게
   const pulse=0.5+0.5*Math.sin(now*2.6);const ga=0.26+0.16*pulse+0.15*k,gr0=13+k*15,gx=bkx-f*k*12,gy=bky-3-k*4;
   wx.save();wx.globalAlpha=ga;const gr=wx.createRadialGradient(gx,gy,1,gx,gy,gr0);gr.addColorStop(0,'#fff6c8');gr.addColorStop(0.5,'rgba(255,224,138,0.55)');gr.addColorStop(1,'rgba(255,214,90,0)');wx.fillStyle=gr;wx.fillRect(gx-gr0,gy-gr0,gr0*2,gr0*2);wx.restore();
@@ -1146,7 +1157,8 @@ function drawCosWings(src,cs,bx,by,face){if(!COS_WING[cs])return;const now=time,
   if(k<=0.02)return;
   const st=Math.max(1,Math.min(WING_N-1,Math.round(k*(WING_N-1))));const w=wingCanvas(st,f);
   wx.drawImage(w.c,bkx-w.ox,bky-w.oy);
-  if(atk&&k>0.5&&R()<0.3)part(bkx-f*rf(10,26),bky-rf(0,16),-f*rf(4,12),rf(-6,4),R()<0.6?'#ffffff':'#ffe08a',rf(0.5,0.9),{glow:true,z:rf(6,12),vz:rf(-6,4)});}
+  if(ultW&&k>0.5){wx.save();wx.globalAlpha=0.22+0.12*Math.sin(now*9);const g2=wx.createRadialGradient(bkx-f*12,bky-8,1,bkx-f*12,bky-8,36);g2.addColorStop(0,'#ffffff');g2.addColorStop(1,'rgba(255,224,138,0)');wx.fillStyle=g2;wx.fillRect(bkx-f*12-36,bky-44,72,72);wx.restore();}
+  if(atk&&k>0.5&&R()<(ultW?0.7:0.3))part(bkx-f*rf(10,26),bky-rf(0,16),-f*rf(4,12),rf(-6,4),R()<0.6?'#ffffff':'#ffe08a',rf(0.5,0.9),{glow:true,z:rf(6,12),vz:rf(-6,4)});}
 /* ===== 탈것 · 전설 외형 · 발자국 (전부 코드로 그림) ===== */
 function fr_(x,y,w,h,c){wx.fillStyle=c;wx.fillRect(x,y,w,h);}
 function mountLift(k,t,mv){t=t||0;if(k==='duck')return 1+Math.round(Math.sin(t*4)*0.8);if(k==='broom')return 7+Math.round(Math.sin(t*3)*1.2);if(k==='cloud')return 6+Math.round(Math.sin(t*2.5)*1);if(k==='carpet')return 6+Math.round(Math.sin(t*3.5)*0.8);if(k==='skate')return 3;return 0;}
@@ -3028,7 +3040,7 @@ function drawHolyGauge(){if(!G.ch||G.ch.cls!=='knight'||!G.mev)return;const v=G.
   txt(`신성력 ${v}`,x+w/2,y-5,10,v>=100?'#fff6d0':'#d4b870','center');uiRects.push({x,y:y-8,w,h:12,tip:[['신성력','#ffd35a',12],['기본 공격과 스킬로 모이고, 심판의 검이 한 번에 쏟아 낸다','#e6dcc3',11],['100일 때 심판의 검 650%','#9e937a',11]]});}
 function ufx(o){o.t0=time;UFX.push(o);return o;}
 function onUltFx(o){const k=o.k;
-  if(k==='ult'){const p=playerPos(o.id);const cls=o.id===myId?myCls():(G.players.get(o.id)||{}).cls||'warrior';UCUT={n:o.n,cls,t0:time,mine:o.id===myId,name:o.id===myId?(G.ch&&G.ch.name):((G.players.get(o.id)||{}).name||'')};screenFlash=Math.max(screenFlash,0.25);shake=Math.max(shake,4);
+  if(k==='ult'){{const ws=o.id===myId?me:G.players.get(o.id);if(ws)ws._wUlt=time+2.6;}const p=playerPos(o.id);const cls=o.id===myId?myCls():(G.players.get(o.id)||{}).cls||'warrior';UCUT={n:o.n,cls,t0:time,mine:o.id===myId,name:o.id===myId?(G.ch&&G.ch.name):((G.players.get(o.id)||{}).name||'')};screenFlash=Math.max(screenFlash,0.25);shake=Math.max(shake,4);
     if(p)for(let n=0;n<50;n++){const t=R()*Math.PI*2,sp=rf(40,140);part((o.id===myId?me.x:p.dx),(o.id===myId?me.y:p.dy)-8,Math.cos(t)*sp,Math.sin(t)*sp*0.6,pick(['y','w','o']),rf(.4,.9),{z:rf(2,14),vz:rf(20,60),glow:true});}return true;}
   if(k==='rag'){const p=playerPos(o.id);if(p){p.rag={t0:time,ox:o.id===myId?me.x:p.dx,oy:o.id===myId?me.y:p.dy,tx:o.x,ty:o.y};}ufx({type:'ragsword',x:o.x,y:o.y,max:2.2});ufx({type:'tgt',x:o.x,y:o.y,r:60,max:0.95,c:'#ff8a3a'});return true;}
   if(k==='fissure'){ufx({type:'fissure',x:o.x,y:o.y,a:o.a,max:1.2,seed:R()*999});for(let n=0;n<26;n++)part(o.x+rf(-10,10),o.y+rf(-4,4),rf(-20,20),0,pick(['o','y','e','r']),rf(.4,.9),{z:0,vz:rf(40,120),g:-60,glow:true});sfx('boom');return true;}
