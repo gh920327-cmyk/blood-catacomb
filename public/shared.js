@@ -944,7 +944,7 @@ const GEMS=['r','c','z','p','y'];
 // 등급: 0 일반, 1 마법, 2 희귀(영웅), 3 전설 — 전설은 maxR=3일 때(보스)만 나온다
 function rollRarity(R,bonus,maxR){const x=R()*100-bonus;const r=x<2?3:x<7?2:x<35?1:0;return Math.min(maxR==null?2:maxR,r);}
 function genItem(L,fam,minR,bonus,R,maxR,fslot){
-  R=R||Math.random;minR=minR||0;bonus=bonus||0;
+  R=R||Math.random;minR=minR||0;bonus=bonus||0;if(L>ITEM_LV_CAP){bonus+=Math.round((L-ITEM_LV_CAP)*0.25);L=ITEM_LV_CAP;}
   const slot=fslot||pk(R,['weapon','weapon','armor','armor','ring']);
   let rar=Math.max(minR,rollRarity(R,bonus,maxR));if(slot==='ring'&&rar===0)rar=1;
   const it={id:rid(),slot,rar,L,base:{},aff:[]};
@@ -990,9 +990,14 @@ function affRange(it,k){const L=it.L|0;const lo=AFF[k].r(L,()=>0),hi=AFF[k].r(L,
 /* 아이템 레벨 올리기: 기본 수치·능력 수치를 굴림 위치(품질) 그대로 새 레벨 범위로 옮김 */
 function lvCost1(it,L){const r=it.rar|0;return{gold:Math.round((10+L*5)*(1+r*0.6)),iron:1,dust:r>=2?1:0,ess:r>=3&&L%5===4?1:0,myth:r===4&&L%10===9?1:0};}
 function lvCost(it,n){const c={gold:0,iron:0,dust:0,ess:0,myth:0};for(let i=0;i<n;i++){const d=lvCost1(it,(it.L|0)+i);for(const k in c)c[k]+=d[k];}return c;}
-function itemLvUp(it,n){const L0=it.L|0,L1=L0+n;if(n<=0)return it;
+/* 아이템 레벨 상한 = 만렙. 더 깊은 곳에서 얻으면 레벨 대신 등급 확률이 오른다 */
+const ITEM_LV_CAP=LVL_CAP;
+function itemCapLv(it){if(it&&it.base&&Array.isArray(it.aff)&&(it.L|0)>ITEM_LV_CAP)itemSetLv(it,ITEM_LV_CAP);return it;}
+function itemLvUp(it,n){if(n<=0)return it;return itemSetLv(it,(it.L|0)+n);}
+/* 기본 수치·능력 수치를 굴림 위치(품질) 그대로 새 레벨 범위로 옮긴다 (올리기·내리기 모두) */
+function itemSetLv(it,L1){const L0=it.L|0;if(L1===L0)return it;
   if(it.base.dmg)it.base.dmg=Math.max(1,Math.round(it.base.dmg*(3+L1*1.6)/(3+L0*1.6)));if(it.base.armor)it.base.armor=Math.max(1,Math.round(it.base.armor*(4+L1*3)/(4+L0*3)));
-  const old=it.aff.map(a=>affRange(it,a.k));it.L=L1;it.aff.forEach((a,i)=>{const [lo,hi]=old[i],[lo2,hi2]=affRange(it,a.k);if(hi>lo){const t=Math.max(0,Math.min(1,(a.v-lo)/(hi-lo)));a.v=Math.round(lo2+t*(hi2-lo2));}else if(lo>0)a.v=Math.round(a.v*lo2/lo);else a.v=Math.max(a.v,lo2);});return it;}
+  const old=it.aff.map(a=>affRange(it,a.k));it.L=L1;it.aff.forEach((a,i)=>{const [lo,hi]=old[i],[lo2,hi2]=affRange(it,a.k);if(hi>lo){const t=Math.max(0,Math.min(1,(a.v-lo)/(hi-lo)));a.v=Math.round(lo2+t*(hi2-lo2));}else if(lo>0)a.v=Math.round(a.v*lo2/lo);else a.v=L1>L0?Math.max(a.v,lo2):Math.min(a.v,hi2);});if(it.value)it.value=Math.max(1,Math.round(it.value*(5+L1*3)/(5+L0*3)));return it;}
 function rollAff(it,k,R){R=R||Math.random;return affScale(it,AFF[k].r(it.L|0,R));}
 function rerollCost(it,swap){const n=it.rc|0,L=it.L|0,leg=it.rar>=3;if(it.rar===4){const g=Math.round((30+L*10)*(1+n*0.5)*(swap?2:1));return swap?{gold:g,dust:3,ess:2+n,myth:1}:{gold:g,dust:2+Math.floor(n/3),myth:1};}const g=Math.round((15+L*6)*(1+n*0.5)*(swap?2:1)*(leg?2:1));
   if(swap)return leg?{gold:g,dust:2,ess:2+n}:{gold:g,dust:2+Math.floor(n/3)};return{gold:g,dust:(leg?2:1)+Math.floor(n/3)};}
@@ -1158,7 +1163,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={blockedN,WASTE_THEMES,FIELD_W,FIELD_H,FIELD_FLOOR,FIELD_LV,genField,fieldRegion,RTAG,RELICS,RSET,TABLETS,RBAG_SZ,RINV_MAX,rotA,relicEval,relicNewBag,relicResize,randRelicDrop,FISH_LV_MAX,fishNeed,fishLvOf,fishXpGain,fishOdds,fishBigOdds,MOUNTS,MOUNT_PRICE,FOOTS,FOOT_PRICE,LEGENDS,legendOk,AWK_ULT_N,FISH_GN,FISH_GC,fishGrade,rollFishCm,COSTUMES,COS_PRICE,AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={blockedN,ITEM_LV_CAP,itemCapLv,itemSetLv,WASTE_THEMES,FIELD_W,FIELD_H,FIELD_FLOOR,FIELD_LV,genField,fieldRegion,RTAG,RELICS,RSET,TABLETS,RBAG_SZ,RINV_MAX,rotA,relicEval,relicNewBag,relicResize,randRelicDrop,FISH_LV_MAX,fishNeed,fishLvOf,fishXpGain,fishOdds,fishBigOdds,MOUNTS,MOUNT_PRICE,FOOTS,FOOT_PRICE,LEGENDS,legendOk,AWK_ULT_N,FISH_GN,FISH_GC,fishGrade,rollFishCm,COSTUMES,COS_PRICE,AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,ADV,ADV_OF,ADV_LVL,ADV_VAR,advVar,CLASS_INFO,advOf,ultsOf,advChangeCost,lvCost,itemLvUp,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;

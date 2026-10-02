@@ -524,7 +524,7 @@ function addDrop(inst,o,x,y){let tx=x,ty=y;for(let t=0;t<14;t++){const a=R()*Mat
 function remDrop(inst,d){const i=inst.drops.indexOf(d);if(i>=0)inst.drops.splice(i,1);bcast(inst,{t:'drem',id:d.id});}
 function killMonster(inst,m,killer){if(m.dummy)return;m.dead=true;m.hp=0;fx(inst,{k:'mdie',id:m.id});if(inst.field&&m.lair!=null)fieldBossKill(inst,m);if(killer&&killer.ch&&killer.S&&killer.S.rl)relicKill(inst,m,killer);if(killer&&killer.ch)mythKill(inst,m,killer);
   if(inst.raid){for(const P of instPlayers(inst))gainXP(P,m.xp);if(m.boss){const X=RAIDX[inst.raid.id];if(X.bossDied&&X.bossDied(inst,m)===false)return;for(const P of instPlayers(inst)){bump(P,'boss',1);P.ch.bossK=(P.ch.bossK|0)+1;}raidClear(inst,m);}return;}if(killer&&inst.meter&&!m.boss&&!m.summ){const mm=getMeter(inst.meter,killer);if(m.elite)mm.elites++;else mm.kills++;}
-  const f=m.f||inst.floor;if(inst.field&&m.fev!=null){const b=inst.field.bases.find(q=>q.id===m.fev);if(b&&b.ev)b.ev.kills++;}
+  const f=m.f||inst.floor;/* 황야: 아이템 레벨은 층수가 아니라 지역 권장 레벨 (51~60) */const iL=inst.field?((SH.FIELD_LV[m.reg!=null?m.reg:(m.lair|0)]||SH.FIELD_LV[0])+1):f;if(inst.field&&m.fev!=null){const b=inst.field.bases.find(q=>q.id===m.fev);if(b&&b.ev)b.ev.kills++;}
   for(const P of instPlayers(inst)){if(inst.field&&Math.hypot(P.x-m.x,P.y-m.y)>600)continue;if(inst.field&&!m.summ&&R()<(m.elite?0.08:0.008))relicGain(P,SH.randRelicDrop(R));gainXP(P,m.xp);if(P===killer)P.ch.kills++;const fam=CLASSES[P.ch.cls].fam,own=P.id;
     if(!m.summ){if(m.boss){bump(P,'boss',1);P.ch.bossK=(P.ch.bossK|0)+1;}else{bump(P,'kill',1);if(m.elite)bump(P,'elite',1);}}
     {const th=SH.themeOf(f);if(m.boss)addCdx(P,f>=100?'b:fin':'b:'+th.idx);else if(m.type==='goblin'){addCdx(P,'gob');stInc(P,'gob');}else if(['zombie','skel','hound'].includes(m.type)&&!m.summ)addCdx(P,`m:${th.idx}:${m.type}`);}
@@ -532,8 +532,8 @@ function killMonster(inst,m,killer){if(m.dummy)return;m.dead=true;m.hp=0;fx(inst
     if(m.boss){const th0=SH.themeOf(f);const en=f>=100?5:th0.corrupt?2:1;P.ch.mats.ess+=en;msg(P,`핏빛 정수 +${en}`,'#ff5a6a');for(let i=0;i<2;i++)addDrop(inst,{kind:'gem',owner:own,g:SH.randGem(f+5)},m.x,m.y);}
     else if(R()<(m.elite?0.2:0.025))addDrop(inst,{kind:'gem',owner:own,g:SH.randGem(f)},m.x,m.y);
     if(m.boss){const th=SH.themeOf(f);const legP=f>=100?1:BAL.legBase+(th.corrupt?BAL.legCorrupt:0)+f*BAL.legPerFloor;
-      for(let i=0;i<3;i++){const leg=i===0&&R()<legP;addDrop(inst,{kind:'item',owner:own,it:leg?SH.genItem(f+2,fam,3,0,R,3):SH.genItem(f+2,fam,i===0?2:1,i===0?0:25,R,2)},m.x,m.y);}for(let i=0;i<4;i++)addDrop(inst,{kind:'gold',owner:own,amt:ri(10,20)*f},m.x,m.y);addDrop(inst,{kind:'hp',owner:own},m.x,m.y);}
-    else{if(R()<(m.elite?0.9:BAL.dropItem))addDrop(inst,{kind:'item',owner:own,it:SH.genItem(f+(m.elite?1:0),fam,m.elite?1:0,m.elite?8:0,R,2)},m.x,m.y);
+      for(let i=0;i<3;i++){const leg=i===0&&R()<legP;addDrop(inst,{kind:'item',owner:own,it:leg?SH.genItem(iL+2,fam,3,0,R,3):SH.genItem(iL+2,fam,i===0?2:1,i===0?0:25,R,2)},m.x,m.y);}for(let i=0;i<4;i++)addDrop(inst,{kind:'gold',owner:own,amt:ri(10,20)*f},m.x,m.y);addDrop(inst,{kind:'hp',owner:own},m.x,m.y);}
+    else{if(R()<(m.elite?0.9:BAL.dropItem))addDrop(inst,{kind:'item',owner:own,it:SH.genItem(iL+(m.elite?1:0),fam,m.elite?1:0,m.elite?8:0,R,2)},m.x,m.y);
       if(R()<.35)addDrop(inst,{kind:'gold',owner:own,amt:Math.max(1,Math.round(ri(2,6)*f*(m.elite?3:1)*BAL.gold))},m.x,m.y);if(R()<BAL.dropHp)addDrop(inst,{kind:'hp',owner:own},m.x,m.y);if(R()<BAL.dropMp)addDrop(inst,{kind:'mp',owner:own},m.x,m.y);}}
   if(m.type==='goblin')fx(inst,{k:'msg',m:'보물 고블린을 잡았다! 보물이 쏟아진다',c:'#ffd35a'});
   if(m.altar&&inst.ev)bcastEv(inst);
@@ -1795,7 +1795,7 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
   const ch={v:1,id:String(o.id||SH.rid()).slice(0,24),name:String(o.name).slice(0,12)||'모험가',cls:o.cls,lvl:clamp(o.lvl|0,1,SH.LVL_CAP),xp:Math.max(0,o.xp|0),pts:Math.max(0,o.pts|0),
     str:o.str|0||C.base.str,dex:o.dex|0||C.base.dex,vit:o.vit|0||C.base.vit,ene:o.ene|0||C.base.ene,gold:Math.max(0,o.gold|0),pots:{hp:clamp((o.pots&&o.pots.hp)|0,0,9),mp:clamp((o.pots&&o.pots.mp)|0,0,9)},
     eq:{weapon:o.eq.weapon||null,armor:o.eq.armor||null,ring:o.eq.ring||null},bag:new Array(20).fill(null),cps:Array.isArray(o.cps)&&o.cps.length?o.cps.filter(n=>Number.isInteger(n)&&n>=1&&n<=100):[1],best:o.best|0,kills:o.kills|0,created:o.created||Date.now()};
-  for(let i=0;i<SH.BAG_N;i++)ch.bag[i]=o.bag[i]||null;if(!ch.cps.includes(1))ch.cps.unshift(1);
+  for(let i=0;i<SH.BAG_N;i++)ch.bag[i]=o.bag[i]||null;/* 아이템 레벨 상한(만렙) 맞추기 */for(const k of['weapon','armor','ring'])SH.itemCapLv(ch.eq[k]);for(const it of ch.bag)SH.itemCapLv(it);if(!ch.cps.includes(1))ch.cps.unshift(1);
   ch.adv=(typeof o.adv==='string'&&SH.ADV[o.adv]&&SH.ADV[o.adv].cls===o.cls&&ch.lvl>=SH.ADV_LVL)?o.adv:null;/* 전직 */
   ch.awk=o.awk&&ch.adv&&ch.lvl>=SH.AWK_LVL?1:0;ch.awl=ch.awk?clamp(o.awl|0,0,SH.AWL_MAX):0;ch.awx=ch.awk?Math.max(0,o.awx|0):0;ch.awn={};if(ch.awk&&o.awn&&typeof o.awn==='object'){let left=ch.awl;for(const k in SH.AWN){const v=Math.min(clamp(o.awn[k]|0,0,SH.AWN_MAX),left);if(v>0){ch.awn[k]=v;left-=v;}}}/* 3차 각성 */
   const cs=C.skills.concat(ch.adv?SH.ADV[ch.adv].sk:[]).concat(ch.awk?SH.AWK[ch.adv].ids:[]),def=SH.defaultSkills(o.cls);let sk={};if(o.sk&&typeof o.sk==='object')for(const s of cs){const r=clamp(o.sk[s]|0,0,SH.MAX_RANK);if(r>0&&SKILLS[s].lvl<=ch.lvl)sk[s]=r;}
@@ -1837,7 +1837,7 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
   return ch;}
 function okItem(it){return !!(it&&typeof it==='object'&&['weapon','armor','ring'].includes(it.slot)&&Number.isInteger(it.rar)&&it.rar>=0&&it.rar<=4&&(it.rar<4||SH.MYTH[it.myth])&&(!it.set||SH.SETS[it.set])&&it.base&&typeof it.base==='object'&&Array.isArray(it.aff)&&typeof it.name==='string');}
 const STASH_N=40;
-function sanitizeStash(a){const out=new Array(STASH_N).fill(null);if(Array.isArray(a))for(let i=0;i<STASH_N;i++)if(okItem(a[i]))out[i]=a[i];return out;}
+function sanitizeStash(a){const out=new Array(STASH_N).fill(null);if(Array.isArray(a))for(let i=0;i<STASH_N;i++)if(okItem(a[i]))out[i]=SH.itemCapLv(a[i]);return out;}
 function near(P,pt,r){return Math.hypot(P.x-pt.x,P.y-pt.y)<=r;}
 function addBag(P,it){const i=P.ch.bag.indexOf(null);if(i<0)return false;P.ch.bag[i]=it;return true;}
 
