@@ -1130,12 +1130,12 @@ const COS_WING={archangel:1};const WING_C={};const WING_PH=16,WING_LV=4;
    - 내려치기(주기의 60%): 날개를 끝까지 펴고 깃털을 부채처럼 벌림, 날개 끝은 살짝 늦게 따라옴
    - 올리기(40%, 빠르게): 손목을 접어 날개 끝이 아래로 늘어진 채 끌려 올라감, 깃털을 모음 */
 function wingPose(p,lv){p=((p%1)+1)%1;const L=lv/(WING_LV-1),amp=0.85+0.15*L;
-  // 키 포즈: [위치, 팔 각도, 손 각도, 손 길이, 깃털 벌림]  (0=맨 위 · 0.3=활짝 아치 · 0.6=맨 아래 · 0.8=손목 접고 올리는 중)
-  const K=[[0,0.15,0.95,0.7,0.6],[0.3,0.6,1.35,1,1.05],[0.6,1.5,1.9,1,0.95],[0.8,0.85,2.75,0.5,0.4],[1,0.15,0.95,0.7,0.6]];
+  // 키 포즈: [위치, 팔 각도, 손 각도, 손 길이, 깃털 벌림, 등에 붙이기]  (0=맨 위 · 0.3=활짝 아치 · 0.6=맨 아래 · 0.8=등에 착 접어 붙임)
+  const K=[[0,0.15,0.95,0.7,0.6,0.2],[0.3,0.6,1.35,1,1.05,0],[0.6,1.5,1.9,1,0.95,0],[0.8,0.12,2.95,0.55,0.5,1],[1,0.15,0.95,0.7,0.6,0.2]];
   let i=0;while(i<K.length-2&&p>=K[i+1][0])i++;const A=K[i],B=K[i+1];const t=(p-A[0])/(B[0]-A[0]),e=(1-Math.cos(Math.PI*t))/2;
   const H=K[1],v=j=>{const x=A[j]+(B[j]-A[j])*e;return H[j]+(x-H[j])*amp;};
   const dn=p<0.6?Math.sin(Math.PI*p/0.6):0,up=p>=0.6?Math.sin(Math.PI*(p-0.6)/0.4):0;
-  return{t1:v(1),t2:v(2),c:v(3),fan:v(4),sc:0.58+0.18*L,bob:Math.round(-dn*1.2*amp+up*0.6*amp)};}
+  return{t1:v(1),t2:v(2),c:v(3),fan:v(4),tk:Math.max(0,v(5)),sc:0.58+0.18*L,bob:Math.round(-dn*1.2*amp+up*0.6*amp)};}
 function wingCanvas(pi,lv,dir){const key=pi+'|'+lv+'|'+dir;if(WING_C[key])return WING_C[key];const W=78,H=74,ox=60,oy=38;const g=new Uint8Array(W*H);
   const put=(x,y,v)=>{x=Math.round(x);y=Math.round(y);if(x<0||y<0||x>=W||y>=H)return;g[y*W+x]=v;};
   const disc=(cx,cy,r,v)=>{const R2=r*r,n=Math.ceil(r);for(let dy=-n;dy<=n;dy++)for(let dx=-n;dx<=n;dx++)if(dx*dx+dy*dy<=R2)put(cx+dx,cy+dy,v);};
@@ -1143,7 +1143,7 @@ function wingCanvas(pi,lv,dir){const key=pi+'|'+lv+'|'+dir;if(WING_C[key])return
   const wing=(P,dx,dy,scm,dim)=>{const D=dim?10:0,sc=P.sc*scm;const a1=17*sc,a2=16*sc*P.c;
     const S=[ox+dx,oy+dy],v1=dirv(P.t1),Wp=[S[0]+v1[0]*a1,S[1]+v1[1]*a1],v2=dirv(P.t2),T=[Wp[0]+v2[0]*a2,Wp[1]+v2[1]*a2];
     const m=a1/(a1+a2);const edge=u=>u<m?[lerp(S[0],Wp[0],u/m),lerp(S[1],Wp[1],u/m),P.t1]:[lerp(Wp[0],T[0],(u-m)/(1-m)),lerp(Wp[1],T[1],(u-m)/(1-m)),P.t2];
-    const feather=(u,len,beta,fill,shade,tip)=>{const[ex,ey,te]=edge(u);const a=Math.min(3.1,te+beta);const[vx,vy]=dirv(a);
+    const feather=(u,len,beta,fill,shade,tip)=>{const[ex,ey,te]=edge(u);let a=Math.min(3.1,te+beta);a+=(Math.PI-0.2-a)*(P.tk||0);const[vx,vy]=dirv(a);
       for(const pass of[0,1])for(let r=0;r<=len;r+=0.4){const q=r/len;const w=lerp(1.45,1.0,u)*(q<0.7?1:Math.sqrt(Math.max(0,1-Math.pow((q-0.7)/0.3,2))))+0.25;disc(ex+vx*r,ey+vy*r,pass?w:w+0.7,pass?(q>0.82&&tip?tip:fill):shade);}};
     const NF=14;for(let i=NF-1;i>=0;i--){const u=0.04+0.96*i/(NF-1);feather(u,(9+16*Math.pow(u,1.5))*sc*(0.55+0.45*P.c),lerp(2.6,0.5,Math.pow(u,1.3))*P.fan,2+D,4+D,u>0.5?3+D:0);}
     for(let i=9;i>=0;i--){const u=0.03+0.92*i/9;feather(u,(4+5*u)*sc,lerp(2.4,0.6,u)*P.fan,1+D,4+D,0);}
