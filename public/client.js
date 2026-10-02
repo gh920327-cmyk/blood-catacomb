@@ -644,7 +644,9 @@ document.getElementById('createBtn').onclick=()=>{const name=document.getElement
 document.getElementById('importBtn').onclick=()=>{const e=document.getElementById('importErr');const ch=SH.decodeSave(document.getElementById('importCode').value);if(!ch||!SH.validChar(ch)){e.textContent='올바른 저장 코드가 아닙니다';return;}
   const a=loadChars();const i=a.findIndex(c=>c.id===ch.id);if(i>=0)a[i]=ch;else a.push(ch);saveChars(a);e.textContent='';document.getElementById('importCode').value='';toast(`${ch.name} 캐릭터를 불러왔습니다`);renderSelect();};
 
-let conn={t0:0,recon:false,tries:0};let BC_VER=null;const IS_DESKTOP=/BCDesktop\//.test(navigator.userAgent);
+let conn={t0:0,recon:false,tries:0};setInterval(()=>{if(ws&&ws.readyState===1&&scene==='game')net({t:'lat',c:Math.round(performance.now()*10)/10});},2000);
+/* FPS·핑 표시 (렉이 내 PC 탓인지 서버·인터넷 탓인지 구분) */
+function drawPerf(){if(scene!=='game')return;const f=FPSC.v,pg=G.ping==null?null:Math.round(G.ping);const lv=Math.max(f>=50?0:f>=30?1:2,pg==null?0:pg<120?0:pg<250?1:2);const col=['#7fd05a','#ffd35a','#e0574a'][lv];const y=G.kind==='dungeon'?75:9;txt(`FPS ${f} · 핑 ${pg==null?'-':pg+'ms'}`,476,y,9,col,'right');}let BC_VER=null;const IS_DESKTOP=/BCDesktop\//.test(navigator.userAgent);
 function startGame(id){const ch=loadChars().find(c=>c.id===id);if(!ch)return;if(CINE.on)cineStop(true);curSlot=id;initAudio();selEl.hidden=true;scene='connecting';cv.focus();conn={t0:performance.now(),recon:false,tries:0};openWs();}
 function openWs(){const ch=loadChars().find(c=>c.id===curSlot);if(!ch){backToSelect('캐릭터를 찾을 수 없습니다');return;}
   const proto=location.protocol==='https:'?'wss':'ws';let s2;try{s2=new WebSocket(`${proto}://${location.host}/ws`);}catch(e){retryWs();return;}ws=s2;let opened=false;
@@ -696,6 +698,7 @@ function handle(d){switch(d.t){
   case 'an':G.anD=d;break;
 case 'combo':G.combo={n:d.n,t0:time,d:d.t2};break;
 case 'fame':G.fame=d.list;break;
+case 'lat':{const v=performance.now()-(+d.c||0);if(v>=0&&v<10000)G.ping=G.ping==null?v:G.ping*0.6+v*0.4;break;}
 case 'ranks':G.ranks=d;break;
 case 'cprres':if(d.rank>=0){msg(`격돌 무한 연습 ${d.s.toLocaleString()}점 · 랭킹 ${d.rank+1}위!`,'#ffd35a');sfx('legend');}else if(d.pb)msg(`개인 최고 기록 ${d.s.toLocaleString()}점!`,'#ffe9a8');else msg(`${d.s.toLocaleString()}점 · 개인 최고 ${d.top.toLocaleString()}점`,'#c9a0e8');break;
 case 'fameann':G.gmBanner={n:'',t0:time,fame:d.m};sfx('holy');break;
@@ -1644,7 +1647,7 @@ function render(){
     if(conn.recon||el>=4){txt(conn.recon?'서버가 업데이트됐거나 잠깐 끊겼어요. 캐릭터는 저장돼 있어요':'서버가 잠들어 있으면 깨어나는 데 최대 1분쯤 걸려요',240,142,11,'#9e937a','center');txt(el+'초',240,158,11,'#6b6275','center');}
     const n=Math.floor(time*3)%4;txt('.'.repeat(n),240,106,14,'#ffd35a','center');}return;}
   const [icx,icy]=renderWorld();drawClashScene(icx,icy);drawClashWait(icx,icy);drawUltScreen();
-  drawWorldUI(icx,icy);drawPartyArrows(icx,icy);drawHUD();drawTut();drawChat();
+  drawWorldUI(icx,icy);drawPartyArrows(icx,icy);drawHUD();drawPerf();drawTut();drawChat();
   if(G.trade)drawTrade();if(G.talent)drawTalents();else if(G.chron)drawChron();else if(G.comm)drawComm();else if(G.anal)drawAnal();else if(G.rec)drawRecords();else if(showSkills)drawSkills();else if(showChar)drawChar();else if(showShop)drawShop();else if(G.fac)drawFacPanel();
   if(showInv&&!showSkills&&!G.talent&&!G.rec)drawInv();
   if(!G.anal&&!G.awkView)button(G.kind==='hub'?(!G.comm?198:130):372,G.kind==='hub'?3:192,60,13,`분석기 (${keyLabel(kbCode('anal'))})`,()=>openAnal(true),{size:9,tip:[['전투력 분석기','#ffd35a',12],['어떤 스킬이 피해를 얼마나 넣었는지 보여줘요','#e6dcc3',11]]});
@@ -3539,7 +3542,8 @@ function drawRaid2Marks(icx,icy){const rs=G.raid;if(!rs||!rs.x||!rs.x.marks)retu
 
 // ================= 루프 =================
 let last=performance.now();
-function frame(ts){let dt=Math.min(0.05,(ts-last)/1000)||0;last=ts;if(window.__tscale)dt*=window.__tscale;
+const FPSC={n:0,t:0,v:0};
+function frame(ts){let dt=Math.min(0.05,(ts-last)/1000)||0;last=ts;FPSC.n++;if(ts-FPSC.t>=1000){FPSC.v=Math.round(FPSC.n*1000/(ts-FPSC.t));FPSC.n=0;FPSC.t=ts;}if(window.__tscale)dt*=window.__tscale;
   if(HSTOP>0){HSTOP-=dt;dt*=0.06;}
   try{if(scene==='game'&&G.map){update(dt);tutUpdate(dt);}else time+=dt;render();}catch(err){console.error(err);}
   requestAnimationFrame(frame);}

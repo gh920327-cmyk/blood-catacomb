@@ -1832,6 +1832,7 @@ const H={
   tbuy(P,d){const inst=P.inst;if(!inst||!inst.ev||!inst.ev.trader||Math.hypot(P.x-inst.ev.trader.x,P.y-inst.ev.trader.y)>40)return;
     if(d.k){const k=d.k==='mp'?'mp':'hp',pr=Math.round(SH.potPrice(P.ch.lvl)*0.8);if(P.ch.pots[k]>=9){msg(P,'더 들 수 없습니다','#ff6a5a');return;}if(P.ch.gold<pr){msg(P,'골드가 부족합니다','#ff6a5a');return;}P.ch.gold-=pr;P.ch.pots[k]++;markDirty(P);send(P,{t:'fxp',k:'gold'});return;}
     const st=traderStock(inst,P),i=st.findIndex(x=>x.id===d.id);if(i<0)return;const it=st[i];if(P.ch.gold<it.price){msg(P,'골드가 부족합니다','#ff6a5a');return;}const cp=Object.assign({},it);delete cp.price;if(!addBag(P,cp)){msg(P,'가방이 가득 찼습니다','#ff6a5a');return;}P.ch.gold-=it.price;st.splice(i,1);markDirty(P);msg(P,`${it.name} 구입`,'#ffd35a');send(P,{t:'fxp',k:'gold'});H.trader(P);},
+  lat(P,d){send(P,{t:'lat',c:+d.c||0});},
   ping(P,d){const inst=P.inst;if(!inst)return;const now=Date.now();if(now-(P.pingT||0)<700)return;P.pingT=now;const x=+d.x,y=+d.y;if(!isFinite(x)||!isFinite(y))return;const k=clamp(d.k|0,0,2);
     const o={t:'ping',x:r1(x),y:r1(y),k,id:P.id,name:P.ch.name};const tg=P.party?partyList(P.party).filter(q=>q.inst===inst):[P];for(const q of tg)send(q,o);},
   fame(P){send(P,{t:'fame',list:FAME.slice(-30).reverse()});},
@@ -1914,7 +1915,9 @@ setInterval(()=>{for(const P of players.values()){if(!P.alive){P.ws.terminate();
 
 // ================= 메인 루프 =================
 const DT=0.05;let flushT=0;
-setInterval(()=>{
+/* 서버 성능 기록: 접속자가 있을 때 1분마다 [PERF] 로그 (틱 처리 시간 평균·최대 · 접속자 · 던전 수 · 메모리) */
+let PERF={n:0,sum:0,max:0,t:Date.now()};
+setInterval(()=>{const pf0=process.hrtime.bigint();
   for(const P of players.values())P.msgs=0;
   for(const inst of dungeons.values()){try{updateDungeon(inst,DT);snapshot(inst);}catch(e){console.error('tick',e);}}
   hub.time+=DT;
@@ -1924,6 +1927,7 @@ setInterval(()=>{
   try{updateDots(hub,DT);updateProjs(hub,DT);updateZones(hub,DT);updateTimers(hub,DT);for(const m of hub.monsters){m.flash-=DT;m.slow-=DT;m.stun-=DT;}}catch(e){console.error('hub',e);}
   snapshot(hub);
   flushT-=DT;if(flushT<=0){flushT=0.5;for(const P of players.values())if(P.dirty){P.dirty=false;checkAch(P);send(P,{t:'ch',ch:P.ch,S:P.S});}}
+  {const ms=Number(process.hrtime.bigint()-pf0)/1e6;PERF.n++;PERF.sum+=ms;if(ms>PERF.max)PERF.max=ms;const now=Date.now();if(now-PERF.t>=60000){if(players.size)console.log(`[PERF] 틱 평균 ${(PERF.sum/PERF.n).toFixed(2)}ms 최대 ${PERF.max.toFixed(1)}ms · 틱 ${PERF.n}/${Math.round((now-PERF.t)/1000/DT)} · 접속 ${players.size} · 던전 ${dungeons.size} · 메모리 ${Math.round(process.memoryUsage().rss/1048576)}MB`);PERF={n:0,sum:0,max:0,t:now};}}
 },DT*1000);
 
 server.listen(PORT,()=>console.log('달 없는 밤: 등불을 든 자 서버 실행 중 · 포트 '+PORT));
