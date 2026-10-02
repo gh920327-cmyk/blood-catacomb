@@ -89,7 +89,7 @@ function restoreParty(P){const prev=P.prevParty;if(!prev||prev.length<2)return;f
 function leaveParty(P){const pt=P.party;if(!pt)return;pt.members.delete(P.id);P.party=null;if(pt.members.size===0){parties.delete(pt.id);}else{if(pt.leader===P.id)pt.leader=[...pt.members][0];sendParty(pt);}}
 
 // ================= 인스턴스 =================
-function lookOf(P){const w=P.ch.eq.weapon,a=P.ch.eq.armor,r=P.ch.eq.ring,c=P.ch.cos||{};return{pet:P.ch.pet||null,ttl:P.ch.title?SH.titleOf(P.ch.title):null,w:w?w.kind:null,wr:w?w.rar:-1,wid:w?String(w.id).slice(0,12):null,a:a?a.kind:null,ar:a?a.rar:-1,rr:r?r.rar:-1,dy:P.ch.dye|0,cp:c.cape===0?0:1,gl:c.glow===0?0:1,adv:SH.advOf(P.ch)?P.ch.adv:null,aw:SH.awkOf(P.ch)?1:0,sk:(P.ch.skinOn||{})[CLASSES[P.ch.cls].fam]||null,cs:P.ch.cstOn||null};}
+function lookOf(P){const w=P.ch.eq.weapon,a=P.ch.eq.armor,r=P.ch.eq.ring,c=P.ch.cos||{};return{pet:P.ch.pet||null,ttl:P.ch.title?SH.titleOf(P.ch.title):null,w:w?w.kind:null,wr:w?w.rar:-1,wid:w?String(w.id).slice(0,12):null,a:a?a.kind:null,ar:a?a.rar:-1,rr:r?r.rar:-1,dy:P.ch.dye|0,cp:c.cape===0?0:1,gl:c.glow===0?0:1,sh:c.shield===0?0:1,adv:SH.advOf(P.ch)?P.ch.adv:null,aw:SH.awkOf(P.ch)?1:0,sk:(P.ch.skinOn||{})[CLASSES[P.ch.cls].fam]||null,cs:P.ch.cstOn||null};}
 function roster(inst){return instPlayers(inst).map(p=>({id:p.id,name:p.ch.name,cls:p.ch.cls,lvl:p.ch.lvl,pt:p.party?p.party.id:null,look:lookOf(p),pvp:p.ch.pvp,tm:p.arenaTeam==null?-1:p.arenaTeam}));}
 function bcastRoster(inst){if(inst.type==='dungeon'){inst.syn=SH.synergies(instPlayers(inst).map(p=>p.ch.cls));inst.synM={};for(const c of SH.CLASS_ORDER)inst.synM[c]=SH.synergyMods(inst.syn,c);}bcast(inst,{t:'ros',list:roster(inst),syn:inst.syn||null});}
 function visibleDrops(inst,P){return inst.drops.filter(d=>d.owner==null||d.owner===P.id);}
@@ -1668,7 +1668,7 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
   ch.moonH=Math.max(0,o.moonH|0);ch.rclr={};if(o.rclr&&typeof o.rclr==='object')for(const r of SH.RAIDS){const v=Math.max(0,o.rclr[r.id]|0);if(v)ch.rclr[r.id]=v;}
   if((o.lvl|0)>SH.LVL_CAP){const C0=CLASSES[ch.cls];ch.str=C0.base.str;ch.dex=C0.base.dex;ch.vit=C0.base.vit;ch.ene=C0.base.ene;ch.pts=3*(SH.LVL_CAP-1);ch.xp=0;ch.tal={};ch.sk=SH.defaultSkills(ch.cls).sk;ch.spts=SH.skillPointsTotal(SH.LVL_CAP)-(Object.values(ch.sk).reduce((a,b)=>a+b,0)-2);ch.bar=SH.defaultSkills(ch.cls).bar.slice();while(ch.bar.length<SH.BAR_SIZE)ch.bar.push(null);ch._capped=1;}
   {let u=o.ult;if(ch.awk&&SH.AWK[ch.adv]&&u===SH.ADV[ch.adv].ult)u=SH.AWK[ch.adv].ult;ch.ult=typeof u==='string'&&SH.ultsOf(ch).includes(u)&&ch.lvl>=SH.ULT_LVL?u:null;}
-  ch.cos={cape:!(o.cos&&o.cos.cape===0)?1:0,glow:!(o.cos&&o.cos.glow===0)?1:0};
+  ch.cos={cape:!(o.cos&&o.cos.cape===0)?1:0,glow:!(o.cos&&o.cos.glow===0)?1:0,shield:!(o.cos&&o.cos.shield===0)?1:0};
   ch.cst=Array.isArray(o.cst)?[...new Set(o.cst.filter(k=>typeof k==='string'&&SH.COSTUMES[k]))]:[];ch.cstOn=typeof o.cstOn==='string'&&ch.cst.includes(o.cstOn)?o.cstOn:null;
   ch.skins=Array.isArray(o.skins)?[...new Set(o.skins.filter(k=>typeof k==='string'&&SH.SKINS[k]))]:[];ch.skinOn={};if(o.skinOn&&typeof o.skinOn==='object')for(const f in SH.FAMN){const k=o.skinOn[f];if(typeof k==='string'&&ch.skins.includes(k)&&SH.SKINS[k].fam===f)ch.skinOn[f]=k;}/* 꾸미기 무기 외형 */
   ch.trl={b:Math.max(0,(o.trl&&o.trl.b)|0),n:Math.max(0,(o.trl&&o.trl.n)|0),d:o.trl&&typeof o.trl.d==='string'?o.trl.d.slice(0,10):''};/* 그림자 시험 기록 */
@@ -1872,7 +1872,7 @@ const H={
   dye(P,d){if(P.inst!==hub||!near(P,hub.map.tailor,48))return;const i=d.i|0;if(i<0||i>=SH.DYES.length)return;const ch=P.ch;
     if(i>0&&!ch.dyes.includes(i)){if(ch.gold<SH.DYE_COST){msg(P,'골드가 부족합니다','#ff6a5a');return;}ch.gold-=SH.DYE_COST;ch.dyes.push(i);msg(P,`'${SH.DYES[i].n}' 염료를 샀습니다`,'#ffd35a');send(P,{t:'fxp',k:'gold'});}
     ch.dye=i;markDirty(P);bcastRoster(hub);},
-  cos(P,d){if(P.inst!==hub)return;const k=d.k==='glow'?'glow':'cape';P.ch.cos[k]=P.ch.cos[k]?0:1;markDirty(P);bcastRoster(hub);},
+  cos(P,d){if(P.inst!==hub)return;const k=d.k==='glow'?'glow':d.k==='shield'?'shield':'cape';P.ch.cos[k]=P.ch.cos[k]?0:1;markDirty(P);bcastRoster(hub);},
   tal(P,d){const e=SH.canTalent(P.ch,String(d.id));if(e){msg(P,e,'#ff6a5a');return;}P.ch.tal[d.id]=(P.ch.tal[d.id]|0)+1;recalc(P);send(P,{t:'fxp',k:'learn'});},
   talreset(P){if(P.inst!==hub){msg(P,'마을에서만 초기화할 수 있습니다','#ff6a5a');return;}const cost=50*P.ch.lvl;if(P.ch.gold<cost){msg(P,'골드가 부족합니다','#ff6a5a');return;}P.ch.gold-=cost;P.ch.tal={};recalc(P);msg(P,`특성을 초기화했습니다 (-${cost}골드)`,'#ffd35a');},
   title(P,d){const id=d.id||null;if(id&&!(P.ch.ach||[]).includes(id))return;P.ch.title=id;markDirty(P);if(P.inst)bcastRoster(P.inst);},

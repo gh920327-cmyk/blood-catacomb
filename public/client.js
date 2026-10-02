@@ -56,7 +56,7 @@ const TRIM={warrior:'g',guardian:'y',archer:'G',mage:'y',priest:'y',knight:'y',g
 const RTRIM=[null,'C','y','o'];
 const HELM={plate:{s:'w',S:'s'},leather:{s:'b',S:'B'},robe:{s:'p',S:'P'}};
 const PF_CACHE={};
-function lookOfMe(){const e=G.ch?G.ch.eq:{};return{w:e.weapon?e.weapon.kind:null,wr:e.weapon?e.weapon.rar:-1,wid:e.weapon?e.weapon.id:null,a:e.armor?e.armor.kind:null,ar:e.armor?e.armor.rar:-1,rr:e.ring?e.ring.rar:-1,dy:G.ch?G.ch.dye|0:0,cp:G.ch&&G.ch.cos&&G.ch.cos.cape===0?0:1,gl:G.ch&&G.ch.cos&&G.ch.cos.glow===0?0:1,adv:G.ch&&SH.advOf(G.ch)?G.ch.adv:null,aw:G.ch&&SH.awkOf(G.ch)?1:0,sk:G.ch&&G.ch.skinOn?G.ch.skinOn[CLASSES[G.ch.cls].fam]||null:null,cs:G.ch&&G.ch.cstOn||null};}
+function lookOfMe(){const e=G.ch?G.ch.eq:{};return{w:e.weapon?e.weapon.kind:null,wr:e.weapon?e.weapon.rar:-1,wid:e.weapon?e.weapon.id:null,a:e.armor?e.armor.kind:null,ar:e.armor?e.armor.rar:-1,rr:e.ring?e.ring.rar:-1,dy:G.ch?G.ch.dye|0:0,cp:G.ch&&G.ch.cos&&G.ch.cos.cape===0?0:1,gl:G.ch&&G.ch.cos&&G.ch.cos.glow===0?0:1,sh:G.ch&&G.ch.cos&&G.ch.cos.shield===0?0:1,adv:G.ch&&SH.advOf(G.ch)?G.ch.adv:null,aw:G.ch&&SH.awkOf(G.ch)?1:0,sk:G.ch&&G.ch.skinOn?G.ch.skinOn[CLASSES[G.ch.cls].fam]||null:null,cs:G.ch&&G.ch.cstOn||null};}
 const ADV_KEYS=Object.keys(SH.ADV);
 function playerFrames(cls,look){look=look||{};if(look.cs&&SPR.cost&&SH.COSTUMES[look.cs]){const ck='cs|'+look.cs;if(PF_CACHE[ck])return PF_CACHE[ck];const row=SPR.cost[SH.COSTUMES[look.cs].row];if(row){const fr=animFrames(row);PF_CACHE[ck]=fr;return fr;}}const ar=Math.max(0,look.ar|0),a=look.a||'';const dy=look.dy|0;const adv=look.adv&&SH.ADV[look.adv]&&SH.ADV[look.adv].cls===cls?look.adv:'';const key=(SPR.ready?'ai|':'')+cls+'|'+a+'|'+ar+'|'+dy+'|'+(SPR.heroAdv?adv:'');if(PF_CACHE[key])return PF_CACHE[key];
   if(dy>0&&SH.DYES[dy]){const base=playerFrames(cls,Object.assign({},look,{dy:0}));const fr2=dyeFrames(base,SH.DYES[dy]);PF_CACHE[key]=fr2;return fr2;}
@@ -1107,7 +1107,7 @@ function drawHeldGear(cls,src,s,sx,sy,e,look){const fam=CLASSES[cls].fam;const k
   else if(kind==='crossbow'){ang=0;}
   else if(fam==='bow'){ang=atk?0:0.3+bob*0.5;}
   else{ang=atk?0.95:0.3+bob*0.5;}
-  if(cls==='guardian'){const shW=weapSprite('shield',Math.max(0,look.ar|0),'s'+(look.ar|0));const scx=sx+(f>0?Math.round(s.w/2)+5:Math.round(s.w/2)-5),scy=sy+s.h-7;
+  if(cls==='guardian'&&look.sh!==0){const shW=weapSprite('shield',Math.max(0,look.ar|0),'s'+(look.ar|0));const scx=sx+(f>0?Math.round(s.w/2)+5:Math.round(s.w/2)-5),scy=sy+s.h-7;
     drawHeld(ws,ax,ay,ang,f,rar,time,skin?'skin':kind);if(shW)drawHeld(shW,atk?ax+(f>0?3:-3):scx,atk?ay+1:scy,0,f,Math.max(0,look.ar|0),time+1,'shield');}
   else drawHeld(ws,ax,ay,ang,f,rar,time,skin?'skin':kind);
   if(rar===3&&ws&&R()<0.5){const L=ws.h*0.7,aa=ang*(f<0?-1:1);part(ax+Math.sin(aa)*rf(2,L)*(f<0?-1:1)+ (0),ay-Math.cos(aa)*rf(2,L),rf(-6,6),rf(-6,6),pick(['o','y','w','r']),rf(.3,.6),{z:0,glow:true});}
@@ -2015,7 +2015,7 @@ function drawTailor(){const x=6,y=38,w=226,h=194;panel(x,y,w,h,'재단사 마르
   SH.DYES.forEach((D,i)=>{const c=i%2,r=(i/2)|0,bx=x+10+c*104,by=y+30+r*20;const own=i===0||(ch.dyes||[]).includes(i),cur=(ch.dye|0)===i;pr(bx,by,100,18,cur?PAL.y:PAL.k);pr(bx+1,by+1,98,16,cur?'#3a3016':'#241e2b');
     const sw=D.h!=null?`hsl(${D.h},60%,45%)`:D.dark?'#26222c':D.light?'#dcd8e4':'#8a6a4a';pr(bx+4,by+4,10,10,PAL.k);pr(bx+5,by+5,8,8,sw);txt(D.n,bx+19,by+9,11,cur?'#ffd35a':'#e6dcc3');txt(cur?'착용 중':own?'보유':`${SH.DYE_COST}`,bx+96,by+9,9,cur?'#ffd35a':own?'#7fd05a':'#ffd35a','right');
     uiRects.push({x:bx,y:by,w:100,h:18,click:()=>net({t:'dye',i}),tip:()=>[[D.n+' 염료','#ffd35a',12],[own?'클릭: 입기':`클릭: ${SH.DYE_COST}골드에 사서 입기`,'#9e937a',11]]});});
-  const cs=ch.cos||{};const ly=y+140;button(x+10,ly,w-100,14,`무기 보이기 (마을): ${cs.cape===0?'끔':'켬'}`,()=>net({t:'cos',k:'cape'}),{size:10});button(x+10,ly+18,w-100,14,`전설 불꽃 효과: ${cs.glow===0?'끔':'켬'}`,()=>net({t:'cos',k:'glow'}),{size:10});
+  const cs=ch.cos||{};const ly=y+140;button(x+10,ly,w-100,14,`무기 보이기 (마을): ${cs.cape===0?'끔':'켬'}`,()=>net({t:'cos',k:'cape'}),{size:10});button(x+10,ly+18,w-100,14,`전설 불꽃 효과: ${cs.glow===0?'끔':'켬'}`,()=>net({t:'cos',k:'glow'}),{size:10});if(ch.cls==='guardian')button(x+10,ly+36,w-100,14,`방패 보이기: ${cs.shield===0?'끔':'켬'}`,()=>net({t:'cos',k:'shield'}),{size:10,tip:[['방패 외형만 숨겨요','#ffd35a',12],['방어력·막기 등 방패 기능은 그대로예요','#9e937a',11]]});
   const pv=playerFrames(ch.cls,lookOfMe());const s=pv.idle[((time*2)|0)%2].r;const sc=2;ctx.imageSmoothingEnabled=false;ctx.drawImage(s.c,Math.round((x+w-8-s.w*sc)*SC),Math.round((y+h-6-s.h*sc)*SC),s.w*sc*SC,s.h*sc*SC);}
 const WARDROBE=outlineC(pcan(22,32,q=>{for(let j=2;j<31;j++)for(let i=1;i<21;i++)q(i,j,(i===1||i===20||j===2||j===30)?'#4a2e16':(i===10||i===11)?'#3a2210':(j%6===0)?'#6a4020':'#7a4a24');for(let j=8;j<22;j++)for(let i=3;i<9;i++)q(i,j,((i+j)%4)?'#9ab8d8':'#cfe2f2');q(9,16,'#d4a02a');q(12,16,'#d4a02a');for(let i=0;i<22;i++)q(i,1,'#5a3a1a');}));
 
