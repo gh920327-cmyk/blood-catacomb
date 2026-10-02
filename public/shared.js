@@ -662,7 +662,7 @@ function eaffNames(mask){return EAFF.filter(a=>mask&a[2]).map(a=>a[1]);}
 const WIND_LIST=['','melee','shoot','charge','slam','ring','cast'];
 // 타격음 종류 (서버가 번호로 보냄)
 const EL_LIST=['slash','blunt','heavy','arrow','magic','zap','fire','ice','holy','poison','void','quake','shot','blast'];
-const PROJ_LIST=['arrow','parrow','bolt','holy','fire','orb','pierce','shieldp','poison','frostorb','holybeam','ice','web','page','void','fireb','bullet','pellet','shell','slug'];
+const PROJ_LIST=['arrow','parrow','bolt','holy','fire','orb','pierce','shieldp','poison','frostorb','holybeam','ice','web','page','void','fireb','bullet','pellet','shell','slug','hammer'];
 
 // ---------- 테마 · 보스 ----------
 // 5층마다 테마가 바뀌고, 51층부터는 같은 테마의 타락한 버전이 나온다. 100층은 최종 보스.
