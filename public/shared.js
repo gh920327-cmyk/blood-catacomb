@@ -75,7 +75,7 @@ const TALENTS={
   knight:[{b:'성검',n:[tn('k1','성검 숙련','dmgPct',4),tn('k2','빛의 일격','critDmg',10),tn('k3','검무','as',3)]},{b:'신성력',n:[tn('k4','깊은 신앙','holy',10),tn('k5','빛의 권능','crit',1.5),tn('k6','찬란한 심판','cdr',3)]},{b:'섬광',n:[tn('k7','섬광 걸음','ms',2),tn('k8','잔광','ls',0.6),tn('k9','빛의 보호','dr',2)]}],
   priest:[{b:'신성',n:[tn('p1','축복의 손','healPct',5),tn('p2','빛의 권능','spellPct',3),tn('p3','기도의 시간','cdr',3)]},{b:'응징자',n:[tn('p4','심판','dmgPct',4),tn('p5','성스러운 분노','crit',1.5),tn('p6','천벌','critDmg',8)]},{b:'인내',n:[tn('p7','순교자의 몸','hpPct',4),tn('p8','깊은 신앙','mpPct',6),tn('p9','고행','dr',2)]}]};
 const TAL_NEED=[0,5,10];
-const LVL_CAP=50;
+const LVL_CAP=60; // 4막 DLC: 50 → 60
 function talentPts(lvl){return Math.min(20,Math.max(0,Math.floor(((lvl|0)-8)/2)));}
 function talentSpent(ch){let n=0;if(ch.tal)for(const k in ch.tal)n+=ch.tal[k]|0;return n;}
 function talentSums(ch){const T={};const tr=TALENTS[ch.cls];if(!tr||!ch.tal)return T;for(const br of tr)for(const nd of br.n){const r=ch.tal[nd.id]|0;if(r)T[nd.k]=(T[nd.k]||0)+nd.v*r;}return T;}
@@ -721,7 +721,50 @@ const THEMES=[
     lines:['빛이 빨려 들어간다','발밑이 사라지는 것 같다','무(無)가 부른다']}
 ];
 const FINAL_BOSS={n:'심연의 심장',pats:['bloodring','iceSpears','meteorRain','poisonPools','pull','webShot','sweep','homing','chainMark','voidOrb'],p2:['circles','inout','lines'],p3:['doom'],brm:{r:'e',R:'R',p:'k',w:'y',W:'o'}};
-function themeOf(floor){const i=Math.floor((Math.max(1,floor)-1)/5);return{idx:i%10,corrupt:floor>50,t:THEMES[i%10],final:floor===100};}
+// ================= DLC 4막 · 잿빛 황야 (넓은 필드) =================
+// 4지역(2×2) · 지역마다 거점 3곳 + 보스 둥지 1곳 · 고정 지형(모두가 같은 황야를 기억하도록)
+const WASTE_THEMES=[
+  {n:'재의 평원',tile:0,tint:[10, 8, 4, 0.15],lit:1.15,col:{d:'#2a2622',D:'#3a342e',k:'#14110e',m:'#5a5248',S:'#a89c8c'},flame:{o:'o',y:'y',r:'r'},mon:{zombie:'재투성이 망자',skel:'잿빛 궁수',hound:'재 늑대'},mrm:{},boss:{n:'재의 거인 그롬',pats:['slam','cone','summon'],p2:['circles'],brm:{}},lines:['재가 눈처럼 내린다','발밑에서 잿불이 바스락거린다','먼 곳에서 무언가 울부짖는다']},
+  {n:'불 꺼진 마을',tile:7,tint:[0, 0, 8, 0.4],lit:1.05,col:{d:'#1e1a24',D:'#2a2432',k:'#0c0a10',m:'#463c50',S:'#8a7e98'},flame:{o:'c',y:'w',r:'C'},mon:{zombie:'떠도는 마을 사람',skel:'창가의 궁수',hound:'굶주린 들개'},mrm:{},boss:{n:'촛불 사제 엘몬',pats:['bloodring','markSpread','summon'],p2:['inout'],brm:{}},lines:['꺼진 창문들이 너를 본다','종이 한 번 울리고 멎는다','누군가 등불을 기다렸다']},
+  {n:'유리 사막',tile:0,tint:[44,32,6,0.08],lit:1.35,col:{d:'#2c2a20',D:'#3e3a2a',k:'#14130c',m:'#6a6040',S:'#d8c890'},flame:{o:'y',y:'w',r:'o'},mon:{zombie:'유리 미라',skel:'모래 궁수',hound:'유리 전갈'},mrm:{},boss:{n:'유리 전갈 여왕 세트라',pats:['iceSpears','cone','lungeFar'],p2:['lines'],brm:{}},lines:['녹은 모래가 유리처럼 반짝인다','햇빛 없는 열기가 피어오른다','발자국이 금세 사라진다']},
+  {n:'등불 성채',tile:6,tint:[16, 8, 0, 0.6],lit:1.1,col:{d:'#24201a',D:'#342e24',k:'#100d0a',m:'#5a4a30',S:'#c8a060'},flame:{},mon:{zombie:'성채의 망령 기사',skel:'성벽 석궁병',hound:'잿불 사냥개'},mrm:{},boss:{n:'꺼진 성주 발레리온',pats:['slam','bloodring','markSpread','lungeFar'],p2:['circles','inout'],brm:{}},lines:['꺼진 등불들이 줄지어 서 있다','성벽 너머에서 바람이 운다','마지막 불씨의 온기가 느껴진다']}];
+const FIELD_W=160,FIELD_H=120,FIELD_FLOOR=[102,106,110,114],FIELD_LV=[50,53,56,59];
+let FIELD_CACHE=null;
+function genField(){if(FIELD_CACHE)return cloneField(FIELD_CACHE);
+  const R=mulberry(4040);const W=FIELD_W,H=FIELD_H,tiles=new Uint8Array(W*H);const map={w:W,h:H,tiles,field:true,floor:FIELD_FLOOR[0],rooms:[],torches:[]};
+  const RG=[{x0:2,y0:2,x1:79,y1:59},{x0:80,y0:2,x1:157,y1:59},{x0:80,y0:60,x1:157,y1:117},{x0:2,y0:60,x1:79,y1:117}];
+  map.regions=RG.map((g,i)=>Object.assign({id:i,n:WASTE_THEMES[i].n,floor:FIELD_FLOOR[i],lv:FIELD_LV[i]},g));
+  // 노이즈 바위 (셀룰러)
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)tiles[y*W+x]=R()<0.40?0:1;
+  for(let it=0;it<4;it++){const nt=tiles.slice();for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){let n=0;for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++)if(tiles[(y+j)*W+x+i]===0)n++;nt[y*W+x]=n>=5?0:1;}tiles.set(nt);}
+  // 지역 경계 벽 (두께 2) + 관문
+  for(let y=0;y<H;y++){tiles[y*W+79]=0;tiles[y*W+80]=0;}for(let x=0;x<W;x++){tiles[59*W+x]=0;tiles[60*W+x]=0;}
+  for(let x=0;x<W;x++){tiles[x]=0;tiles[W+x]=0;tiles[(H-1)*W+x]=0;tiles[(H-2)*W+x]=0;}for(let y=0;y<H;y++){tiles[y*W]=0;tiles[y*W+1]=0;tiles[y*W+W-1]=0;tiles[y*W+W-2]=0;}
+  const clear=(cx,cy,r)=>{for(let y=cy-r;y<=cy+r;y++)for(let x=cx-r;x<=cx+r;x++){if(x<2||y<2||x>=W-2||y>=H-2)continue;if((x-cx)*(x-cx)+(y-cy)*(y-cy)<=r*r+1)tiles[y*W+x]=1;}};
+  const gates=[[79,30,'v'],[118,59,'h'],[79,92,'v']];map.gates=[];for(const [gx,gy,o] of gates){for(let d=-2;d<=2;d++){if(o==='v'){tiles[(gy+d)*W+79]=1;tiles[(gy+d)*W+80]=1;}else{tiles[59*W+gx+d]=1;tiles[60*W+gx+d]=1;}}clear(gx,gy,4);map.gates.push({x:gx,y:gy});}
+  // 출발 야영지 (재의 평원 왼쪽 위)
+  const start={cx:10,cy:10};clear(10,10,6);map.start=start;map.camp={x:10*TS+8,y:10*TS+8};
+  // 거점 · 둥지
+  const BASE_POS=[[[38,14],[16,44],[56,40]],[[100,16],[140,22],[112,44]],[[96,78],[140,74],[118,104]],[[20,74],[50,82],[22,104]]];
+  const LAIR=[[60,6],[134,36],[134,96],[52,96]];
+  map.bases=[];map.lairs=[];
+  BASE_POS.forEach((L,ri)=>L.forEach(([bx,by],k)=>{clear(bx,by,5);map.bases.push({id:ri*3+k,reg:ri,x:bx*TS+8,y:by*TS+8,tx:bx,ty:by});}));
+  LAIR.forEach(([lx,ly],ri)=>{const w=16,h=12;const x0=Math.max(3,Math.min(W-w-3,lx-(w>>1))),y0=Math.max(3,Math.min(H-h-3,ly-(h>>1)));
+    for(let y=y0-1;y<=y0+h;y++)for(let x=x0-1;x<=x0+w;x++)tiles[y*W+x]=0;for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)tiles[y*W+x]=1;
+    const dx=x0+(w>>1);const top=ri<2?y0+h:y0-1;const door=[];for(let d=-1;d<=1;d++){tiles[top*W+dx+d]=5;door.push(top*W+dx+d);}clear(dx,ri<2?top+3:top-3,3);
+    map.lairs.push({reg:ri,room:{x:x0,y:y0,w,h},cx:(x0+(w>>1))*TS+8,cy:(y0+(h>>1))*TS+8,door,dx:dx*TS+8,dy:(ri<2?top+2:top-2)*TS+8});});
+  // 연결 보장: 야영지에서 닿지 않는 바닥은 바위로
+  const reach=new Uint8Array(W*H);const q=[start.cy*W+start.cx];reach[q[0]]=1;while(q.length){const k=q.pop();const x=k%W,y=(k/W)|0;for(const [ddx,ddy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nk=(y+ddy)*W+x+ddx;if(!reach[nk]&&(tiles[nk]===1||tiles[nk]===5)){reach[nk]=1;if(tiles[nk]===1)q.push(nk);}}}
+  // 둥지 안쪽은 문 뒤라 닿지 않는 게 정상 → 둥지 바닥은 유지
+  const inLair=(x,y)=>map.lairs.some(l=>x>=l.room.x&&x<l.room.x+l.room.w&&y>=l.room.y&&y<l.room.y+l.room.h);
+  for(let k=0;k<W*H;k++)if(tiles[k]===1&&!reach[k]&&!inLair(k%W,(k/W)|0))tiles[k]=0;
+  // 거점·관문이 닿는지 확인 (안 닿으면 통로 파기)
+  const dig=(ax,ay,bx,by)=>{let x=ax,y=ay;while(x!==bx||y!==by){if(x!==bx)x+=Math.sign(bx-x);else y+=Math.sign(by-y);for(let j=0;j<2;j++)for(let i=0;i<2;i++){const k=(y+j)*W+x+i;if(tiles[k]===0&&x+i>1&&y+j>1&&x+i<W-2&&y+j<H-2&&!(x+i===79||x+i===80||y+j===59||y+j===60)||tiles[k]===0&&false)tiles[k]=1;}}};
+  for(const b of map.bases)if(!reach[b.ty*W+b.tx]){const g=RG[b.reg];dig(b.tx,b.ty,(g.x0+g.x1)>>1,(g.y0+g.y1)>>1);}
+  map.minimapScale=2;FIELD_CACHE=map;return cloneField(map);}
+function cloneField(m){return Object.assign({},m,{tiles:m.tiles.slice()});}
+function fieldRegion(map,x,y){if(!map||!map.field)return -1;const tx=x/TS,ty=y/TS;const top=ty<60,left=tx<80;return top?(left?0:1):(left?3:2);}
+function themeOf(floor){if(floor>100){const k=Math.max(0,Math.min(3,Math.floor((floor-101)/4)));return{idx:10+k,corrupt:false,t:WASTE_THEMES[k],final:false,waste:true};}const i=Math.floor((Math.max(1,floor)-1)/5);return{idx:i%10,corrupt:floor>50,t:THEMES[i%10],final:floor===100};}
 function bossOf(floor){const th=themeOf(floor);if(th.final)return Object.assign({final:true},FINAL_BOSS);const b=th.t.boss;return Object.assign({},b,{n:(th.corrupt?'타락한 ':'')+b.n});}
 function monName(floor,type,elite,id){const th=themeOf(floor);const base=type==='boss'?bossOf(floor).n:(th.t.mon[type]||(MT[type]&&MT[type].n)||type);return (th.corrupt&&type!=='boss'?'타락한 ':'')+(elite?['광폭한 ','저주받은 ','불타는 ','굶주린 '][id%4]:'')+base;}
 
@@ -975,7 +1018,65 @@ function canEquip(it,cls){if(!it)return false;if(it.slot!=='weapon')return true;
 function xpFor(l){return Math.floor(35*Math.pow(l,1.55));}
 function newChar(name,cls){const C=CLASSES[cls];return{v:1,id:rid(),name,cls,lvl:1,xp:0,pts:0,str:C.base.str,dex:C.base.dex,vit:C.base.vit,ene:C.base.ene,gold:20,pots:{hp:3,mp:2},
   eq:{weapon:starterWeapon(C.fam),armor:starterArmor(cls),ring:null},bag:new Array(BAG_N).fill(null),cps:[1],best:0,kills:0,created:Date.now(),...defaultSkills(cls),spts:0,mats:{iron:0,dust:0,ess:0},gems:{}};}
-function calcStats(ch){
+// ================= DLC 4막 · 잿불 유물 가방 (석판 배치형) =================
+// 유물: 한 칸 · 레벨(기본 레벨 + 주변 석판 보정) · 잿빛 황야/꺼진 등대에서만 효과
+const RTAG={fire:{n:'불꽃',c:'#ff7a3a'},frost:{n:'서리',c:'#8fd0ff'},shadow:{n:'그림자',c:'#b48aff'},lamp:{n:'등불',c:'#ffd35a'},gear:{n:'태엽',c:'#c9a46a'}};
+const RELICS={
+  emberheart:{n:'잿불 심장',tag:'fire',max:5,d:l=>`공격력 +${l*4}%`,st:l=>({dmgPct:l*4})},
+  blaze:{n:'불꽃 손길',tag:'fire',max:4,d:l=>`적중 시 ${l*6}% 확률로 불길 폭발 (공격력 ${60+l*20}%)`,p:1},
+  pyre:{n:'장작더미',tag:'fire',max:4,d:l=>`처치 시 시체가 폭발 (주변에 공격력 ${40+l*30}%)`,p:1},
+  flametrail:{n:'불길 발자국',tag:'fire',max:3,d:l=>`구르기 끝에 불길이 터짐 (공격력 ${80+l*40}%)`,p:1},
+  frostshard:{n:'서리 조각',tag:'frost',max:5,d:l=>`치명타 확률 +${l*2}%`,st:l=>({crit:l*2})},
+  glacier:{n:'빙하 갑옷',tag:'frost',max:5,d:l=>`방어력 +${l*6}%`,st:l=>({armorPct:l*6})},
+  chill:{n:'얼어붙은 손톱',tag:'frost',max:3,d:l=>`적중한 적을 ${(l*0.3).toFixed(1)}초 둔화`,p:1},
+  icenova:{n:'얼음 파동',tag:'frost',max:4,d:l=>`피격 시 ${l*8}% 확률로 얼음 파동 (주변 둔화 · 공격력 ${50+l*25}%)`,p:1},
+  shadefang:{n:'그림자 송곳니',tag:'shadow',max:5,d:l=>`치명타 피해 +${l*8}%`,st:l=>({critDmg:l*8})},
+  nightveil:{n:'밤의 장막',tag:'shadow',max:4,d:l=>`구르기 후 1.5초간 공격력 +${l*8}%`,p:1},
+  souldrain:{n:'영혼 흡수',tag:'shadow',max:4,d:l=>`생명력 흡수 +${(l*0.6).toFixed(1)}%`,st:l=>({ls:l*0.6})},
+  echo:{n:'메아리',tag:'shadow',max:4,d:l=>`적중 시 ${l*6}% 확률로 같은 피해의 50%를 한 번 더`,p:1},
+  lampoil:{n:'등유 병',tag:'lamp',max:5,d:l=>`최대 체력 +${l*4}%`,st:l=>({hpPct:l*4})},
+  warmglow:{n:'온기',tag:'lamp',max:4,d:l=>`체력 재생 +${l*35}%`,st:l=>({regenPct:l*35})},
+  beacon:{n:'봉화',tag:'lamp',max:4,d:l=>`동료 곁(80 거리)에 있으면 받는 피해 -${l*3}%`,p:1},
+  guiding:{n:'길잡이 불빛',tag:'lamp',max:4,d:l=>`이동 속도 +${l*3}%`,st:l=>({ms:l*3})},
+  spring:{n:'태엽 용수철',tag:'gear',max:5,d:l=>`공격 속도 +${l*3}%`,st:l=>({as:l*3})},
+  cog:{n:'정밀 톱니',tag:'gear',max:4,d:l=>`스킬 재사용 대기 -${l*2}%`,st:l=>({cdr:l*2})},
+  overclock:{n:'과부하 코일',tag:'gear',max:4,d:l=>`마나 재생 +${l*12}%`,st:l=>({mpRegenPct:l*12})},
+  piston:{n:'증기 피스톤',tag:'gear',max:3,d:l=>`적중 시 ${l*5}% 확률로 충격파 (밀쳐내기 · 공격력 ${40+l*20}%)`,p:1}};
+// 계열 세트 (켜진 유물 수 기준)
+const RSET={fire:[[2,'공격력 +5%',{dmgPct:5}],[4,'불꽃 유물 발동 확률 1.5배',{fire4:1}]],
+  frost:[[2,'방어력 +8%',{armorPct:8}],[4,'둔화된 적에게 피해 +15%',{frost4:1}]],
+  shadow:[[2,'치명타 확률 +4%',{crit:4}],[4,'치명타 피해 +25%',{critDmg:25}]],
+  lamp:[[2,'최대 체력 +6%',{hpPct:6}],[4,'쓰러질 피해를 한 번 버팀 (90초마다)',{lamp4:1}]],
+  gear:[[2,'공격 속도 +5%',{as:5}],[4,'스킬 재사용 대기 -8%',{cdr:8}]]};
+// 석판: 화살표(dx,dy,v) · rot 0~3 으로 시계 방향 회전 · cond 조건
+const TABLETS={
+  up1:{n:'상승 석판',a:[[0,-1,1]],d:'화살표 방향 유물 +1'},
+  twin:{n:'쌍날 석판',a:[[0,-1,1],[0,1,1]],d:'양쪽 유물 +1'},
+  cross:{n:'십자 석판',a:[[0,-1,1],[1,0,1],[0,1,1],[-1,0,1]],d:'상하좌우 유물 +1',rare:1},
+  diag:{n:'대각 석판',a:[[1,-1,1],[1,1,1],[-1,1,1],[-1,-1,1]],d:'대각선 유물 +1',rare:1},
+  focus:{n:'집중 석판',a:[[0,-1,2],[0,1,-1]],d:'화살표 방향 +2 · 반대쪽 -1'},
+  lance:{n:'관통 석판',a:[[0,-1,1],[0,-2,1]],d:'화살표 방향 두 칸 +1'},
+  edge:{n:'변두리 석판',a:[[0,-1,1],[1,0,1],[0,1,1],[-1,0,1]],cond:'edge',d:'가방 가장자리에 놓이면 상하좌우 +1 (안쪽이면 효과 없음)'},
+  lonely:{n:'고독 석판',a:[[0,-1,3]],cond:'alone',d:'화살표 방향 +3 · 이웃한 석판이 있으면 효과 없음',rare:1},
+  sacrifice:{n:'희생 석판',a:[[0,-1,3],[1,0,-1],[-1,0,-1]],d:'화살표 방향 +3 · 좌우 -1'}};
+const RBAG_SZ=[[4,3],[5,3],[5,4],[6,4]];
+const RINV_MAX=16;
+function rotA(dx,dy,r){for(let i=0;i<(r&3);i++){const t=dx;dx=-dy;dy=t;}return[dx,dy];}
+// 가방 평가 → {lv:[칸별 유효 레벨], on:{id:lv}, sets:{tag:n}, st:{능력치}, sp:{특수}}
+function relicEval(ch){const B=ch&&ch.rbag;const out={lv:[],on:{},sets:{},st:{},sp:{},act:[]};if(!B||!Array.isArray(B.c))return out;const W=B.w,H=B.h,C=B.c;const add=new Array(W*H).fill(0);
+  for(let i=0;i<C.length;i++){const q=C[i];if(!q||q.t!=='s'||!TABLETS[q.id])continue;const T=TABLETS[q.id];const x=i%W,y=(i/W)|0;
+    if(T.cond==='edge'&&!(x===0||y===0||x===W-1||y===H-1))continue;
+    if(T.cond==='alone'){let nb=false;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;const o=C[ny*W+nx];if(o&&o.t==='s'){nb=true;break;}}if(nb)continue;}
+    for(const [ax,ay,v] of T.a){const [dx,dy]=rotA(ax,ay,q.r|0);const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;add[ny*W+nx]+=v;out.act.push([i,ny*W+nx,v]);}}
+  for(let i=0;i<C.length;i++){const q=C[i];if(!q||q.t!=='r'||!RELICS[q.id]){out.lv[i]=0;continue;}const R=RELICS[q.id];const L=Math.max(0,Math.min(R.max,(q.lv|0)+add[i]));out.lv[i]=L;if(L>0){out.on[q.id]=Math.max(out.on[q.id]||0,L);}}
+  for(const id in out.on){const R=RELICS[id];out.sets[R.tag]=(out.sets[R.tag]||0)+1;if(R.st){const s=R.st(out.on[id]);for(const k in s)out.st[k]=(out.st[k]||0)+s[k];}}
+  for(const tg in out.sets)for(const [n,,b] of RSET[tg])if(out.sets[tg]>=n)for(const k in b){if(k in{fire4:1,frost4:1,lamp4:1})out.sp[k]=1;else out.st[k]=(out.st[k]||0)+b[k];}
+  return out;}
+function relicNewBag(lv){const s=RBAG_SZ[Math.max(0,Math.min(RBAG_SZ.length-1,lv|0))];return{w:s[0],h:s[1],c:new Array(s[0]*s[1]).fill(null)};}
+// 가방 크기를 늘릴 때 기존 배치 유지
+function relicResize(B,lv){const nb=relicNewBag(lv);if(!B)return nb;for(let i=0;i<B.c.length;i++){const x=i%B.w,y=(i/B.w)|0;if(x<nb.w&&y<nb.h)nb.c[y*nb.w+x]=B.c[i];}return nb;}
+function randRelicDrop(R){R=R||Math.random;if(R()<0.62){const ks=Object.keys(RELICS);return{t:'r',id:ks[Math.floor(R()*ks.length)],lv:1};}const ks=Object.keys(TABLETS).filter(k=>!TABLETS[k].rare||R()<0.35);return{t:'s',id:ks[Math.floor(R()*ks.length)],r:0};}
+function calcStats(ch,relicOn){
   const C=CLASSES[ch.cls],g={};
   for(const s of['weapon','armor','ring']){const it=ch.eq[s];if(!it||!canEquip(it,ch.cls))continue;const st=itemStats(it);for(const k in st)g[k]=(g[k]||0)+st[k];}
   const T=talentSums(ch);for(const k of['dmgPct','crit','critDmg','as','ms','ls'])if(T[k])g[k]=(g[k]||0)+T[k];
@@ -1029,6 +1130,11 @@ function calcStats(ch){
   S.set3=[];for(const id in SETS){const n=setCount(ch,id);if(n<2)continue;const b=SETS[id].b2;if(b.hpPct)S.maxHp=Math.round(S.maxHp*(1+b.hpPct/100));if(b.armorPct)S.armor=Math.round(S.armor*(1+b.armorPct/100));if(b.crit)S.crit=Math.min(75,S.crit+b.crit);if(b.as)S.atkRate*=1+b.as/100;if(b.bossDmg)S.bossDmg=(S.bossDmg||0)+b.bossDmg/100;if(n>=3)S.set3.push(id);}
   S.myth=[];for(const s2 of['weapon','armor','ring']){const it=ch.eq[s2];if(it&&it.rar===4&&it.myth&&MYTH[it.myth]&&canEquip(it,ch.cls))S.myth.push(it.myth);}
   if(S.myth.includes('vamp'))S.ls+=4;if(S.myth.includes('haste'))S.cdr=Math.min(0.5,(S.cdr||0)+0.15);
+  // 잿불 유물 (잿빛 황야 · 꺼진 등대에서만)
+  S.rl=null;if(relicOn&&ch.rbag){const E=relicEval(ch);const t=E.st;S.rl={on:E.on,sp:E.sp,sets:E.sets};
+    if(t.dmgPct)S.dmgMul*=1+t.dmgPct/100;if(t.crit)S.crit=Math.min(80,S.crit+t.crit);if(t.critDmg)S.critMul+=t.critDmg/100;if(t.armorPct)S.armor=Math.round(S.armor*(1+t.armorPct/100));
+    if(t.hpPct)S.maxHp=Math.round(S.maxHp*(1+t.hpPct/100));if(t.ls)S.ls+=t.ls;if(t.as)S.atkRate*=1+t.as/100;if(t.ms)S.ms*=1+t.ms/100;if(t.cdr)S.cdr=Math.min(0.5,(S.cdr||0)+t.cdr/100);
+    if(t.mpRegenPct)S.mpRegen*=1+t.mpRegenPct/100;if(t.regenPct)S.regen=(S.regen||1)*(1+t.regenPct/100);}
   return S;
 }
 function dmgReduce(S,floor){return Math.min(0.75,S.armor/(S.armor+40+12*Math.max(1,floor)));}
@@ -1048,7 +1154,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={FISH_LV_MAX,fishNeed,fishLvOf,fishXpGain,fishOdds,fishBigOdds,MOUNTS,MOUNT_PRICE,FOOTS,FOOT_PRICE,LEGENDS,legendOk,AWK_ULT_N,FISH_GN,FISH_GC,fishGrade,rollFishCm,COSTUMES,COS_PRICE,AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={WASTE_THEMES,FIELD_W,FIELD_H,FIELD_FLOOR,FIELD_LV,genField,fieldRegion,RTAG,RELICS,RSET,TABLETS,RBAG_SZ,RINV_MAX,rotA,relicEval,relicNewBag,relicResize,randRelicDrop,FISH_LV_MAX,fishNeed,fishLvOf,fishXpGain,fishOdds,fishBigOdds,MOUNTS,MOUNT_PRICE,FOOTS,FOOT_PRICE,LEGENDS,legendOk,AWK_ULT_N,FISH_GN,FISH_GC,fishGrade,rollFishCm,COSTUMES,COS_PRICE,AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,ADV,ADV_OF,ADV_LVL,ADV_VAR,advVar,CLASS_INFO,advOf,ultsOf,advChangeCost,lvCost,itemLvUp,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;
