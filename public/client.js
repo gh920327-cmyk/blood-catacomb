@@ -691,6 +691,8 @@ function handle(d){switch(d.t){
   case 'an':G.anD=d;break;
 case 'combo':G.combo={n:d.n,t0:time,d:d.t2};break;
 case 'fame':G.fame=d.list;break;
+case 'ranks':G.ranks=d;break;
+case 'cprres':if(d.rank>=0){msg(`격돌 무한 연습 ${d.s.toLocaleString()}점 · 랭킹 ${d.rank+1}위!`,'#ffd35a');sfx('legend');}else if(d.pb)msg(`개인 최고 기록 ${d.s.toLocaleString()}점!`,'#ffe9a8');else msg(`${d.s.toLocaleString()}점 · 개인 최고 ${d.top.toLocaleString()}점`,'#c9a0e8');break;
 case 'fameann':G.gmBanner={n:'',t0:time,fame:d.m};sfx('holy');break;
 case 'who':G.who=d.list;G.whoT=time;break;
 case 'insp':G.insp=d.v;break;
@@ -1608,7 +1610,7 @@ function drawWorldUI(icx,icy){drawGMLabels();
   if(G.kind==='hub'){const m=G.map.merchant;txt('상인',m.x-icx,m.y-icy-(SPR.ready?26:20),11,'#ffd35a','center');
     if(G.map.fish)txt('낚시터',G.map.fish.x-icx,G.map.fish.y-icy+30,11,'#8fd0ff','center');
     for(const f of FAC){if(f.id==='merchant')continue;const p=facProp(f);if(!p)continue;const r=propSz(p.t);txt(f.n,p.x-icx,p.y-icy-(r?r[1]:30)-4,f.id==='portal'?12:11,f.id==='portal'?'#ff8a7a':'#ffd35a','center');}
-    {const rs=G.map.raidStone;if(rs)txt('레이드 석판',rs.x-icx,rs.y-icy-46,11,'#ff8a9a','center');const cs=G.map.clashpr;if(cs&&!G.cpr)txt('격돌 수련석',cs.x-icx,cs.y-icy-34,10,'#c9a0e8','center');}
+    {const rs=G.map.raidStone;if(rs)txt('레이드 석판',rs.x-icx,rs.y-icy-46,11,'#ff8a9a','center');const cs=G.map.clashpr;if(cs&&!G.cpr)txt('격돌 수련석',cs.x-icx,cs.y-icy-34,10,'#c9a0e8','center');const rb=G.map.rank;if(rb)txt('마을 랭킹 게시판',rb.x-icx,rb.y-icy-52,10,'#ffd35a','center');}
     if(!(G.dps&&time-G.dps.at<5))for(const d of G.map.dummies||[])if(Math.hypot(me.x-d.x,me.y-d.y)<160)txt('훈련용 허수아비',d.x-icx,d.y-icy-34,10,'#c9bfa8','center');
     drawNpcUI(icx,icy);drawDpsUI(icx,icy);
     const n=nearNpc();if(n){const f=FAC.find(q=>q.id===n);txt((f?f.hint:'F').replace(/^F/,keyLabel(kbCode('act'))),me.x-icx,me.y-icy+10,11,'#ffd35a','center');}
@@ -1671,12 +1673,12 @@ function lobbyTex(){if(LOB.ftex||!LOB.tiles)return LOB.ftex;const mir=(sx)=>{con
 function lobbySpr(t,sx,sy){if(t==='wardrobe'){wx.drawImage(WARDROBE,sx-11,sy-32);return true;}if(t==='aboard')t='board';const r=LOBBY_R[t];if(!r||!LOB.img)return false;wx.drawImage(LOB.img,r[0],r[1],r[2],r[3],sx-(r[2]>>1),sy-r[3],r[2],r[3]);return true;}
 // 시설: 지도 좌표(G.map[id])에 가까이 가서 F
 const FAC=[{id:'merchant',n:'상인',hint:'F: 상인과 거래',r:40},{id:'forge',n:'대장간',hint:'F: 대장간 (강화·재련·보석·분해)',r:50,prop:'forge'},{id:'vault',n:'공유 창고',hint:'F: 공유 창고',r:50,prop:'vault'},
-  {id:'tent',n:'수상한 도박사',hint:'F: 도박 (무작위 장비)',r:50,prop:'tent'},{id:'tailor',n:'재단사 옷장',hint:'F: 옷장 (염색·겉모습)',r:44,prop:'wardrobe'},{id:'arena',n:'결투장',hint:'F: 결투장 안내·전적',r:40,prop:'aboard'},{id:'fish',n:'낚시터',hint:'F: 낚시하기',r:40},{id:'merc',n:'용병 대장',hint:'F: 용병 고용 (혼자일 때 동료)',r:40},{id:'clashpr',n:'격돌 수련석',hint:'F: 격돌 연습',r:34},{id:'board',n:'현상금 게시판',hint:'F: 오늘의 의뢰',r:44,prop:'board'},{id:'portal',n:'던전 입구',hint:'F: 던전 입장',r:48,prop:'gate'},{id:'raid',n:'레이드 석판',hint:'F: 레이드 (20레벨부터)',r:40}];
+  {id:'tent',n:'수상한 도박사',hint:'F: 도박 (무작위 장비)',r:50,prop:'tent'},{id:'tailor',n:'재단사 옷장',hint:'F: 옷장 (염색·겉모습)',r:44,prop:'wardrobe'},{id:'arena',n:'결투장',hint:'F: 결투장 안내·전적',r:40,prop:'aboard'},{id:'fish',n:'낚시터',hint:'F: 낚시하기',r:40},{id:'merc',n:'용병 대장',hint:'F: 용병 고용 (혼자일 때 동료)',r:40},{id:'clashpr',n:'격돌 수련석',hint:'F: 격돌 연습',r:34},{id:'rank',n:'마을 랭킹 게시판',hint:'F: 랭킹 보기',r:34},{id:'board',n:'현상금 게시판',hint:'F: 오늘의 의뢰',r:44,prop:'board'},{id:'portal',n:'던전 입구',hint:'F: 던전 입장',r:48,prop:'gate'},{id:'raid',n:'레이드 석판',hint:'F: 레이드 (20레벨부터)',r:40}];
 function propSz(t){if(t==='aboard')t='board';const r=LOBBY_R[t];return r?[r[2],r[3]]:SH.LOBBY_SZ[t];}
 function facProp(f){return f.prop?(G.map.props||[]).find(p=>p.t===f.prop):null;}
 function nearNpc(){if(G.kind!=='hub')return null;let best=null,bd=1e9;for(const f of FAC){const p=G.map[f.id];if(!p)continue;const d=Math.hypot(me.x-p.x,me.y-p.y);if(d<f.r&&d<bd){bd=d;best=f.id;}}return best;}
 function npcAt(x,y){if(G.kind!=='hub')return null;const m=G.map;if(Math.abs(x-m.merchant.x)<9&&y>m.merchant.y-22&&y<m.merchant.y+3)return 'merchant';
-  for(const f of FAC){const p=facProp(f);if(!p)continue;const r=propSz(p.t);if(!r)continue;if(x>=p.x-r[0]/2+4&&x<=p.x+r[0]/2-4&&y>=p.y-r[1]+4&&y<=p.y)return f.id;}if(m.pond&&((x-m.pond.cx)/m.pond.rx)**2+((y-m.pond.cy)/m.pond.ry)**2<=1)return 'fish';if(m.merc&&Math.abs(x-m.merc.x)<10&&y>m.merc.y-26&&y<m.merc.y+4)return 'merc';if(m.clashpr&&Math.abs(x-m.clashpr.x)<10&&y>m.clashpr.y-30&&y<m.clashpr.y+3)return 'clashpr';if(m.raidStone&&Math.abs(x-m.raidStone.x)<11&&y>m.raidStone.y-40&&y<m.raidStone.y+2)return 'raid';return null;}
+  for(const f of FAC){const p=facProp(f);if(!p)continue;const r=propSz(p.t);if(!r)continue;if(x>=p.x-r[0]/2+4&&x<=p.x+r[0]/2-4&&y>=p.y-r[1]+4&&y<=p.y)return f.id;}if(m.pond&&((x-m.pond.cx)/m.pond.rx)**2+((y-m.pond.cy)/m.pond.ry)**2<=1)return 'fish';if(m.merc&&Math.abs(x-m.merc.x)<10&&y>m.merc.y-26&&y<m.merc.y+4)return 'merc';if(m.rank&&Math.abs(x-m.rank.x)<13&&y>m.rank.y-48&&y<m.rank.y-6)return 'rank';if(m.clashpr&&Math.abs(x-m.clashpr.x)<10&&y>m.clashpr.y-30&&y<m.clashpr.y+3)return 'clashpr';if(m.raidStone&&Math.abs(x-m.raidStone.x)<11&&y>m.raidStone.y-40&&y<m.raidStone.y+2)return 'raid';return null;}
 function goFac(id){const t=G.map[id];if(!t)return;me.goal=id;setGoal(t.x,t.y+(id==='portal'?20:6));}
 function closeFac(){G.fac=null;G.advOpen=false;G.bs=null;G.bsArm=null;}
 function openNpc(n){closeFac();showSkills=false;showChar=false;G.portalMenu=false;showShop=false;
@@ -1684,6 +1686,7 @@ function openNpc(n){closeFac();showSkills=false;showChar=false;G.portalMenu=fals
   else if(n==='portal'){G.portalMenu=true;}
   else if(n==='fish'){if(!G.fishS)fishStart();}
   else if(n==='clashpr'){G.fac=n;G.facT=time;}
+  else if(n==='rank'){G.fac=n;G.facT=time;G.rankTab=G.rankTab||'cpr';net({t:'ranks'});sfx('pick');}
   else if(n==='tailor'||n==='arena'||n==='merc'||n==='raid'){G.fac=n;G.facT=time;}
   else{G.fac=n;G.facT=time;showInv=n!=='board'&&n!=='tent'?true:showInv;if(n==='vault')net({t:'stash'});if(n==='board')net({t:'bty'});if(n==='tent')showInv=true;if(n==='forge'){G.bsTab=G.bsTab||'enh';}sfx('pick');}}
 function inYardC(){return G.kind==='hub'&&G.map&&G.map.dummies&&G.map.dummies.some(d=>Math.hypot(me.x-d.x,me.y-d.y)<124);}
@@ -1838,7 +1841,7 @@ function drawBoard(){const x=6,y=38,w=282,h=194;panel(x,y,w,h,'현상금 게시�
     const r=q.r||{};const rw=[];if(r.gold)rw.push(`${r.gold}골드`);if(r.iron)rw.push(`철 ${r.iron}`);if(r.dust)rw.push(`가루 ${r.dust}`);if(r.ess)rw.push(`정수 ${r.ess}`);if(r.gem&&SH.gemOk(r.gem))rw.push(SH.gemName(r.gem));txt('보상: '+rw.join(' · '),x+14,ly+30,10,'#d2c7ab');
     if(q.cl)txt('받음',x+w-16,ly+12,11,'#6b6275','right');else button(x+w-66,ly+5,52,14,done?'보상 받기':'진행 중',()=>net({t:'btyc',i}),{size:10,main:done,dis:!done});});
   txt(B.b.all?'오늘의 의뢰를 모두 끝냈어요!':'세 개 모두 끝내면 추가 보상: 핏빛 정수 1 · 보석 · 마력 가루 3',x+w/2,y+h-10,10,B.b.all?'#ffd35a':'#6b6275','center');}
-function drawFacPanel(){if(G.fac==='clashpr')drawCprPanel();else if(G.fac==='raid')drawRaidPanel();else if(G.fac==='merc')drawMercPanel();else if(G.fac==='tailor')drawTailor();else if(G.fac==='arena')drawArenaBoard();if(G.fac==='trader'){drawTrader();if(!G.ev||!G.ev.trader||Math.hypot(me.x-G.ev.trader.x,me.y-G.ev.trader.y)>70)closeFac();return;}if(G.fac==='forge')drawForge();else if(G.fac==='vault')drawVault();else if(G.fac==='tent')drawTent();else if(G.fac==='board')drawBoard();
+function drawFacPanel(){if(G.fac==='rank')drawRankPanel();else if(G.fac==='clashpr')drawCprPanel();else if(G.fac==='raid')drawRaidPanel();else if(G.fac==='merc')drawMercPanel();else if(G.fac==='tailor')drawTailor();else if(G.fac==='arena')drawArenaBoard();if(G.fac==='trader'){drawTrader();if(!G.ev||!G.ev.trader||Math.hypot(me.x-G.ev.trader.x,me.y-G.ev.trader.y)>70)closeFac();return;}if(G.fac==='forge')drawForge();else if(G.fac==='vault')drawVault();else if(G.fac==='tent')drawTent();else if(G.fac==='board')drawBoard();
   if(G.fac&&G.map&&G.map[G.fac]&&Math.hypot(me.x-G.map[G.fac].x,me.y-G.map[G.fac].y)>80)closeFac();}
 
 // ---- 허수아비 DPS ----
@@ -1948,7 +1951,7 @@ function drawArenaBoard(){const x=6,y=38,w=226,h=194;panel(x,y,w,h,'결투장');
 const FISHI={};function fishIcon(r){if(FISHI[r])return FISHI[r];const c=SH.FISH_RC[r];FISHI[r]=outlineC(pcan(14,9,q=>{for(let i=2;i<11;i++){const hh=Math.round(3*Math.sin((i-2)/9*Math.PI));for(let j=4-hh;j<=4+hh;j++)q(i,j,j<4?shade(c,1):shade(c,0.7));}q(1,2,shade(c,0.6));q(1,6,shade(c,0.6));q(0,1,shade(c,0.6));q(0,7,shade(c,0.6));q(9,3,'#0e0b12');}));return FISHI[r];}
 function fishStart(){G.fishS={st:'cast',t:time};net({t:'fish',op:'cast'});sfx('swing');}
 function onFish(d){const F=G.fishS||(G.fishS={});if(d.st==='cast'){F.st='wait';F.biteAt=time+d.wait/1000;F.t=time;}else if(d.st==='bite'){F.r=d.r;}
-  else if(d.st==='got'){const f=SH.FISH.find(x=>x.id===d.id);G.fishS={st:'got',t:time,f,cm:d.cm,best:d.best,extra:d.extra};sfx(f.r>=2?'legend':'rare');}
+  else if(d.st==='got'){const f=SH.FISH.find(x=>x.id===d.id);G.fishS={st:'got',t:time,f,cm:d.cm,g:d.g,rank:d.rank==null?-1:d.rank,best:d.best,extra:d.extra};sfx(f.r>=2||d.g>=2||d.rank>=0?'legend':'rare');}
   else if(d.st==='miss'){G.fishS={st:'miss',t:time};}}
 const FISH_Z=[0.34,0.25,0.17,0.11],FISH_V=[1.1,1.5,2.0,2.6];
 function fishPress(){const F=G.fishS;if(!F)return false;
@@ -1971,7 +1974,7 @@ function drawFishUI(){const F=G.fishS;if(!F)return;const x=150,y=176,w=180,h=40;
   else if(F.st==='bite'){const b=(time*8|0)%2;bigTxt('입질!',x+w/2,y+16,16,b?'#ffd35a':'#ff8a1f',2);txt(`지금 ${K}!`,x+w/2,y+32,11,'#e6dcc3','center');}
   else if(F.st==='game'||F.st==='reel'){const z=FISH_Z[F.r|0];const bw=w-20,bx=x+10,by=y+14;pr(bx,by,bw,8,PAL.k);pr(bx+Math.round(bw*(F.zc-z/2)),by,Math.round(bw*z),8,'#3a9a4a');const pos=F.st==='reel'?F.zc:(Math.sin((time-F.t)*FISH_V[F.r|0]*3+F.ph)+1)/2;pr(bx+Math.round(bw*pos)-1,by-3,3,14,'#ffd35a');
     txt(F.st==='reel'?'끌어올리는 중...':`초록 칸에서 ${K}!`,x+w/2,y+32,11,'#e6dcc3','center');txt(SH.FISH_RN[F.r|0],x+w-8,y+6,9,SH.FISH_RC[F.r|0],'right');}
-  else if(F.st==='got'){const f=F.f;pimg(fishIcon(f.r),x+10,y+10);txt(`${f.n} ${F.cm}cm`,x+30,y+12,12,SH.FISH_RC[f.r]);txt(`${SH.FISH_RN[f.r]} · ${f.v}골드${F.extra||''}${F.best?' · 최고 기록!':''}`,x+30,y+24,10,'#d2c7ab');txt(`${K}: 다시 던지기`,x+w-8,y+34,9,'#6b6275','right');}
+  else if(F.st==='got'){const f=F.f;pimg(fishIcon(f.r),x+10,y+10);const gw=txt(`${f.n} ${F.cm}cm`,x+30,y+12,12,SH.FISH_RC[f.r]);if(F.g!=null)txt(`[${SH.FISH_GN[F.g]}]`,x+34+gw,y+12,10,SH.FISH_GC[F.g]);txt(`${SH.FISH_RN[f.r]} · ${f.v}골드${F.extra||''}${F.rank>=0?` · 낚시 랭킹 ${F.rank+1}위!`:F.best?' · 최고 기록!':''}`,x+30,y+24,10,F.rank>=0?'#ffd35a':'#d2c7ab');txt(`${K}: 다시 던지기`,x+w-8,y+34,9,'#6b6275','right');}
   else if(F.st==='miss'){txt('놓쳤다...',x+w/2,y+14,12,'#9e937a','center');txt(`${K}: 다시 던지기`,x+w/2,y+28,10,'#6b6275','center');}}
 function drawWater(sx,sy,tx,ty){const t=time*1.4;wx.fillStyle='#1c3a5a';wx.fillRect(sx,sy,16,16);for(let j=0;j<16;j+=4){const o=Math.round(Math.sin(t+(tx*16+j)*0.3+ty)*2);wx.fillStyle='#2a5a82';wx.fillRect(sx+((j*5+o+16)%16),sy+j,5,1);}if(((tx*7+ty*13+(t*2|0))%11)===0){wx.fillStyle='#8fd0ff';wx.fillRect(sx+6,sy+7,2,1);}}
 
@@ -3369,7 +3372,7 @@ function drawGMScreen(){drawCombo();if(G.raid)gcutPre();drawGCut();if(G.raid&&G.
 // ===== 격돌 수련석: 혼자 하는 격돌 연습 (서버 없이 화면에서만) =====
 const CPR_MODES={n:{n:'일반',d:'Q W E R · 실제 흑왕 격돌과 같은 속도',dur:1.45,tol:0.16,nk:4},h:{n:'하드',d:'Q W E R A S D F · 판정 좁음',dur:1.25,tol:0.11,nk:8},
   fn:{n:'최후의 격돌',d:'4연속 노트 · 일반',dur:1.1,tol:0.16,nk:4,set:4},fh:{n:'최후의 격돌 (하드)',d:'5연속 노트 · 하드',dur:0.95,tol:0.11,nk:8,set:5},
-  inf:{n:'무한 연습',d:'성공할수록 빨라짐 · 3번 놓치면 끝',dur:1.5,tol:0.16,nk:4,lives:3}};
+  inf:{n:'무한 연습 (랭킹)',d:'점수 랭킹 도전 · 빨라질수록 고득점 · 3번 놓치면 끝',dur:1.5,tol:0.16,nk:4,lives:3}};
 function drawCprStone(icx,icy,ents){const p=G.map&&G.map.clashpr;if(!p||G.kind!=='hub')return;const bx=Math.round(p.x)-icx,by=Math.round(p.y)-icy;if(bx<-40||bx>W+40||by<-60||by>H+30)return;
   ents.push({y:p.y,f:()=>{wx.drawImage(SH_S,bx-6,by-1);wx.fillStyle='#0e0b12';wx.fillRect(bx-11,by-5,22,6);wx.fillStyle='#3a3144';wx.fillRect(bx-10,by-4,20,3);
     for(let j=0;j<20;j++){const hw=Math.round(7-j*0.12);wx.fillStyle='#0e0b12';wx.fillRect(bx-hw-1,by-5-j,hw*2+2,1);wx.fillStyle=j%7===0?'#4a4152':'#2e2838';wx.fillRect(bx-hw,by-5-j,hw*2,1);wx.fillStyle='#5a5066';wx.fillRect(bx-hw,by-5-j,1,1);}
@@ -3383,12 +3386,12 @@ function drawCprPanel(){const x=6,y=38,w=200,h=168;panel(x,y,w,h,'격돌 수련�
   for(const k in CPR_MODES){const M=CPR_MODES[k];button(x+8,yy,w-16,20,'',()=>cprStart(k),{tip:[[M.n,'#ffd35a',12],[M.d,'#e6dcc3',11]]});txt(M.n,x+14,yy+7,11,'#ffe9a8');txt(M.d,x+14,yy+15,9,'#9e937a');yy+=23;}
   if(st)txt(`지난 기록 · 완벽 ${st.p} · 좋음 ${st.g} · 실패 ${st.m} · 최고 연속 ${st.best}`,x+w/2,yy+6,9,'#c9a0e8','center');
   txt('ESC 또는 멀어지면 연습 종료',x+w/2,y+h-8,9,'#6b6275','center');}
-function cprStart(k){const M=CPR_MODES[k];closeFac();G.cpr={k,M,p:0,g:0,m:0,str:0,best:0,errs:[],lives:M.lives||0,speed:1,setI:0,next:time+0.6};G.clash=null;msg(`격돌 연습 · ${M.n}`,'#c9a0e8');sfx('shout');}
-function cprStop(){const c=G.cpr;if(!c)return;G.cprLast={p:c.p,g:c.g,m:c.m,best:c.best};const avg=c.errs.length?Math.round(c.errs.reduce((a,b)=>a+Math.abs(b),0)/c.errs.length*1000):0;
+function cprStart(k){const M=CPR_MODES[k];closeFac();G.cpr={k,M,p:0,g:0,m:0,str:0,best:0,errs:[],score:0,lives:M.lives||0,speed:1,setI:0,next:time+0.6};G.clash=null;msg(`격돌 연습 · ${M.n}`,'#c9a0e8');sfx('shout');}
+function cprStop(){const c=G.cpr;if(!c)return;if(c.k==='inf'&&c.score>0)net({t:'cprsc',s:c.score,p:c.p,g:c.g,best:c.best});G.cprLast={p:c.p,g:c.g,m:c.m,best:c.best};const avg=c.errs.length?Math.round(c.errs.reduce((a,b)=>a+Math.abs(b),0)/c.errs.length*1000):0;
   msg(`격돌 연습 끝 · 완벽 ${c.p} · 좋음 ${c.g} · 실패 ${c.m} · 최고 연속 ${c.best}${avg?` · 평균 오차 ${avg}ms`:''}`,'#ffe9a8');if(G.clash&&G.clash.local)G.clash=null;G.cpr=null;}
 function cprNote(){const c=G.cpr,M=c.M;let nk=M.nk;if(c.k==='inf'&&c.str>=10)nk=8;const fin=!!M.set,dur=M.dur*(c.k==='inf'?c.speed:1),tol=M.tol;let k=(Math.random()*nk)|0;if(G.clash&&G.clash.k===k)k=(k+1)%nk;
   G.clash={local:1,n:fin?M.set:1,i:fin?c.setI:0,dur,zone:[1-tol/dur,1+tol/dur],k,dl:fin&&c.setI>0?0.15:0.45,t0:time,fin:fin?1:0,pressed:false};}
-function cprResult(C){const c=G.cpr;if(!c)return;if(C.ok){if(C.perf)c.p++;else c.g++;c.str++;c.best=Math.max(c.best,c.str);c.errs.push(C.err);if(c.k==='inf')c.speed=Math.max(0.45,c.speed*0.96);}
+function cprResult(C){const c=G.cpr;if(!c)return;if(C.ok){if(C.perf)c.p++;else c.g++;c.str++;c.best=Math.max(c.best,c.str);c.errs.push(C.err);if(c.k==='inf'){const add=Math.round((C.perf?300:100)*(1+Math.min(c.str,50)*0.02)/c.speed);c.score+=add;c.addT=time;c.add=add;}if(c.k==='inf')c.speed=Math.max(0.45,c.speed*0.96);}
   else{c.m++;c.str=0;if(c.k==='inf'){c.lives--;}}
   C.doneT=time;}
 function cprTick(){const c=G.cpr;if(!c)return;const p=G.map&&G.map.clashpr;if(G.kind!=='hub'||!p||Math.hypot(me.x-p.x,me.y-p.y)>110){cprStop();return;}
@@ -3401,7 +3404,19 @@ function cprTick(){const c=G.cpr;if(!c)return;const p=G.map&&G.map.clashpr;if(G.
   if(!C&&time>=c.next)cprNote();}
 function drawCprHud(){const c=G.cpr;if(!c)return;const x=240,y=52;const t=`${c.M.n} · 완벽 ${c.p} · 좋음 ${c.g} · 실패 ${c.m}`+(c.k==='inf'?` · 목숨 ${'♥'.repeat(Math.max(0,c.lives))}`:'');
   txt(t,x,y-8,10,'#c9a0e8','center');if(c.str>=2){const pop=1+0.5*Math.max(0,1-(time-(G.clash&&G.clash.doneT||0))/0.15);bigTxt(`${c.str} 연속`,x+128,166,12,c.str>=10?'#ffd35a':'#ffffff',pop);}
-  txt('ESC: 연습 종료',x,y+2,9,'#6b6275','center');}
+  if(c.k==='inf'){bigTxt(c.score.toLocaleString(),x,y+14,12,'#ffe9a8',1.5);if(time-(c.addT||-9)<0.6)txt(`+${c.add}`,x+50,y+12-(time-c.addT)*14,10,'#ffd35a');}
+  txt('ESC: 연습 종료',x,y+(c.k==='inf'?26:2),9,'#6b6275','center');}
+function drawRankPanel(){const x=6,y=38,w=232,h=196;panel(x,y,w,h,'마을 랭킹 게시판');const R0=G.ranks,tab=G.rankTab||'cpr';
+  [['cpr','격돌 무한 연습'],['fish','낚시 대어']].forEach(([k,l],i)=>button(x+8+i*110,y+4,106,14,l,()=>{G.rankTab=k;},{size:10,main:tab===k}));
+  if(!R0){txt('불러오는 중…',x+w/2,y+60,10,'#9e937a','center');return;}const L=R0[tab]||[];
+  txt(tab==='cpr'?'수련석의 무한 연습 점수 · 캐릭터마다 최고 기록':'낚은 물고기 크기 · 캐릭터마다 최고 기록',x+w/2,y+26,9,'#9e937a','center');
+  if(!L.length)txt('아직 기록이 없어요. 첫 1위의 주인공이 되어 보세요!',x+w/2,y+70,10,'#e6dcc3','center');
+  const MED=['#ffd35a','#d8d8e0','#d0905a'];
+  for(let i=0;i<Math.min(L.length,12);i++){const e=L[i],yy=y+38+i*12.5,mine=e.id===R0.me;if(mine)pr(x+6,yy-5,w-12,11,'rgba(201,160,232,0.18)');
+    txt(`${i+1}`,x+16,yy,10,MED[i]||'#9e937a','center');txt(e.n,x+26,yy,10,mine?'#ffffff':'#e6dcc3');txt((SH.CLASSES[e.cls]||{}).n||'',x+92,yy,9,'#6b6275');
+    if(tab==='cpr'){txt(e.s.toLocaleString()+'점',x+w-60,yy,10,MED[i]||'#ffe9a8','right');txt(`${e.best|0}연속`,x+w-10,yy,9,'#9e937a','right');}
+    else{const f=SH.FISH.find(q=>q.id===e.f)||{n:'?',r:0};txt(`${SH.FISH_GN[e.g|0]}`,x+132,yy,9,SH.FISH_GC[e.g|0]);txt(f.n,x+160,yy,9,SH.FISH_RC[f.r]);txt(`${e.s}cm`,x+w-10,yy,10,MED[i]||'#ffe9a8','right');}}
+  const mi=L.findIndex(e=>e.id===R0.me);txt(mi>=0?`내 순위 ${mi+1}위`:(tab==='cpr'?'격돌 수련석에서 무한 연습으로 도전!':'연못에서 대어를 낚아 도전!'),x+w/2,y+h-9,9,mi>=0?'#c9a0e8':'#6b6275','center');}
 function clashCirc(x,y,r,c,lw,fill){ctx.beginPath();ctx.arc(x*SC,y*SC,Math.max(0.5,r)*SC,0,6.2832);if(fill){ctx.fillStyle=fill;ctx.fill();}if(c){ctx.strokeStyle=c;ctx.lineWidth=lw*SC;ctx.stroke();}}
 function drawClashUI(C){const cx=240,cy=166,R=16,AR=42;
   for(let j=G.clashFx.length-1;j>=0;j--){const f=G.clashFx[j],t=time-f.t0,D=f.perf?0.7:0.5;if(t>D){G.clashFx.splice(j,1);continue;}const a=1-t/D;

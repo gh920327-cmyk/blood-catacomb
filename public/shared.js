@@ -174,6 +174,8 @@ const FISH=[{id:'f0',n:'진흙 메기',r:0,v:8},{id:'f1',n:'비늘 붕어',r:0,v
   {id:'f7',n:'반짝이는 조개',r:2,v:60,gem:1},{id:'f8',n:'마력 해파리',r:2,v:70,dust:2},{id:'f9',n:'유령 잉어',r:2,v:120},
   {id:'f10',n:'심연의 아귀',r:3,v:400,dust:4},{id:'f11',n:'황금 비늘 용어',r:3,v:600,gem:2}];
 const FISH_RN=['일반','고급','희귀','전설'],FISH_RC=['#e6dcc3','#7aa2ff','#ffd35a','#ff8a1f'];
+const FISH_GN=['보통','큼','월척','전설급'],FISH_GC=['#9e937a','#e6dcc3','#7fd05a','#ff8a1f'];function fishGrade(f,cm){if(!f)return 0;const q=cm/(1+f.r*0.6);return q<24?0:q<36?1:q<52?2:3;}
+function rollFishCm(R,f){R=R||Math.random;let b=12+28*Math.pow(R(),1.5);const j=R();if(j<0.007)b*=1.8+R()*0.6;else if(j<0.06)b*=1.3+R()*0.3;return Math.round(b*(1+f.r*0.6)*10)/10;}
 function rollFish(R,lvl){R=R||Math.random;const x=R()*100;const b=Math.min(4,(lvl|0)/25);const r=x<2+b?3:x<12+b*2?2:x<40?1:0;const pool=FISH.filter(f=>f.r===r);return pool[Math.floor(R()*pool.length)];}
 // ---------- 염색 · 감정표현 ----------
 const DYES=[{n:'기본'},{n:'핏빛',h:0},{n:'황금',h:44},{n:'숲',h:110},{n:'청록',h:172},{n:'바다',h:212},{n:'자수정',h:276},{n:'장미',h:330},{n:'칠흑',dark:1},{n:'설원',light:1}];
@@ -192,6 +194,7 @@ function genHub(){
   add('board',392,244);
   add('fountain',480,272);
   // 훈련장(남동): 허수아비는 서버 몬스터로 그린다
+  add('board',548,554);
   add('logs',700,510);add('logs',870,600);add('planter',720,600);add('bench',860,500);
   // 쉼터(남서)
   add('well',180,520);add('fire',260,560);add('bench',230,590);add('bench',290,590);add('logs',120,600);
@@ -214,7 +217,7 @@ function genHub(){
     g[y*W+x]=road?0:1;}
   // 연못 (낚시터)
   const pond={cx:430,cy:584,rx:66,ry:30};for(let y=0;y<H;y++)for(let x=0;x<W;x++){const px=x*TS+8,py=y*TS+8;const d=((px-pond.cx)/pond.rx)**2+((py-pond.cy)/pond.ry)**2;if(d<=1){g[y*W+x]=2;tiles[y*W+x]=3;}else if(d<=1.5&&g[y*W+x]===0)g[y*W+x]=1;}
-  map.ground=g;map.pond=pond;map.fish={x:430,y:540};map.merc={x:566,y:176};map.arena={x:620,y:510};map.tailor={x:742,y:212};map.raid={x:320,y:188};map.clashpr={x:790,y:598};map.raidStone={x:320,y:176};for(const tx of[19,20])tiles[10*W+tx]=3;
+  map.ground=g;map.pond=pond;map.fish={x:430,y:540};map.merc={x:566,y:176};map.arena={x:620,y:510};map.tailor={x:742,y:212};map.raid={x:320,y:188};map.clashpr={x:790,y:598};map.rank={x:548,y:566};map.raidStone={x:320,y:176};for(const tx of[19,20])tiles[10*W+tx]=3;
   map.portal={x:480,y:100};map.merchant={x:206,y:330};map.spawn={x:480,y:356};map.board={x:392,y:252};
   map.forge={x:150,y:190};map.vault={x:812,y:190};map.tent={x:812,y:334};map.dummies=[{x:760,y:548},{x:820,y:548}];
   map.torches=[];
@@ -936,7 +939,7 @@ function encodeSave(ch){const s=JSON.stringify(ch);const b=typeof btoa!=='undefi
 function decodeSave(code){code=String(code||'').trim();if(!code.startsWith('BC1:'))return null;try{const b=code.slice(4);const s=typeof atob!=='undefined'?decodeURIComponent(escape(atob(b))):Buffer.from(b,'base64').toString('utf8');return JSON.parse(s);}catch(e){return null;}}
 function validChar(o){return !!(o&&typeof o==='object'&&CLASSES[o.cls]&&typeof o.name==='string'&&o.eq&&Array.isArray(o.bag));}
 
-const SH={COSTUMES,COS_PRICE,AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
+const SH={FISH_GN,FISH_GC,fishGrade,rollFishCm,COSTUMES,COS_PRICE,AWK,AWK_LVL,AWL_MAX,AWN_MAX,AWN,awkOf,awNeed,spTotal,awnSpent,SKINS,SKIN_PRICE,ultPow,CLASS_DK,classDk,SYN_INFO,TS,LVL_CAP,ULT_LVL,mulberry,rid,tileAt,walk,solidAt,blocked,moveEnt,los,bfs,D4,D8,genFloor,openStairs,genHub,LOBBY_SZ,RAIDS,genRaid,TALENTS,TN,TAL_NEED,talentPts,talentSpent,talentSums,branchSpent,canTalent,PETS,ACH,codexList,titleOf,LORE,loreFloor,BOSS_LINES,CTR_SKILL,CTR_CD,FINAL_LINES,MERCS,mercCost,genArena,FISH,FISH_RN,FISH_RC,rollFish,DYES,DYE_COST,EMOTES,
   CLASSES,CLASS_ORDER,SKILLS,MT,MT_LIST,EAFF,eaffNames,WIND_LIST,PROJ_LIST,EL_LIST,RAR_N,SLOTN,FAMN,AFF,WEAPONS,ARMORS,genItem,starterWeapon,starterArmor,itemStats,power,raidCP,ADV,ADV_OF,ADV_LVL,ADV_VAR,advVar,CLASS_INFO,advOf,ultsOf,advChangeCost,lvCost,itemLvUp,canEquip,
   THEMES,FINAL_BOSS,themeOf,MYTH,genMythic,SETS,RAID_SET,genSet,setCount,affScale,ENH_MAX,ENH_RATE,TRANS_MAX,TRANS_RATE,canTrans,enhMax,enhRate,enhMul,enhCost,affRange,rollAff,rerollCost,salvageOf,GEM_T,GEM_N,GEM_COL,GEM_FX,gemOk,gemEff,gemName,gemTierFor,randGem,SOCK_MAX,socketCost,combineCost,unsocketCost,gambleCost,itemName,AFF_POOL,bossOf,monName,xpFor,newChar,calcStats,dmgReduce,potPrice,encodeSave,decodeSave,validChar,UNLOCK,MAX_RANK,BAR_SIZE,BAG_N,skillMul,defaultSkills,skillPointsTotal,synergies,synergyMods};
 if(typeof module!=='undefined'&&module.exports)module.exports=SH;else root.SH=SH;

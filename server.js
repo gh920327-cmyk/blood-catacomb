@@ -27,6 +27,13 @@ function raidLog(inst,result,why){try{const r=inst.raid;if(!r||r.logged)return;r
   fs.mkdir(path.dirname(RAIDLOG_F),{recursive:true},()=>fs.appendFile(RAIDLOG_F,JSON.stringify(rec)+'\n',()=>{}));}catch(e){console.error('raidlog',e);}}
 /* 명예의 전당: 흑왕 처치 파티 */
 const FAME_F=path.join(__dirname,'data','fame.json');let FAME=[];try{FAME=JSON.parse(fs.readFileSync(FAME_F,'utf8'))||[];}catch(e){}
+/* 마을 랭킹 게시판: 격돌 무한 연습 · 낚시 대어 (캐릭터마다 최고 기록 1개 · 상위 20) — 배포로 파일이 지워져도 접속하는 캐릭터의 최고 기록으로 다시 채워짐 */
+const RANK_F=path.join(__dirname,'data','ranks.json');const RANKS={cpr:[],fish:[]};try{const o=JSON.parse(fs.readFileSync(RANK_F,'utf8'));for(const k of['cpr','fish'])if(o&&Array.isArray(o[k]))RANKS[k]=o[k].slice(0,20);}catch(e){}
+let rankSaveT=null;function rankSave(){if(rankSaveT)return;rankSaveT=setTimeout(()=>{rankSaveT=null;try{fs.mkdirSync(path.dirname(RANK_F),{recursive:true});fs.writeFileSync(RANK_F,JSON.stringify(RANKS));}catch(e){}},1500);}
+function rankPut(board,ent,quiet){const L=RANKS[board];const i=L.findIndex(e=>e.id===ent.id);if(i>=0){if(L[i].s>=ent.s){if(L[i].n!==ent.n){L[i].n=ent.n;rankSave();}return -1;}L.splice(i,1);}const top=L[0];L.push(ent);L.sort((a,b)=>b.s-a.s||a.ts-b.ts);if(L.length>20)L.length=20;const pos=L.indexOf(ent);if(pos<0)return -1;rankSave();
+  if(!quiet&&pos===0&&(!top||top.id!==ent.id)){const m=board==='cpr'?`${ent.n}님이 격돌 무한 연습 ${ent.s.toLocaleString()}점으로 랭킹 1위!`:`${ent.n}님이 ${SH.FISH_GN[ent.g]} '${(SH.FISH.find(f=>f.id===ent.f)||{}).n||'물고기'}' ${ent.s}cm로 낚시 랭킹 1위!`;for(const q of players.values())if(q.ch)send(q,{t:'msg',m,c:'#ffd35a'});}return pos;}
+function rankSeed(P){const ch=P.ch;if(!ch||!ch.id)return;if(ch.fishBest&&ch.fishBest.cm>0){const f=SH.FISH.find(x=>x.id===ch.fishBest.id);if(f)rankPut('fish',{id:ch.id,n:ch.name,cls:ch.cls,s:ch.fishBest.cm,f:f.id,g:SH.fishGrade(f,ch.fishBest.cm),ts:Date.now()},true);}
+  if(ch.cprBest&&ch.cprBest.s>0)rankPut('cpr',{id:ch.id,n:ch.name,cls:ch.cls,s:ch.cprBest.s,best:ch.cprBest.best|0,p:ch.cprBest.p|0,ts:Date.now()},true);}
 const wss=new WebSocketServer({server,path:'/ws',maxPayload:256*1024});
 
 // ================= 밸런스 (이 숫자만 고치면 난이도가 바뀝니다) =================
@@ -1636,7 +1643,7 @@ function sanitizeChar(o){if(!SH.validChar(o))return null;const C=CLASSES[o.cls];
   if(o.bty&&typeof o.bty==='object'&&typeof o.bty.d==='string'&&Array.isArray(o.bty.q))ch.bty={d:o.bty.d.slice(0,12),q:o.bty.q.slice(0,3).map(q=>({t:String(q.t).slice(0,8),n:Math.max(0,q.n|0),need:Math.max(1,q.need|0),cl:!!q.cl,r:q.r&&typeof q.r==='object'?q.r:{}})),all:!!o.bty.all};
   ch.bossK=Math.max(0,o.bossK|0);
   ch.pvp={w:Math.max(0,(o.pvp&&o.pvp.w)|0),l:Math.max(0,(o.pvp&&o.pvp.l)|0)};
-  ch.fish={};if(o.fish&&typeof o.fish==='object')for(const f of SH.FISH){const n=clamp(o.fish[f.id]|0,0,9999);if(n)ch.fish[f.id]=n;}ch.fishN=Math.max(0,o.fishN|0);ch.fishBest=o.fishBest&&typeof o.fishBest==='object'?{id:String(o.fishBest.id).slice(0,4),cm:+o.fishBest.cm||0}:null;
+  ch.fish={};if(o.fish&&typeof o.fish==='object')for(const f of SH.FISH){const n=clamp(o.fish[f.id]|0,0,9999);if(n)ch.fish[f.id]=n;}ch.fishN=Math.max(0,o.fishN|0);ch.fishBest=o.fishBest&&typeof o.fishBest==='object'?{id:String(o.fishBest.id).slice(0,4),cm:clamp(+o.fishBest.cm||0,0,200)}:null;ch.cprBest=o.cprBest&&typeof o.cprBest==='object'?{s:clamp(o.cprBest.s|0,0,5e7),best:clamp(o.cprBest.best|0,0,99999),p:clamp(o.cprBest.p|0,0,99999)}:null;
   ch.dyes=Array.isArray(o.dyes)?o.dyes.filter(i=>Number.isInteger(i)&&i>0&&i<SH.DYES.length):[];ch.dye=Number.isInteger(o.dye)&&(o.dye===0||ch.dyes.includes(o.dye))?o.dye:0;
   {const tr=SH.TALENTS[ch.cls];ch.tal={};if(o.tal&&typeof o.tal==='object')for(const br of tr)for(const nd of br.n){const r=clamp(o.tal[nd.id]|0,0,nd.max);if(r)ch.tal[nd.id]=r;}if(SH.talentSpent(ch)>SH.talentPts(ch.lvl))ch.tal={};}
   ch.ach=Array.isArray(o.ach)?o.ach.filter(id=>SH.ACH.some(a=>a.id===id)):[];ch.title=typeof o.title==='string'&&ch.ach.includes(o.title)?o.title:null;
@@ -1815,6 +1822,9 @@ const H={
   ping(P,d){const inst=P.inst;if(!inst)return;const now=Date.now();if(now-(P.pingT||0)<700)return;P.pingT=now;const x=+d.x,y=+d.y;if(!isFinite(x)||!isFinite(y))return;const k=clamp(d.k|0,0,2);
     const o={t:'ping',x:r1(x),y:r1(y),k,id:P.id,name:P.ch.name};const tg=P.party?partyList(P.party).filter(q=>q.inst===inst):[P];for(const q of tg)send(q,o);},
   fame(P){send(P,{t:'fame',list:FAME.slice(-30).reverse()});},
+  ranks(P){send(P,{t:'ranks',cpr:RANKS.cpr,fish:RANKS.fish,me:P.ch&&P.ch.id});},
+  cprsc(P,d){if(P.inst!==hub||!P.ch||!near(P,hub.map.clashpr,160))return;const s=d.s|0,p=clamp(d.p|0,0,5000),g=clamp(d.g|0,0,5000),best=clamp(d.best|0,0,10000);if(s<=0||s>(p*300+g*100)*2*2.25+10||best>p+g)return;
+    const ch=P.ch;let pb=false,rank=-1;if(!ch.cprBest||s>ch.cprBest.s){ch.cprBest={s,best,p};pb=true;markDirty(P);rank=rankPut('cpr',{id:ch.id,n:ch.name,cls:ch.cls,s,best,p,ts:Date.now()});}send(P,{t:'cprres',s,pb,rank,top:ch.cprBest?ch.cprBest.s:s});},
   who(P){const L=[];for(const q of players.values()){if(!q.ch)continue;const i=q.inst;const where=!i?'-':i===hub?'마을':i.raid?'레이드':i.arena?'결투장':i.type==='dungeon'?`던전 지하 ${i.floor|0}층`:'마을';L.push({id:q.id,name:q.ch.name,cls:q.ch.cls,lvl:q.ch.lvl,where,hub:i===hub,pt:q.party?q.party.members.size:0,me:q===P});if(L.length>=100)break;}send(P,{t:'who',list:L});},
   fadd(P,d){if(typeof d.n!=='string')return;for(const q of players.values())if(q.ch&&q.ch.name===d.n&&q!==P){msg(q,`${P.ch.name}님이 당신을 친구로 추가했어요`,'#8fd0ff');break;}},
   an(P){const A=P.an||{by:{},n:0};send(P,{t:'an',by:A.by,n:A.n|0,dur:A.n?Math.max(1,(A.t1-A.t0)/1000):0});},
@@ -1839,11 +1849,11 @@ const H={
     if(!d.ok){msg(F,`${P.ch.name}님이 결투를 거절했습니다`,'#9e937a');return;}if(F.inst!==hub||P.inst!==hub){msg(P,'결투를 시작할 수 없습니다','#ff6a5a');return;}
     const [A,B]=duelTeams(F,P);if(A.some(q=>B.includes(q))||A.some(q=>q.inst!==hub)||B.some(q=>q.inst!==hub))return;startArena(A,B);},
   fish(P,d){if(P.inst!==hub||!near(P,hub.map.fish,40))return;const now=Date.now();
-    if(d.op==='cast'){const f=SH.rollFish(R,P.ch.lvl);P.fishing={bite:now+rf(2200,6500),f,cm:Math.round(rf(12,40)*(1+f.r*0.6)*10)/10};send(P,{t:'fish',st:'cast',wait:Math.round(P.fishing.bite-now)});return;}
+    if(d.op==='cast'){const f=SH.rollFish(R,P.ch.lvl);P.fishing={bite:now+rf(2200,6500),f,cm:SH.rollFishCm(R,f)};send(P,{t:'fish',st:'cast',wait:Math.round(P.fishing.bite-now)});return;}
     if(d.op==='reel'){const fs=P.fishing;P.fishing=null;if(!fs)return;if(now<fs.bite-400){msg(P,'너무 일찍 당겼어요! 물고기가 도망갔습니다','#ff6a5a');send(P,{t:'fish',st:'miss'});return;}if(!d.ok||now>fs.bite+12000){send(P,{t:'fish',st:'miss'});msg(P,'놓쳤다...','#9e937a');return;}
       const f=fs.f,ch=P.ch;ch.fish[f.id]=(ch.fish[f.id]|0)+1;addCdx(P,'f:'+f.id);ch.fishN=(ch.fishN|0)+1;let extra='';if(f.gem){for(let i=0;i<f.gem;i++){const g=SH.randGem(Math.max(1,ch.best|0)+10);ch.gems[g]=(ch.gems[g]|0)+1;extra+=` · ${SH.gemName(g)}`;}}if(f.dust){ch.mats.dust+=f.dust;extra+=` · 마력 가루 ${f.dust}`;}
-      let best=false;if(!ch.fishBest||fs.cm>ch.fishBest.cm){ch.fishBest={id:f.id,cm:fs.cm};best=true;}markDirty(P);send(P,{t:'fish',st:'got',id:f.id,cm:fs.cm,best,extra});
-      if(f.r>=2)bcast(hub,{t:'msg',m:`${P.ch.name}님이 ${SH.FISH_RN[f.r]} 물고기 '${f.n}'(${fs.cm}cm)을 낚았다!`,c:SH.FISH_RC[f.r]});return;}
+      const g=SH.fishGrade(f,fs.cm);let best=false,rank=-1;if(!ch.fishBest||fs.cm>ch.fishBest.cm){ch.fishBest={id:f.id,cm:fs.cm};best=true;rank=rankPut('fish',{id:ch.id,n:ch.name,cls:ch.cls,s:fs.cm,f:f.id,g,ts:Date.now()});}markDirty(P);send(P,{t:'fish',st:'got',id:f.id,cm:fs.cm,g,best,rank,extra});
+      if(f.r>=2||g>=2)bcast(hub,{t:'msg',m:`${P.ch.name}님이 ${g>=2?SH.FISH_GN[g]+' ':''}${SH.FISH_RN[f.r]} 물고기 '${f.n}'(${fs.cm}cm)을 낚았다!`,c:g>=3?SH.FISH_GC[3]:SH.FISH_RC[f.r]});return;}
     if(d.op==='bite'){const fs=P.fishing;if(!fs)return;send(P,{t:'fish',st:'bite',r:fs.f.r});}},
   sellfish(P){if(P.inst!==hub||!near(P,hub.map.merchant,48))return;let g=0,n=0;for(const f of SH.FISH){const c=P.ch.fish[f.id]|0;if(c){g+=c*f.v;n+=c;}}if(!n){msg(P,'팔 물고기가 없습니다','#9e937a');return;}P.ch.fish={};P.ch.gold+=g;markDirty(P);msg(P,`물고기 ${n}마리 판매 · +${g}골드`,'#ffd35a');send(P,{t:'fxp',k:'gold'});},
   emo(P,d){const inst=P.inst;if(!inst)return;const now=Date.now();if(now-(P.emoT||0)<1200)return;P.emoT=now;const i=clamp(d.i|0,0,SH.EMOTES.length-1);bcast(inst,{t:'emo',id:P.id,i});},
@@ -1883,7 +1893,7 @@ wss.on('connection',ws=>{
   ws.on('pong',()=>{P.alive=true;});
   ws.on('message',raw=>{let d;try{d=JSON.parse(raw);}catch(e){return;}if(!d||typeof d.t!=='string')return;
     if(++P.msgs>200)return;
-    if(!P.ch){if(d.t==='join'){const ch=sanitizeChar(d.ch);if(!ch){send(P,{t:'err',m:'캐릭터 정보가 올바르지 않습니다'});return;}P.ch=ch;P.S=SH.calcStats(ch);P.stash=sanitizeStash(d.stash);players.set(P.id,P);newParty(P);send(P,{t:'welcome',id:P.id,ultok:process.env.BC_DEBUG?null:[...ULT_OK]});if(ch._capped){delete ch._capped;markDirty(P);setTimeout(()=>{msg(P,`만렙이 ${SH.LVL_CAP}으로 정해져 레벨이 ${SH.LVL_CAP}이 되었어요`,'#ffd35a');msg(P,'스탯·스킬·특성 포인트를 모두 돌려드렸어요. 다시 찍어 주세요 (C · K · N)','#ffd35a');},1500);}joinHub(P);P.prevParty=Array.isArray(d.prev)?d.prev.slice(0,PARTY_MAX).map(String):null;restoreParty(P);sendParty(P.party);send(P,{t:'ch',ch:P.ch,S:P.S});send(P,{t:'stash',s:P.stash});}return;}
+    if(!P.ch){if(d.t==='join'){const ch=sanitizeChar(d.ch);if(!ch){send(P,{t:'err',m:'캐릭터 정보가 올바르지 않습니다'});return;}P.ch=ch;P.S=SH.calcStats(ch);P.stash=sanitizeStash(d.stash);players.set(P.id,P);newParty(P);send(P,{t:'welcome',id:P.id,ultok:process.env.BC_DEBUG?null:[...ULT_OK]});if(ch._capped){delete ch._capped;markDirty(P);setTimeout(()=>{msg(P,`만렙이 ${SH.LVL_CAP}으로 정해져 레벨이 ${SH.LVL_CAP}이 되었어요`,'#ffd35a');msg(P,'스탯·스킬·특성 포인트를 모두 돌려드렸어요. 다시 찍어 주세요 (C · K · N)','#ffd35a');},1500);}joinHub(P);rankSeed(P);P.prevParty=Array.isArray(d.prev)?d.prev.slice(0,PARTY_MAX).map(String):null;restoreParty(P);sendParty(P.party);send(P,{t:'ch',ch:P.ch,S:P.S});send(P,{t:'stash',s:P.stash});}return;}
     const h=H[d.t];if(h){try{h(P,d);}catch(e){console.error('handler',d.t,e);}}});
   ws.on('close',()=>{if(!P.ch)return;leaveInst(P);const pt=P.party;leaveParty(P);players.delete(P.id);});
 });
