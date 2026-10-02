@@ -852,7 +852,11 @@ const COSTUMES={
   icequeen:{n:'얼음 여왕',row:40,d:'얼음 왕관과 서리 드레스'},
   astronaut:{n:'우주비행사',row:41,d:'금빛 바이저 헬멧의 우주복'},
   firefighter:{n:'소방관',row:42,d:'반사띠 방화복과 빨간 헬멧'},
-  detective:{n:'명탐정',row:43,d:'트렌치코트와 중절모, 돋보기'}};
+  detective:{n:'명탐정',row:43,d:'트렌치코트와 중절모, 돋보기'},
+  archangel:{n:'대천사',row:44,d:'금빛 후광과 하얀 날개, 금테 두른 흰 로브'},
+  dawnpaladin:{n:'새벽의 성기사',row:45,d:'은빛 판금 갑옷과 태양 문장이 새겨진 흰 휘장'},
+  angelknight:{n:'수호 천사 기사',row:46,d:'날개 투구와 깃털 견갑, 금빛 갑옷의 천사 기사'},
+  seraph:{n:'심판의 세라핌',row:47,d:'세 쌍의 빛나는 날개와 금빛 왕관 후광'}};
 const SKINS={
   katana:{n:'벚꽃 카타나',fam:'melee',col:0,d:'검은 칼집에서 벚꽃 문양 칼날이 빛난다'},
   tuna:{n:'냉동 참치',fam:'melee',col:1,d:'꽁꽁 언 참치. 맞으면 아프다'},
@@ -911,7 +915,11 @@ const SKINS={
   boltumb:{n:'번개 우산',fam:'staff',col:54,d:'한정판 · 번개를 부르는 노란 우산'},
   crystalgun:{n:'크리스탈 레이저건',fam:'gun',col:55,d:'한정판 · 무지갯빛 수정 레이저건'},
   lavabread:{n:'용암 바게트',fam:'melee',col:56,d:'한정판 · 겉은 용암, 속은 촉촉'},
-  ghostlamp:{n:'유령 랜턴',fam:'staff',col:57,d:'한정판 · 초록 유령불이 깃든 랜턴'}};
+  ghostlamp:{n:'유령 랜턴',fam:'staff',col:57,d:'한정판 · 초록 유령불이 깃든 랜턴'},
+  holysword:{n:'새벽의 성검',fam:'melee',col:58,d:'날개 모양 가드에 빛나는 하얀 칼날'},
+  angelbow:{n:'천사의 날개 활',fam:'bow',col:59,d:'하얀 깃털 날개로 빚은 활'},
+  haloscepter:{n:'대천사의 홀',fam:'staff',col:60,d:'꼭대기에 금빛 후광 고리가 떠 있는 홀'},
+  holypistol:{n:'성광 권총',fam:'gun',col:61,d:'금 세공과 작은 날개 장식의 하얀 권총'}};
 
 const AFF={
   dmg:{f:v=>`+${v} 공격력`,r:(L,R)=>ri(R,1+Math.floor(L*0.6),3+Math.floor(L*1.3))},
