@@ -1841,7 +1841,7 @@ const H={
   fadd(P,d){if(typeof d.n!=='string')return;for(const q of players.values())if(q.ch&&q.ch.name===d.n&&q!==P){msg(q,`${P.ch.name}님이 당신을 친구로 추가했어요`,'#8fd0ff');break;}},
   an(P){const A=P.an||{by:{},n:0};send(P,{t:'an',by:A.by,n:A.n|0,dur:A.n?Math.max(1,(A.t1-A.t0)/1000):0});},
   anreset(P){P.an=null;H.an(P);},
-  insp(P,d){let T=d.id!=null?players.get(d.id):null;if(!T&&typeof d.n==='string')for(const q of players.values())if(q.ch&&q.ch.name===d.n){T=q;break;}if(!T||!T.ch){msg(P,'접속 중인 플레이어가 아니에요','#9e937a');return;}const c=T.ch;send(P,{t:'insp',v:{id:T.id,name:c.name,cls:c.cls,lvl:c.lvl,title:c.title||null,eq:c.eq,S:T.S,cp:SH.power(c),str:c.str,dex:c.dex,vit:c.vit,ene:c.ene,best:c.best|0,kills:c.kills|0,rclr:c.rclr||{},ult:c.ult||null,bar:c.bar||[],sk:c.sk||{},pvp:c.pvp||null}});},
+  insp(P,d){let T=d.id!=null?players.get(d.id):null;if(!T&&typeof d.n==='string')for(const q of players.values())if(q.ch&&q.ch.name===d.n){T=q;break;}if(!T||!T.ch){msg(P,'접속 중인 플레이어가 아니에요','#9e937a');return;}const c=T.ch;send(P,{t:'insp',v:{id:T.id,name:c.name,cls:c.cls,adv:SH.advOf(c)?c.adv:null,awk:c.awk?1:0,lvl:c.lvl,title:c.title||null,eq:c.eq,S:T.S,cp:SH.power(c),str:c.str,dex:c.dex,vit:c.vit,ene:c.ene,best:c.best|0,kills:c.kills|0,rclr:c.rclr||{},ult:c.ult||null,bar:c.bar||[],sk:c.sk||{},pvp:c.pvp||null}});},
   treq(P,d){const T=players.get(d.id);if(!T||T===P||!T.ch)return;if(P.inst!==hub||T.inst!==hub){msg(P,'마을에서만 거래할 수 있습니다','#ff6a5a');return;}
     if(P.trade||T.trade){msg(P,T.trade?`${T.ch.name}님은 다른 사람과 거래 중입니다`:'이미 거래 중입니다','#ff6a5a');return;}
     T.treq={from:P.id,t:Date.now()};send(T,{t:'treq',from:P.id,name:P.ch.name});msg(P,`${T.ch.name}님에게 거래를 신청했습니다`,'#9e937a');},
