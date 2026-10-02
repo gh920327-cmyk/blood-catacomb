@@ -1125,18 +1125,19 @@ function drawPlayer0(p,icx,icy,isMe){const cls=isMe?myCls():(p.cls||'warrior');c
   if(p&&p.shield){wx.globalAlpha=0.5;for(let n=0;n<24;n++){const t=n/24*Math.PI*2+time*2;if(n%2)wpx(Math.round(bx+Math.cos(t)*9),Math.round(by-6+Math.sin(t)*10),'c');}}
   wx.globalAlpha=1;return s;}
 /* ===== 의상 연출: 대천사 — 공격할 때 등 뒤의 큰 날개가 펼쳐짐 ===== */
-const COS_WING={archangel:1};const WING_C={};const WING_PH=16,WING_LV=4;
+const COS_WING={archangel:1};const WING_C={};const WING_PH=16,WING_LV=8;
 /* 천사 날개 날갯짓 (옆모습, 오른쪽을 볼 때 기준 · 날개는 등 뒤 왼쪽으로)
    - 어깨→손목(팔) · 손목→날개 끝(손) 두 마디. 각도는 '위'에서 '등 뒤'쪽으로 잰 값
    - 내려치기(주기의 60%): 날개를 끝까지 펴고 깃털을 부채처럼 벌림, 날개 끝은 살짝 늦게 따라옴
    - 올리기(40%, 빠르게): 손목을 접어 날개 끝이 아래로 늘어진 채 끌려 올라감, 깃털을 모음 */
-function wingPose(p,lv){p=((p%1)+1)%1;const L=lv/(WING_LV-1),amp=0.85+0.15*L;
-  // 키 포즈: [위치, 팔 각도, 손 각도, 손 길이, 깃털 벌림, 등에 붙이기]  (0=맨 위 · 0.3=활짝 아치 · 0.6=맨 아래 · 0.8=등에 착 접어 붙임)
-  const K=[[0,0.15,0.95,0.7,0.6,0.2],[0.3,0.6,1.35,1,1.05,0],[0.6,1.5,1.9,1,0.95,0],[0.8,0.12,2.95,0.55,0.5,1],[1,0.15,0.95,0.7,0.6,0.2]];
-  let i=0;while(i<K.length-2&&p>=K[i+1][0])i++;const A=K[i],B=K[i+1];const t=(p-A[0])/(B[0]-A[0]),e=(1-Math.cos(Math.PI*t))/2;
-  const H=K[1],v=j=>{const x=A[j]+(B[j]-A[j])*e;return H[j]+(x-H[j])*amp;};
-  const dn=p<0.6?Math.sin(Math.PI*p/0.6):0,up=p>=0.6?Math.sin(Math.PI*(p-0.6)/0.4):0;
-  return{t1:v(1),t2:v(2),c:v(3),fan:v(4),tk:Math.max(0,v(5)),sc:0.58+0.18*L,bob:Math.round(-dn*1.2*amp+up*0.6*amp)};}
+// o: 펼친 정도(0=등에 접어 붙임, 1=활짝) · p: 편 상태에서의 날갯짓 위치(0~1)
+function wingPose(p,o){p=((p%1)+1)%1;const sm=t=>t*t*(3-2*t);
+  const F={t1:0.42,t2:2.7,c:0.6,fan:0.5,tk:1,sc:0.62};
+  // 편 상태 날갯짓: 아치를 중심으로 위아래로만 작게 (한 바퀴 돌지 않음) · 내려치기 60% · 올리기 40%(살짝 오므림) · 날개 끝은 조금 늦게 따라옴
+  const hOf=q=>{q=((q%1)+1)%1;return q<0.6?1-sm(q/0.6):sm((q-0.6)/0.4);};
+  const up=p>=0.6?Math.sin(Math.PI*(p-0.6)/0.4):0;
+  const Sp={t1:0.95-0.65*hOf(p),t2:1.8-0.75*hOf(p-0.08),c:1-0.12*up,fan:1.05-0.25*up,tk:0,sc:0.76};
+  const e=sm(Math.max(0,Math.min(1,o)));const r={};for(const k in F)r[k]=F[k]+(Sp[k]-F[k])*e;return r;}
 function wingCanvas(pi,lv,dir){const key=pi+'|'+lv+'|'+dir;if(WING_C[key])return WING_C[key];const W=78,H=74,ox=60,oy=38;const g=new Uint8Array(W*H);
   const put=(x,y,v)=>{x=Math.round(x);y=Math.round(y);if(x<0||y<0||x>=W||y>=H)return;g[y*W+x]=v;};
   const disc=(cx,cy,r,v)=>{const R2=r*r,n=Math.ceil(r);for(let dy=-n;dy<=n;dy++)for(let dx=-n;dx<=n;dx++)if(dx*dx+dy*dy<=R2)put(cx+dx,cy+dy,v);};
@@ -1144,12 +1145,12 @@ function wingCanvas(pi,lv,dir){const key=pi+'|'+lv+'|'+dir;if(WING_C[key])return
   const wing=(P,dx,dy,scm,dim)=>{const D=dim?10:0,sc=P.sc*scm;const a1=17*sc,a2=16*sc*P.c;
     const S=[ox+dx,oy+dy],v1=dirv(P.t1),Wp=[S[0]+v1[0]*a1,S[1]+v1[1]*a1],v2=dirv(P.t2),T=[Wp[0]+v2[0]*a2,Wp[1]+v2[1]*a2];
     const m=a1/(a1+a2);const edge=u=>u<m?[lerp(S[0],Wp[0],u/m),lerp(S[1],Wp[1],u/m),P.t1]:[lerp(Wp[0],T[0],(u-m)/(1-m)),lerp(Wp[1],T[1],(u-m)/(1-m)),P.t2];
-    const feather=(u,len,beta,fill,shade,tip)=>{const[ex,ey,te]=edge(u);let a=Math.min(3.1,te+beta);a+=(Math.PI-0.2-a)*(P.tk||0);const[vx,vy]=dirv(a);
+    const feather=(u,len,beta,fill,shade,tip)=>{const[ex,ey,te]=edge(u);let a=Math.min(3.1,te+beta);a+=(Math.PI-0.42-a)*(P.tk||0);const[vx,vy]=dirv(a);
       for(const pass of[0,1])for(let r=0;r<=len;r+=0.4){const q=r/len;const w=lerp(1.45,1.0,u)*(q<0.7?1:Math.sqrt(Math.max(0,1-Math.pow((q-0.7)/0.3,2))))+0.25;disc(ex+vx*r,ey+vy*r,pass?w:w+0.7,pass?(q>0.82&&tip?tip:fill):shade);}};
     const NF=14;for(let i=NF-1;i>=0;i--){const u=0.04+0.96*i/(NF-1);feather(u,(9+16*Math.pow(u,1.5))*sc*(0.55+0.45*P.c),lerp(2.6,0.5,Math.pow(u,1.3))*P.fan,2+D,4+D,u>0.5?3+D:0);}
     for(let i=9;i>=0;i--){const u=0.03+0.92*i/9;feather(u,(4+5*u)*sc,lerp(2.4,0.6,u)*P.fan,1+D,4+D,0);}
     for(let u=0;u<=1;u+=0.02){const[ex,ey]=edge(u);disc(ex,ey,lerp(1.9,1.1,u),2+D);}};
-  const ph=pi/WING_PH;wing(wingPose(ph-0.05,lv),3,-2,0.86,1);wing(wingPose(ph,lv),0,0,1,0);
+  const ph=pi/WING_PH,oo=lv/(WING_LV-1);wing(wingPose(ph-0.05,oo),3,-2,0.86,1);wing(wingPose(ph,oo),0,0,1,0);
   const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
   const col={1:'#fff6dc',2:'#ffffff',3:'#ffe08a',4:'#d9c69a',11:'#efe5ca',12:'#e4d9bb',13:'#d9b766',14:'#b9a576'};
   if(dir<0){x.translate(W,0);x.scale(-1,1);}
@@ -1159,17 +1160,18 @@ function wingCanvas(pi,lv,dir){const key=pi+'|'+lv+'|'+dir;if(WING_C[key])return
   for(let y=oy-7;y<=oy+6;y++)for(let xx=ox-6;xx<=ox;xx++){if(y<0||y>=H||xx<0)continue;const v=g[y*W+xx];if(v&&v<10&&(xx-ox)*(xx-ox)+(y-oy)*(y-oy)<=34){xc.fillStyle=col[v===4?1:v];xc.fillRect(xx,y,1,1);}}
   return(WING_C[key]={c,cap:cp,ox:dir<0?W-ox:ox,oy});}
 function drawCosWings(src,cs,bx,by,face){if(!COS_WING[cs])return;const now=time,d=Math.max(0,Math.min(0.1,now-(src._wt||now)));src._wt=now;const f=face<0?-1:1;
-  const ultW=(src._wUlt||0)>now;const atk=src.atkAnim>0||ultW;const mv=!!src.moving||(src===me&&me.moving);
-  const tgt=atk?1:0;src._wk=src._wk==null?tgt:(src._wk<tgt?Math.min(tgt,src._wk+d*8):Math.max(tgt,src._wk-d*2));const k=src._wk;
-  const per=atk?0.45:mv?0.8:1.3;src._wph=((src._wph==null?R():src._wph)+d/per)%1;
-  const lv=Math.round(k*(WING_LV-1)),pi=Math.floor(src._wph*WING_PH)%WING_PH;const P=wingPose(src._wph,lv);
-  const bkx=bx-f*3,bky=by-10+P.bob;
-  const pulse=0.5+0.5*Math.sin(now*2.6);const ga=0.22+0.14*pulse+0.15*k,gr0=16+k*12,gx=bkx-f*12,gy=bky-6;
+  const ultW=(src._wUlt||0)>now;const atk=src.atkAnim>0||ultW;if(atk)src._wLast=now;
+  // 평소엔 등에 접어 둠 · 공격하면 0.15초에 펴짐 · 공격이 끝나고 0.4초 뒤 0.35초에 걸쳐 접힘
+  const hold=atk||now-(src._wLast||-9)<0.4;src._wo=Math.max(0,Math.min(1,(src._wo||0)+(hold?d/0.15:-d/0.35)));const o=src._wo;
+  if(o>0.3)src._wph=((src._wph||0)+d/(ultW?0.42:0.5))%1;else src._wph=0.3;
+  const oi=Math.round(o*(WING_LV-1)),pi=oi===0?0:Math.floor(src._wph*WING_PH)%WING_PH;
+  const bkx=bx-f*3,bky=by-10;
+  const pulse=0.5+0.5*Math.sin(now*2.6);const ga=0.2+0.12*pulse+0.15*o,gr0=12+o*16,gx=bkx-f*(2+o*10),gy=bky-4-o*2;
   wx.save();wx.globalAlpha=ga;const gr=wx.createRadialGradient(gx,gy,1,gx,gy,gr0);gr.addColorStop(0,'#fff6c8');gr.addColorStop(0.5,'rgba(255,224,138,0.55)');gr.addColorStop(1,'rgba(255,214,90,0)');wx.fillStyle=gr;wx.fillRect(gx-gr0,gy-gr0,gr0*2,gr0*2);wx.restore();
   if(ultW){wx.save();wx.globalAlpha=0.22+0.12*Math.sin(now*9);const g2=wx.createRadialGradient(bkx-f*12,bky-8,1,bkx-f*12,bky-8,36);g2.addColorStop(0,'#ffffff');g2.addColorStop(1,'rgba(255,224,138,0)');wx.fillStyle=g2;wx.fillRect(bkx-f*12-36,bky-44,72,72);wx.restore();}
-  const w=wingCanvas(pi,lv,f);wx.drawImage(w.c,bkx-w.ox,bky-w.oy);src._wcap={c:w.cap,x:bkx-w.ox,y:bky-w.oy,t:now};
-  // 내려칠 때 깃털이 흩날림
-  const dnp=src._wph<0.6;if(R()<(ultW?0.6:atk?0.3:dnp?0.06:0.02))part(bkx-f*rf(8,24),bky-rf(-4,12),-f*rf(4,12),rf(-2,8),R()<0.6?'#ffffff':'#ffe08a',rf(0.5,0.9),{glow:true,z:rf(6,12),vz:rf(-8,2)});}
+  const w=wingCanvas(pi,oi,f);wx.drawImage(w.c,bkx-w.ox,bky-w.oy);src._wcap={c:w.cap,x:bkx-w.ox,y:bky-w.oy,t:now};
+  if(o>0.6&&R()<(ultW?0.6:0.25))part(bkx-f*rf(8,24),bky-rf(-4,12),-f*rf(4,12),rf(-2,8),R()<0.6?'#ffffff':'#ffe08a',rf(0.5,0.9),{glow:true,z:rf(6,12),vz:rf(-8,2)});
+  else if(o<0.1&&R()<0.03)part(bkx-f*rf(1,5),bky-rf(2,10),rf(-3,3),rf(-14,-6),R()<0.5?'#ffffff':'#ffe08a',rf(0.5,0.9),{glow:true});}
 function drawCosWingsFront(src){const q=src._wcap;if(q&&q.t===time)wx.drawImage(q.c,q.x,q.y);}
 /* ===== 탈것 · 전설 외형 · 발자국 (전부 코드로 그림) ===== */
 function fr_(x,y,w,h,c){wx.fillStyle=c;wx.fillRect(x,y,w,h);}
