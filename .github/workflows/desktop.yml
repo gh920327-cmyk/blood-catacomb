@@ -1,9 +1,11 @@
 # PC 실행기(exe) 빌드 · GitHub Releases에 올리기
-# desktop/package.json 의 version 을 올린 뒤 "desktop-v<버전>" 태그를 push 하면 실행됨
+# desktop/ 이 바뀐 커밋이 main 에 올라오면 실행 — desktop/package.json 의 version 으로 v<버전> 릴리스를 만듦
+# (같은 버전 릴리스가 이미 있으면 건너뜀 → 실행기를 새로 내보낼 때는 version 을 올릴 것)
 name: desktop
 on:
   push:
-    tags: ['desktop-v*']
+    branches: [main]
+    paths: ['desktop/**', '.github/workflows/desktop.yml']
   workflow_dispatch:
 
 permissions:
