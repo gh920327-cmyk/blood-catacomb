@@ -5,8 +5,13 @@ const { app, BrowserWindow, shell, dialog, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-const GAME_URL = process.env.BC_URL || 'https://blood-catacomb.onrender.com/';
+const GAME_URL = process.env.BC_URL || 'https://43-202-116-151.sslip.io/';
 const GAME_ORIGIN = new URL(GAME_URL).origin;
+// 서버 이전(2026-10): 예전 주소에 저장된 캐릭터를 처음 한 번 옮겨 온다.
+// 예전 주소가 저장 데이터를 챙겨 새 주소로 넘겨주므로, 그 이동만 실행기 안에서 허용한다.
+const OLD_URL = 'https://blood-catacomb.onrender.com/';
+const OLD_ORIGIN = new URL(OLD_URL).origin;
+const ALLOWED = new Set([GAME_ORIGIN, OLD_ORIGIN]);
 
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 
@@ -51,10 +56,18 @@ function createWindows() {
   const ua = win.webContents.getUserAgent().replace(/Electron\/\S+\s?/, '') + ` BCDesktop/${app.getVersion()}`;
   win.webContents.setUserAgent(ua);
 
-  const go = () => { win.loadURL(GAME_URL).catch(() => {}); };
+  const movedFile = path.join(app.getPath('userData'), 'moved-seoul.flag');
+  const needMove = !process.env.BC_URL && !fs.existsSync(movedFile);
+  const go = () => { win.loadURL(needMove ? OLD_URL : GAME_URL).catch(() => {}); };
+  // 새 주소에 도착하면 이전 완료로 기록 → 다음부터는 새 주소로 바로 접속
+  win.webContents.on('did-navigate', (e, url) => {
+    try { if (needMove && new URL(url).origin === GAME_ORIGIN) fs.writeFileSync(movedFile, String(Date.now())); } catch (er) { /* 무시 */ }
+  });
 
   win.webContents.on('did-finish-load', () => {
     if (shown) return;
+    // 예전 주소의 '이동 중' 화면에서는 아직 창을 띄우지 않음 (새 주소 도착 후 표시)
+    try { if (new URL(win.webContents.getURL()).origin !== GAME_ORIGIN) { splashMsg('새 서울 서버로 캐릭터를 옮기는 중…'); return; } } catch (er) { /* 무시 */ }
     shown = true;
     if (splash && !splash.isDestroyed()) { splash.destroy(); splash = null; }
     if (st.max) win.maximize();
@@ -80,7 +93,7 @@ function createWindows() {
   // 외부 링크는 기본 브라우저로
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) shell.openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => {
-    try { if (new URL(url).origin !== GAME_ORIGIN) { e.preventDefault(); shell.openExternal(url); } } catch (er) { e.preventDefault(); }
+    try { if (!ALLOWED.has(new URL(url).origin)) { e.preventDefault(); shell.openExternal(url); } } catch (er) { e.preventDefault(); }
   });
   win.on('page-title-updated', e => e.preventDefault());
   win.on('close', saveState);
