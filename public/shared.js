@@ -214,7 +214,7 @@ function genHub(){
     g[y*W+x]=road?0:1;}
   // 연못 (낚시터)
   const pond={cx:430,cy:584,rx:66,ry:30};for(let y=0;y<H;y++)for(let x=0;x<W;x++){const px=x*TS+8,py=y*TS+8;const d=((px-pond.cx)/pond.rx)**2+((py-pond.cy)/pond.ry)**2;if(d<=1){g[y*W+x]=2;tiles[y*W+x]=3;}else if(d<=1.5&&g[y*W+x]===0)g[y*W+x]=1;}
-  map.ground=g;map.pond=pond;map.fish={x:430,y:540};map.merc={x:566,y:176};map.arena={x:620,y:510};map.tailor={x:742,y:212};map.raid={x:320,y:188};map.raidStone={x:320,y:176};for(const tx of[19,20])tiles[10*W+tx]=3;
+  map.ground=g;map.pond=pond;map.fish={x:430,y:540};map.merc={x:566,y:176};map.arena={x:620,y:510};map.tailor={x:742,y:212};map.raid={x:320,y:188};map.clashpr={x:790,y:598};map.raidStone={x:320,y:176};for(const tx of[19,20])tiles[10*W+tx]=3;
   map.portal={x:480,y:100};map.merchant={x:206,y:330};map.spawn={x:480,y:356};map.board={x:392,y:252};
   map.forge={x:150,y:190};map.vault={x:812,y:190};map.tent={x:812,y:334};map.dummies=[{x:760,y:548},{x:820,y:548}];
   map.torches=[];
