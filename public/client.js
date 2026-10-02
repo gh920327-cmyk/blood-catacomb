@@ -2185,7 +2185,7 @@ function drawAdvPanel(){const ch=G.ch;if(!ch)return;const x=14,y=12,w=452,h=232;
     const cost=cur&&!mine?SH.advChangeCost(ch.lvl):0;const bl=mine?'그림자 재도전':cur?`바꾸기 (${cost.toLocaleString()}G)`:'전직 시험 도전';
     const arm=G.advPick===k;button(cx+cw-78,cy+180,72,16,arm?(mine?'재도전 입장!':cur?'정말 바꿀까요?':'시험 입장!'):bl,()=>{if(!lvOk)return;if(!arm){G.advPick=k;return;}G.advPick=null;if(mine){net({t:'trialre'});G.advOpen=false;closeFac();return;}net({t:'advsel',id:k});G.advOpen=false;closeFac();if(cur)G.skTab='adv';},{size:10,main:lvOk,dis:!lvOk,tip:mine?()=>[['그림자 재도전','#c9a0e8',12],['지금 갈래의 모습을 한 그림자와 다시 싸워요 (혼자 입장)','#e6dcc3',11],['져도 잃는 것 없음 · 하루 첫 승리 시 골드 보상','#9e937a',11],...(ch.trl&&ch.trl.b?[[`최고 기록 ${fmtMS(ch.trl.b)} · ${ch.trl.n}회 승리`,'#ffd35a',11]]:[])]:null});});}
 // ===== 각성의 시련 소개 창: 3차 각성 일러스트 + 각성 정보 + 시련 입장 =====
-function wrapTxt(str,maxW,size){const out=[];let line='';for(const ch of String(str)){const t=line+ch;if(line&&txt(t,-999,-999,size,'#fff')>maxW){out.push(line);line=ch.trim()?ch:'';}else line=t;}if(line)out.push(line);return out;}
+function awkWrap(str,maxW,size){const out=[];let line='';for(const ch of String(str)){const t=line+ch;if(line&&txt(t,-999,-999,size,'#fff')>maxW){out.push(line);line=ch.trim()?ch:'';}else line=t;}if(line)out.push(line);return out;}
 function drawAwkView(){const ch=G.ch,V=G.awkView;if(!ch||!V)return;const AD=SH.advOf(ch),A=AD&&SH.AWK[ch.adv];if(!A){G.awkView=null;return;}const done=!!ch.awk,ok=ch.lvl>=SH.AWK_LVL;const t=time-V.t0,ea=Math.min(1,t/0.35),e3=1-Math.pow(1-ea,3);
   pr(0,0,W,H,`rgba(4,3,8,${0.86*ea})`);uiRects.push({x:0,y:0,w:W,h:H,block:true});
   const ax=14,ay=16,aw=262,ah=226,im=awkArt(ch.adv);
@@ -2201,7 +2201,7 @@ function drawAwkView(){const ch=G.ch,V=G.awkView;if(!ch||!V)return;const AD=SH.a
   txt(done?'각성':'각성의 시련',ix,y+4,10,'#9e937a');y+=16;bigTxt(A.n,ix+txt(A.n,-999,-999,16,'#fff')*0.65,y+4,16,A.col,1.3);y+=18;
   txt(`${AD.n}의 각성`,ix,y,10,'#c9a0e8');y+=14;pr(ix,y,rw,1,'rgba(201,160,232,0.3)');y+=8;
   txt(`◆ ${A.idn}`,ix,y,10,'#ffe9a8');y+=11;txt(A.idd,ix+8,y,9,'#e6dcc3');y+=14;
-  txt('새 스킬',ix,y,9,'#9e937a');y+=11;for(const k of A.sk||[]){txt(`${k.pas?'◇':'•'} ${k.n}${k.pas?' (패시브)':''}`,ix+4,y,10,k.pas?'#c9a0e8':'#ffffff');y+=11;if(!k.pas&&k.desc){for(const ln of wrapTxt(k.desc,rw-14,8).slice(0,2)){txt(ln,ix+12,y,8,'#9e937a');y+=9;}}y+=1;}
+  txt('새 스킬',ix,y,9,'#9e937a');y+=11;for(const k of A.sk||[]){txt(`${k.pas?'◇':'•'} ${k.n}${k.pas?' (패시브)':''}`,ix+4,y,10,k.pas?'#c9a0e8':'#ffffff');y+=11;if(!k.pas&&k.desc){for(const ln of awkWrap(k.desc,rw-14,8).slice(0,2)){txt(ln,ix+12,y,8,'#9e937a');y+=9;}}y+=1;}
   y+=3;txt('각성 궁극기',ix,y,9,'#9e937a');y+=11;txt(`★ ${(SH.AWK_ULT_N&&SH.AWK_ULT_N[A.ult])||'각성 궁극기'}`,ix+4,y,11,'#ffd35a');y+=14;ctx.restore();
   // 아래: 설명 + 버튼
   const by=H-30;if(!done){txt('두 갈래의 힘을 모두 가진 그림자와 혼자 싸워요 · 이기면 3차 전직 · 져도 잃는 것 없음',240,by-8,9,'#9e937a','center');
