@@ -4,6 +4,7 @@
 const W=480,H=270,TS=16;let SC=2; // SC: 화면 해상도에 맞춰 2~4 (글자를 선명하게)
 const cv=document.getElementById('game');
 const ctx=cv.getContext('2d');
+const ERR1=new Set();function errOnce(k,e){if(ERR1.has(k))return;ERR1.add(k);console.error('['+k+']',e);}
 function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.imageSmoothingEnabled=false;return [c,x];}
 ctx.imageSmoothingEnabled=false;
 let [wc,wx]=mk(W,H);const [lc,lx]=mk(W,H);
@@ -666,7 +667,7 @@ function openWs(){const ch=loadChars().find(c=>c.id===curSlot);if(!ch){backToSel
 function retryWs(){const el=(performance.now()-conn.t0)/1000;if(el>120){backToSelect('서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요');return;}conn.tries++;setTimeout(()=>{if(scene==='connecting')openWs();},Math.min(4000,800+conn.tries*600));}
 function backToSelect(m){scene='select';try{if(ws)ws.close();}catch(e){}ws=null;selEl.hidden=false;renderSelect();if(m)toast(m);}
 function quitToSelect(){scene='select';if(ws){try{ws.close();}catch(e){}}ws=null;selEl.hidden=false;renderSelect();resetWorld();}
-function resetWorld(){G.block=null;me.inBoss=false;G.bossLive=null;G.players.clear();G.monsters.clear();G.projs.clear();G.drops.clear();G.zones=[];parts=[];effects=[];texts=[];G.result=null;G.invite=null;G.ctxMenu=null;showInv=showChar=showShop=false;G.portalMenu=false;G.escMenu=false;}
+function resetWorld(){G.clash=null;G.half=null;G.beats=null;G.beatRes=null;G.clashRes=null;G.clashW=null;G.clashSpec=null;G.cscn=null;G.rrev=null;G.block=null;me.inBoss=false;G.bossLive=null;G.players.clear();G.monsters.clear();G.projs.clear();G.drops.clear();G.zones=[];parts=[];effects=[];texts=[];G.result=null;G.invite=null;G.ctxMenu=null;showInv=showChar=showShop=false;G.portalMenu=false;G.escMenu=false;}
 
 // ================= 네트워크 메시지 =================
 function ensurePlayer(id){let p=G.players.get(id);if(!p){p={id,x:0,y:0,dx:0,dy:0,face:1,hp:1,maxHp:1,downed:false,dodge:false,moving:false,shield:false,rev:0,animT:R()*3,atkAnim:0,atkDur:0.3,atkKind:'',atkAngle:0,spin:0,flash:0};G.players.set(id,p);}return p;}
@@ -675,7 +676,7 @@ function handle(d){switch(d.t){
   case 'ucd':ultEnd=time+d.left;break;
   case 'ctrReset':ctrCdEnd=0;break;
   case 'err':toast(d.m);break;
-  case 'map':{if(G.pendEnd&&d.kind==='hub'){const pe=G.pendEnd;G.pendEnd=null;setTimeout(()=>playEnding(pe,()=>{if(pe==='end2')onFirstDawn();}),1200);}closeFac();G.raid=null;G.rvote=null;G.mvp=null;G.auc=null;G.bseq=null;G.rings=[];G.tethers=[];G.block=null;me.inBoss=false;G.bossLive=null;G.kind=d.kind;G.trial=d.trial?d.trial.adv:null;G.trialRe=!!(d.trial&&d.trial.re);G.trialAw=!!(d.trial&&d.trial.aw);G.trialT0=null;G.shadowLook=d.trial?{cls:d.trial.cls,look:d.trial.look||{}}:null;G.paused=d.paused||null;G.selfPause=false;G.trans=0;G.monsters.clear();G.deadM.clear();G.projs.clear();G.drops.clear();G.zones=[];parts=[];effects=[];texts=[];G.portalMenu=false;showShop=false;
+  case 'map':{G.clash=null;G.half=null;G.beats=null;G.beatRes=null;G.clashRes=null;G.clashW=null;G.clashSpec=null;G.cscn=null;G.rrev=null;if(G.pendEnd&&d.kind==='hub'){const pe=G.pendEnd;G.pendEnd=null;setTimeout(()=>playEnding(pe,()=>{if(pe==='end2')onFirstDawn();}),1200);}closeFac();G.raid=null;G.rvote=null;G.mvp=null;G.auc=null;G.bseq=null;G.rings=[];G.tethers=[];G.block=null;me.inBoss=false;G.bossLive=null;G.kind=d.kind;G.trial=d.trial?d.trial.adv:null;G.trialRe=!!(d.trial&&d.trial.re);G.trialAw=!!(d.trial&&d.trial.aw);G.trialT0=null;G.shadowLook=d.trial?{cls:d.trial.cls,look:d.trial.look||{}}:null;G.paused=d.paused||null;G.selfPause=false;G.trans=0;G.monsters.clear();G.deadM.clear();G.projs.clear();G.drops.clear();G.zones=[];parts=[];effects=[];texts=[];G.portalMenu=false;showShop=false;
     if(!(G.clash&&G.clash.local))G.clash=null;G.clashW=null;G.clashSpec=null;G.cscn=null;
     if(d.kind==='hub'){G.arena=null;G.arenaRes=null;G.fishS=null;G.map=SH.genHub();G.floor=0;banner={t:0,a:'던전 입구 광장',b:'동료를 모아 포탈로 들어가세요'};}
     else if(d.raid){G.arena=null;G.arenaRes=null;G.map=SH.genRaid(d.raid.id,d.seed);G.floor=d.raid.tf;G.stairsOpen=false;G.raid=d.raid.st;G.auc=null;if(d.raid.door)for(const i of G.map.door)G.map.tiles[i]=1;const rd=SH.RAIDS.find(r=>r.id===d.raid.id);for(const k in BPH)artOf(BPH[k].img);G.halfN=0;banner={t:0,a:`${rd.n} · ${RAID_MODE_N[d.raid.mode]}`,b:`${rd.boss}이(가) 기다린다`};}
@@ -2537,8 +2538,8 @@ function drawRaidStone(icx,icy,ents){const p=G.map&&G.map.raidStone;if(!p||G.kin
     if(R()<0.15)part(p.x+rf(-5,5),p.y-rf(8,30),0,0,pick(['r','p']),0.6,{z:0,vz:14,glow:true});}});}
 function gmLights(L,icx,icy){const g=G.raid&&G.raid.gm;if(!g)return;const P2=(x,y,r,i)=>L.push({x:x-icx,y:y-icy,r,i});
   if(g.circles)for(const c of g.circles)P2(c[0],c[1],60,0.9);if(g.valves)for(const v of g.valves)P2(v[0],v[1],50,0.8);if(g.mir)for(const q of g.mir)P2(q[0],q[1]-10,50,0.8);if(g.pil){for(const q of g.pil)P2(q[0],q[1]-20,q[2]?110:40,q[2]?1:0.6);P2(g.br[0],g.br[1],70,1);}
-  if(g.sh)for(const q of g.sh)if(!q[4])P2(q[0],q[1],45,0.7);if(g.k==='gears'&&g.lanes)for(const l of g.lanes)P2(g.wx,(l[0]+l[1])/2,60,0.9);if(g.k==='silence'&&g.toll)for(let k=0;k<5;k++)P2(me.x+(k-2)*90,me.y,110,0.8);}
-function raidDunLights(L,icx,icy){gmLights(L,icx,icy);const map=G.map;const X=G.raid&&G.raid.x;if(X){for(const q of (X.beam||[]))L.push({x:q[0]-icx,y:q[1]-icy,r:34,i:0.8});for(const q of (X.mir||[]).concat(X.lev||[],X.alt||[]))L.push({x:q[0]-icx,y:q[1]-12-icy,r:36,i:0.7});for(const q of (X.lamp||[]))if(q[2])L.push({x:q[0]-icx,y:q[1]-icy,r:40,i:0.8});if(X.pl)for(const q of X.plates||[])L.push({x:q[0]-icx,y:q[1]-icy,r:34,i:0.8});}const bl=(map.bells||[]).concat(map.bossBells||[]);for(const b of bl){const x=b.x-icx,y=b.y-10-icy;if(x<-60||x>W+60||y<-60||y>H+60)continue;L.push({x,y,r:46,i:0.85});}
+  if(g.k==='shadow'&&Array.isArray(g.sh))for(const q of g.sh)if(!q[4])P2(q[0],q[1],45,0.7);if(g.k==='gears'&&g.lanes)for(const l of g.lanes)P2(g.wx,(l[0]+l[1])/2,60,0.9);if(g.k==='silence'&&g.toll)for(let k=0;k<5;k++)P2(me.x+(k-2)*90,me.y,110,0.8);}
+function raidDunLights(L,icx,icy){try{gmLights(L,icx,icy);}catch(e){errOnce('gmLights',e);}const map=G.map;const X=G.raid&&G.raid.x;if(X){for(const q of (X.beam||[]))L.push({x:q[0]-icx,y:q[1]-icy,r:34,i:0.8});for(const q of (X.mir||[]).concat(X.lev||[],X.alt||[]))L.push({x:q[0]-icx,y:q[1]-12-icy,r:36,i:0.7});for(const q of (X.lamp||[]))if(q[2])L.push({x:q[0]-icx,y:q[1]-icy,r:40,i:0.8});if(X.pl)for(const q of X.plates||[])L.push({x:q[0]-icx,y:q[1]-icy,r:34,i:0.8});}const bl=(map.bells||[]).concat(map.bossBells||[]);for(const b of bl){const x=b.x-icx,y=b.y-10-icy;if(x<-60||x>W+60||y<-60||y>H+60)continue;L.push({x,y,r:46,i:0.85});}
   if(map.bigBell)L.push({x:map.bigBell.x-icx,y:map.bigBell.y-14-icy,r:60,i:0.8});for(const m of G.monsters.values())if(RB_TC.has(m.tc))L.push({x:m.dx-icx,y:m.dy-20-icy,r:80,i:0.7});for(const g of G.rings)L.push({x:g.x-icx,y:g.y-icy,r:g.r+10,i:0.25});}
 function raidLights(L,icx,icy){const p=G.map&&G.map.raidStone;if(p&&G.kind==='hub')L.push({x:p.x-icx,y:p.y-18-icy,r:30,i:0.7});const q=G.map&&G.map.clashpr;if(q&&G.kind==='hub')L.push({x:q.x-icx,y:q.y-20-icy,r:G.cpr?44:26,i:0.75});}
 
@@ -3493,7 +3494,8 @@ function gmObjs(){const g=G.raid&&G.raid.gm;if(!g||meDowned())return[];const out
 function gmNear(){let best=null,bd=32;for(const o of gmObjs()){const d=Math.hypot(me.x-o.x,me.y-o.y);if(d<bd){bd=d;best={i:o.i,b:{x:o.x,y:o.y},lab:o.lab};}}return best;}
 function gmPosOf(id){const p=playerPos(id);if(!p)return null;return id===myId?[me.x,me.y]:[p.dx,p.dy];}
 function gmRing(x,y,r,c,a,w){wx.save();wx.globalAlpha=a;wx.strokeStyle=c;wx.lineWidth=w||2;wx.beginPath();wx.ellipse(x,y,r,r*0.62,0,0,Math.PI*2);wx.stroke();wx.restore();}
-function drawGMWorld(icx,icy){const L=G.gmLab=[];const g=G.raid&&G.raid.gm;if(!g)return;
+function drawGMWorld(icx,icy){try{drawGMWorld0(icx,icy);}catch(e){errOnce('gmWorld',e);wx.globalAlpha=1;}}
+function drawGMWorld0(icx,icy){const L=G.gmLab=[];const g=G.raid&&G.raid.gm;if(!g)return;
   if(g.k==='eclipse'){wx.save();wx.globalAlpha=0.38;wx.fillStyle='#05030a';wx.fillRect(0,0,W,H);wx.restore();for(const l of g.lights){const [x,y,r,have]=l;const cx=x-icx,cy=y-icy;const pul=0.75+0.25*Math.sin(time*6);wx.save();wx.globalAlpha=0.32*pul;wx.fillStyle='#ffe9a8';wx.beginPath();wx.ellipse(cx,cy,r,r*0.72,0,0,Math.PI*2);wx.fill();wx.globalAlpha=0.9;wx.strokeStyle='#ffd35a';wx.lineWidth=1;wx.beginPath();wx.ellipse(cx,cy,r,r*0.72,0,0,Math.PI*2);wx.stroke();wx.restore();if(R()<0.3)part(x+rf(-r,r),y+rf(-r*0.6,r*0.6),0,rf(-20,-8),R()<0.5?'y':'w',0.6,{glow:true});}}
   if(g.k==='absorb'){const b=[...G.monsters.values()].find(m=>m.boss);if(b){const cx=b.dx-icx,cy=b.dy-icy-14;const k=g.sh/100;wx.save();wx.globalAlpha=0.25+0.35*k;wx.strokeStyle='#c9a0e8';wx.lineWidth=2;wx.beginPath();wx.arc(cx,cy,18+6*Math.sin(time*5),0,Math.PI*2);wx.stroke();wx.restore();if(R()<0.6){const t=R()*Math.PI*2;part(b.dx+Math.cos(t)*60,b.dy+Math.sin(t)*36,-Math.cos(t)*80,-Math.sin(t)*48,R()<0.5?'p':'w',0.6,{glow:true});}}}const txt=(s2,x,y,sz,c,al,f)=>L.push([s2,x,y,sz,c,al,f]);const bigTxt=(s2,x,y,sz,c)=>L.push([s2,x,y,sz,c,'center',null,1]);const pulse=0.5+0.5*Math.sin(time*6);
   if(g.k==='funeral')for(const c of g.circles){const [x,y,r,need,have]=c;const ok=have===need;const cx=x-icx,cy=y-icy;wx.save();wx.globalAlpha=0.22;wx.fillStyle=ok?'#7fd05a':have>need?'#e0473a':'#9a7ad8';wx.beginPath();wx.ellipse(cx,cy,r,r*0.62,0,0,Math.PI*2);wx.fill();wx.restore();
@@ -3658,7 +3660,7 @@ function drawRaid2Screen(){{const E=G.ella,P=G.ellaPos;if(E&&P&&E.say&&time-E.sa
   const B=G.beats;if(B){const t=time-B.t0;const x=90,y=180,w=300,hx=x+40;pr(x,y-10,w,22,'rgba(10,6,14,0.82)');pr(hx-1,y-10,2,22,'#ffd35a');txt('역격돌',x+4,y-16,11,'#c9a0e8');
     B.beats.forEach((b,i)=>{const px=hx+(b-t)*120;if(px<x-4||px>x+w)return;const hit=B.hit.has(i);pr(Math.round(px)-3,y-4,7,10,hit?'#7fd05a':(t-b>B.win?'#e0574a':'#fff6d0'));});
     txt(hintLvC('beats')?`${keyLabel(kbCode('act'))} 를 선에서!  ${B.hit.size}/${B.beats.length}`:`( ${keyLabel(kbCode('act'))} )  ${B.hit.size}/${B.beats.length}`,x+w-4,y-16,10,'#e6dcc3','right');
-    if(!B.sent&&t>B.beats[B.beats.length-1]+B.win+0.05){B.sent=true;net({t:'beatres',hit:B.hit.size});}}
+    if(!B.sent&&t>B.beats[B.beats.length-1]+B.win+0.05){B.sent=true;B.sentT=time;net({t:'beatres',hit:B.hit.size});}if(B.sent&&time-B.sentT>2.5)G.beats=null;}
   if(G.beatRes&&time-G.beatRes.t0<1.8)bigTxt(G.beatRes.win?`역격돌 성공 ${G.beatRes.rate}%`:`역격돌 실패 ${G.beatRes.rate}%`,240,120,16,G.beatRes.win?'#ffd35a':'#e0473a',2);}
 function drawRaid2World(icx,icy){{const X=G.raid&&G.raid.x;if(X&&X.beam&&X.beam.length>1&&G.map.raid==='mirror'){for(let i=0;i<X.beam.length-1;i++){const [ax,ay]=X.beam[i],[bx,by]=X.beam[i+1];const x1=ax-icx,y1=ay-icy-10,x2=bx-icx,y2=by-icy-10;wx.save();wx.globalCompositeOperation='lighter';wx.strokeStyle='rgba(255,233,168,0.35)';wx.lineWidth=5;wx.beginPath();wx.moveTo(x1,y1);wx.lineTo(x2,y2);wx.stroke();wx.restore();lineP(wpx,x1,y1,x2,y2,'w');}
     const e=X.beam[X.beam.length-1];if(R()<0.6)part(e[0]+rf(-3,3),e[1]-10,rf(-20,20),rf(-20,20),pick(['w','y']),0.3,{z:0,glow:true});}}
