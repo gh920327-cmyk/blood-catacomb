@@ -62,6 +62,7 @@ body{margin:0;background:var(--night);color:var(--bone);font-family:var(--body);
 .num.big{font-size:31px}
 .num.info{font-family:var(--body);font-weight:600;font-size:14px;color:#d6e6ff;letter-spacing:.06em}
 #vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(160,20,10,.78) 100%);opacity:0}
+[hidden]{display:none!important}
 #overlay{position:fixed;inset:0;display:grid;place-items:center;padding-block:16px;padding-inline:16px;background:radial-gradient(ellipse at 50% 60%,rgba(8,9,14,.3),rgba(8,9,14,.9));z-index:5;overflow:auto}
 .card{width:min(560px,100%);display:grid;gap:16px}
 .eyebrow{font-size:12px;letter-spacing:.18em;color:var(--ember)}
@@ -1586,8 +1587,10 @@ function showOverlay(mode){let h='';
     else if(act==='keysBack'){game.state=game.prevState||'title';showOverlay(keysFrom);}else if(act==='keysReset'){for(const k of KEYDEF)BIND[k[0]]=k[2];saveBind();updateKeysHint();showOverlay('keys');}else restart();}));
   if(bs[0])try{bs[0].focus({preventScroll:true});}catch(e){}}
 let ctrlWarned=false;
-function ctrlSafety(){if(!Object.values(BIND).some(c=>/^Control/.test(c)))return;const warn=()=>{if(!ctrlWarned){ctrlWarned=true;toast('주의: Ctrl을 누른 채 W를 누르면 브라우저가 탭을 닫을 수 있어요. 조작 설정에서 가드 키를 바꿀 수 있어요',5);}};
-  try{const el=document.documentElement;if(!document.fullscreenElement&&el.requestFullscreen){el.requestFullscreen().then(()=>{if(navigator.keyboard&&navigator.keyboard.lock)navigator.keyboard.lock().catch(warn);else warn();}).catch(warn);}else if(navigator.keyboard&&navigator.keyboard.lock&&document.fullscreenElement)navigator.keyboard.lock().catch(warn);else warn();}catch(e){warn();}}
+function ctrlSafety(){try{if(navigator.keyboard&&navigator.keyboard.unlock)navigator.keyboard.unlock();}catch(e){}
+  if(!ctrlWarned&&Object.values(BIND).some(c=>/^Control/.test(c))){ctrlWarned=true;toast('Ctrl을 누른 채 W를 누르면 탭을 닫을지 물어봐요. 실수였다면 취소를 누르세요',4);}}
+// 사냥 중 실수로 탭을 닫지 않도록 한 번 물어봄 (Ctrl+W 등)
+addEventListener('beforeunload',e=>{if(game.state==='play'||NET.inHunt){e.preventDefault();e.returnValue='';return '';}});
 function startGame(){initAudio();game.state='play';overlay.hidden=true;hud.hidden=false;requestLock();ctrlSafety();}
 function pause(){input.keys.clear();if(NET.inHunt){NET.paused=true;showOverlay('pause');return;}game.state='paused';showOverlay('pause');}
 function resume(){initAudio();NET.paused=false;game.state='play';overlay.hidden=true;requestLock();}
