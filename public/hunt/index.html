@@ -626,7 +626,7 @@ function updateBeastVisual(dt){const ps=M.ps,f=fwdOf(M.yaw,_e);let bob=0;for(con
 /* ---------- 괴물 행동 ---------- */
 const cool=()=>M.enraged?rand(0.35,0.85):rand(0.7,1.5);
 function playerTouch(c,r){for(const h of [0.45,1.0,1.55]){const dx=c.x-P.pos.x,dy=c.y-h,dz=c.z-P.pos.z;if(dx*dx+dy*dy+dz*dz<(r+0.42)*(r+0.42))return true;}return false;}
-function atkHit(c,r,dmg,type){if(playerTouch(c,r))hurtPlayer(Math.round(dmg*(M.enraged?1.15:1)),type,c);}
+function atkHit(c,r,dmg,type){if(playerTouch(c,r))hurtPlayer(Math.round(dmg*(M.enraged?1.15:1)*M.dsc),type,c);}
 function startAtk(type){if(netClient()&&!NET.applying)return;M.state='atk';M.st=0;M.atk={type,t:0,id:++M.atkId,dir:Math.random()<0.5?1:-1};if(type==='roar'&&M.enraged&&!M.roared50){M.roared50=true;M.atk.enrage=true;}}
 function toStalk(c){if(netClient()&&!NET.applying)return;M.state='stalk';M.st=0;M.atk=null;M.cool=c;warn.hide();}
 function chooseAttack(d,rel){if(netClient()&&!NET.applying)return;if(netTarget(0).dead){M.cool=1;return;}const ar=Math.abs(rel),r=Math.random();
@@ -662,7 +662,7 @@ const ATK={
       const s=(t-0.72)/0.56;M.pos.lerpVectors(a.from,a.land,s);M.jumpY=Math.sin(Math.PI*s)*4.0;M.airborne=true;pt.pitch=lerp(-0.35,0.22,s);pt.h=2.5;pt.nPitch=lerp(-0.2,0.35,s);pt.jaw=0.5;
       if(s>0.65){computeSpheres();atkHit(MS[2].c,1.7,34,'down');}}
     else{if(!a.landed){a.landed=1;M.pos.copy(a.land);M.jumpY=0;warn.hide();slamAt(a.hitC);for(const L of B.legs){homeOf(L,L.foot);L.stepping=false;}
-        const dx=P.pos.x-a.hitC.x,dz=P.pos.z-a.hitC.z;if(dx*dx+dz*dz<5.2*5.2)hurtPlayer(Math.round(42*(M.enraged?1.15:1)),'down',a.hitC);}
+        const dx=P.pos.x-a.hitC.x,dz=P.pos.z-a.hitC.z;if(dx*dx+dz*dz<5.2*5.2)hurtPlayer(Math.round(42*(M.enraged?1.15:1)*M.dsc),'down',a.hitC);}
       pt.h=1.85;pt.nPitch=0.65;pt.pitch=0.16;pt.jaw=0.1;pt.look=0.1;if(t>2.35)toStalk(cool());}},
   roar(a,dt,dist){const t=a.t,pt=M.pt;M.vel.multiplyScalar(Math.exp(-6*dt));
     if(t<0.55){pt.nPitch=-0.3;pt.h=2.35;pt.offZ=-0.35;pt.jaw=0.25;}
@@ -720,11 +720,11 @@ function applyMonsterDamage(part,dmg,remote){if(M.state==='dead')return;M.hp-=dm
   if(part==='head'){M.headDmg+=dmg;M.headFl+=dmg;}else if(part==='tail'){M.tailDmg+=dmg;M.tailFl+=dmg;}else if(part==='leg')M.legDmg+=dmg;else M.bodyFl+=dmg;
   if(M.hp<=0){M.hp=0;killMonster();return;}
   if(!M.enraged&&M.hp<=M.maxHp*0.5)M.enraged=true;
-  if(!M.hornBroken&&M.headDmg>=560){breakHorns();return;}
-  if(!B.tailCutDone&&M.tailDmg>=360){cutTail();return;}
+  if(!M.hornBroken&&M.headDmg>=560*M.sc){breakHorns();return;}
+  if(!B.tailCutDone&&M.tailDmg>=360*M.sc){cutTail();return;}
   if(M.state==='topple')return;
-  if(M.legDmg>=M.topTh){if(M.airborne)return;M.legDmg=0;M.topTh+=180;doTopple();return;}
-  if(M.headFl>=260){M.headFl=0;doFlinch();}else if(M.bodyFl>=420){M.bodyFl=0;doFlinch();}else if(M.tailFl>=320){M.tailFl=0;doFlinch();}
+  if(M.legDmg>=M.topTh){if(M.airborne)return;M.legDmg=0;M.topTh+=180*M.sc;doTopple();return;}
+  if(M.headFl>=260*M.sc){M.headFl=0;doFlinch();}else if(M.bodyFl>=420*M.sc){M.bodyFl=0;doFlinch();}else if(M.tailFl>=320*M.sc){M.tailFl=0;doFlinch();}
 }
 function doFlinch(){if(netClient()&&!NET.applying)return;if(M.airborne||M.state==='topple'||M.state==='dead')return;M.state='flinch';M.st=0;M.atk=null;M.flSide=Math.random()<.5?1:-1;warn.hide();sfx.growl();}
 function doTopple(){if(netClient()&&!NET.applying)return;M.state='topple';M.st=0;M.atk=null;M.topSide=Math.random()<.5?1:-1;warn.hide();sfx.growl();sfx.slam(0.6);showBanner('넘어졌다');addTrauma(0.35);dustBurst(M.pos,18);}
@@ -1423,7 +1423,7 @@ function renderLobby(){const b=document.getElementById('lobbyBody');if(!b)return
 function netStartHunt(o){closeChat();TOWN.panel=null;setWorld('hunt');NET.inHunt=true;NET.hostId=o.host;NET.host=o.host===NET.id;NET.faints=0;NET.hasMon=false;NET.paused=false;NET.tgtId=0;
   for(const id of [...NET.peers.keys()])netRemovePeer(id);for(const pr of o.peers)netAddPeer(pr);
   const ids=[NET.id,...o.peers.map(x=>x.id)].sort((a,b)=>a-b);NET.slot=ids.indexOf(NET.id)+(4-ids.length)/2;
-  resetAll();game.state='title';startGame();showBanner('파티 사냥 시작');}
+  resetAll();game.state='title';startGame();showBanner('파티 사냥 시작');toast(M.np+'인 파티 · 그을음송곳니 체력 ×'+M.sc+' · 공격력 ×'+M.dsc,3.2);}
 function netEndHunt(silent){NET.inHunt=false;NET.host=false;NET.paused=false;goTown();}
 function netFaint(){NET.faints++;netSend({t:'ev',k:'faints',n:NET.faints});showBanner('기절 '+NET.faints+'/3');if(NET.faints>=3){netSend({t:'ev',k:'fail'});netFail();}}
 function netFail(){if(game.state==='play'){game.state='lose';game.endTimer=0;}}
@@ -1588,7 +1588,7 @@ function updateHUD(rdt){
   if(B.tailCutDone)tags.push(['part','꼬리 절단']);if(M.hornBroken)tags.push(['part','뿔 파괴']);if(M.state==='dead')tags.push(['part','토벌 완료']);
   const key=tags.map(x=>x[1]).join('|');if(key!==tagKey){tagKey=key;el.tstate.innerHTML=tags.map(([c,s])=>'<span class="tag '+c+'">'+s+'</span>').join('');}
   el.mhpWrap.hidden=!debugOn;el.debug.hidden=!debugOn;
-  if(debugOn){el.mhpFill.style.width=(M.hp/M.maxHp*100)+'%';el.debug.textContent='체력 '+M.hp+' / '+M.maxHp+'\n머리 누적 '+M.headDmg+' / 560 (뿔 파괴)\n꼬리 누적 '+M.tailDmg+' / 360 (절단)\n다리 누적 '+M.legDmg+' / '+M.topTh+' (넘어짐)';}
+  if(debugOn){el.mhpFill.style.width=(M.hp/M.maxHp*100)+'%';el.debug.textContent='체력 '+M.hp+' / '+M.maxHp+(M.np>1?' ('+M.np+'인 ×'+M.sc+')':'')+'\n머리 누적 '+M.headDmg+' / '+Math.round(560*M.sc)+' (뿔 파괴)\n꼬리 누적 '+M.tailDmg+' / '+Math.round(360*M.sc)+' (절단)\n다리 누적 '+M.legDmg+' / '+M.topTh+' (넘어짐)';}
   if(lockOn&&M.state!=='dead'){_a.copy(MS[2].c).project(camera);if(_a.z<1){el.reticle.hidden=false;el.reticle.style.transform='translate('+((_a.x*0.5+0.5)*innerWidth-17)+'px,'+((-_a.y*0.5+0.5)*innerHeight-17)+'px)';}else el.reticle.hidden=true;}else el.reticle.hidden=true;}
   else{el.reticle.hidden=true;el.mhpWrap.hidden=true;el.debug.hidden=true;}
   updateChatFade();
@@ -1645,10 +1645,13 @@ function startGame(){initAudio();game.state='play';overlay.hidden=true;overlay.c
 function pause(){input.keys.clear();if(NET.inHunt){NET.paused=true;showOverlay('pause');return;}game.state='paused';showOverlay('pause');}
 function resume(){initAudio();NET.paused=false;game.state='play';overlay.hidden=true;requestLock();}
 function restart(){resetAll();startGame();}
+/* 파티 인원수에 따른 몬스터 강화: [체력·부위 배율, 공격력 배율] (출발할 때 정해짐) */
+const PARTY_SC={1:[1,1],2:[1.8,1.1],3:[2.5,1.2],4:[3.2,1.3]};
 function resetAll(){
   Object.assign(P,{hp:150,st:100,stDelay:0,drawn:false,act:null,potions:10,charging:false,chargeT:0,level:0,lastLevel:0,releasedAt:-9,guard:false,guardT:0,healPool:0,dead:false,iframeExtra:0,inv:false,moveSpeed:0,sprinting:false,sitting:false,lastHitId:-1,dodgedId:-1});
   P.pos.set(NET.inHunt?(NET.slot-1.5)*1.7:0,0,-22);P.yaw=0;P.knock.set(0,0,0);P.vel.set(0,0,0);P.cur=Object.assign({},SHEATH);attachSword(false);H.bottle.visible=false;H.steel.emissiveIntensity=0;
-  Object.assign(M,{yaw:Math.PI,hp:4200,state:'idle',st:0,atk:null,cool:1,enraged:false,roared50:false,headDmg:0,headFl:0,bodyFl:0,legDmg:0,topTh:450,tailDmg:0,tailFl:0,hornBroken:false,jumpY:0,airborne:false});
+  const np=NET.inHunt?Math.min(4,NET.peers.size+1):1,PS=PARTY_SC[np];M.sc=PS[0];M.dsc=PS[1];M.np=np;
+  Object.assign(M,{yaw:Math.PI,hp:Math.round(4200*M.sc),maxHp:Math.round(4200*M.sc),state:'idle',st:0,atk:null,cool:1,enraged:false,roared50:false,headDmg:0,headFl:0,bodyFl:0,legDmg:0,topTh:Math.round(450*M.sc),tailDmg:0,tailFl:0,hornBroken:false,jumpY:0,airborne:false});
   M.pos.set(0,0,18);M.vel.set(0,0,0);Object.assign(M.ps,{h:2.5,pitch:0,roll:0,offZ:0,nYaw:0,nPitch:0.1,jaw:0.06,curl:0});
   B.tail.active=B.tail.N;B.tailCutDone=false;B.tailTip.visible=true;for(const m of B.mats)m.userData.flash=0;for(const h of B.horns)h.visible=true;
   for(const d of debris)if(d.obj.parent)d.obj.parent.remove(d.obj);debris.length=0;warn.hide();
