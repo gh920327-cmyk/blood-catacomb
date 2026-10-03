@@ -20,6 +20,8 @@ const server=http.createServer((req,res)=>{
   if(u==='/api/export'){res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify({ranks:RANKS,fame:FAME}));return;}
   if(MOVE_TO&&(u==='/'||u==='/index.html')&&!/[?&]stay=1/.test(req.url)){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(MOVE_PAGE(MOVE_TO,/BCDesktop\//.test(req.headers['user-agent']||'')));return;}
   if(u==='/raidlog'){const q=new URLSearchParams(req.url.split('?')[1]||'');if(q.get('k')!==(process.env.RAIDLOG_KEY||'moonless')){res.writeHead(403);res.end();return;}res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(RAIDLOG));return;}
+  if(u==='/hunt'){res.writeHead(301,{Location:'/hunt/'});res.end();return;}
+  if(u==='/hunt/')u='/hunt/index.html';
   if(u==='/')u='/index.html';
   const f=path.normalize(path.join(PUB,u));
   if(!f.startsWith(PUB)){res.writeHead(403);res.end();return;}
@@ -44,6 +46,8 @@ function rankSeed(P){const ch=P.ch;if(!ch||!ch.id)return;if(ch.fishBest&&ch.fish
   if(ch.cprBest&&ch.cprBest.s>0)rankPut('cpr',{id:ch.id,n:ch.name,cls:ch.cls,s:ch.cprBest.s,best:ch.cprBest.best|0,p:ch.cprBest.p|0,ts:Date.now()},true);
   if(RANKS.cpr[0]&&RANKS.cpr[0].id===ch.id&&!ch.cprTop1){ch.cprTop1=1;markDirty(P);}if(!ch.fishLeg){const fb=ch.fishBest&&SH.FISH.find(x=>x.id===ch.fishBest.id);const legSeen=(ch.cdx||[]).some(k=>{const f=SH.FISH.find(x=>'f:'+x.id===k);return f&&f.r>=3;})||SH.FISH.some(f=>f.r>=3&&(ch.fish||{})[f.id]>0);if(legSeen||(fb&&SH.fishGrade(fb,ch.fishBest.cm)>=3)){ch.fishLeg=1;markDirty(P);}}}
 const wss=new WebSocketServer({server,path:'/ws',maxPayload:256*1024});
+/* 달 없는 밤 외전 · 거대 사냥 (3D 웹) — /hunt 에서 게임, /hunt-ws 에서 멀티 중계 */
+require('./hunt/hunt-server.js')(server,WebSocketServer);
 
 // ================= 밸런스 (이 숫자만 고치면 난이도가 바뀝니다) =================
 const BAL={

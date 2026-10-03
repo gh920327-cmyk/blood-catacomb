@@ -35,9 +35,12 @@ class Socket extends EventEmitter{
 
 class WebSocketServer extends EventEmitter{
   constructor({server,path,maxPayload}){super();this.clients=new Set();this.max=maxPayload||1<<20;
+    // 한 서버에 여러 경로(/ws, /hunt-ws …)를 붙일 수 있게: 맞는 경로만 받고, 거절은 처음 붙은 서버 한 곳에서만
+    if(!server._wsPaths){server._wsPaths=new Set();server._wsFirst=this;}server._wsPaths.add(path);
     server.on('upgrade',(req,sock)=>{
       const u=(req.url||'').split('?')[0];const key=req.headers['sec-websocket-key'];
-      if((path&&u!==path)||!key||String(req.headers.upgrade||'').toLowerCase()!=='websocket'){sock.write('HTTP/1.1 400 Bad Request\r\n\r\n');sock.destroy();return;}
+      if(path&&u!==path){if(server._wsFirst===this&&!server._wsPaths.has(u)){sock.write('HTTP/1.1 400 Bad Request\r\n\r\n');sock.destroy();}return;}
+      if(!key||String(req.headers.upgrade||'').toLowerCase()!=='websocket'){sock.write('HTTP/1.1 400 Bad Request\r\n\r\n');sock.destroy();return;}
       const accept=crypto.createHash('sha1').update(key+GUID).digest('base64');
       sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: '+accept+'\r\n\r\n');
       const ws=new Socket(sock,this.max);this.clients.add(ws);ws.on('close',()=>this.clients.delete(ws));this.emit('connection',ws,req);});}
