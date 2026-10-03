@@ -1012,8 +1012,8 @@ function castSkill(i,tx,ty){if(G.clash&&i<SH.BAR_SIZE){clashPress(i);return;}if(
   localCd[sid]=time+sk.cd*(1-((G.S&&G.S.cdr)||0));me.face=tx<me.x?-1:1;net({t:'sk',i,x:Math.round(tx),y:Math.round(ty)});me.path=null;me.pickTarget=null;}
 function dodge(){if(meDowned()||me.dodgeCd>0||!G.map||G.mev[9]===0)return;let vx=0,vy=0;for(const k of keys){const v=MOVEK[k];if(v){vx+=v[0];vy+=v[1];}}
   if(!vx&&!vy){vx=mouse.wx-me.x;vy=mouse.wy-me.y;}const l=Math.hypot(vx,vy)||1;me.dodx=vx/l;me.dody=vy/l;me.dodgeT=0.28;me.dodgeCd=0.9;me.path=null;net({t:'dodge'});sfx('dodge');}
-function tryAttack(){if(!G.ch||!G.S||meDowned()||me.atkCd>0)return;const a=Math.atan2(mouse.wy-(me.y-6),mouse.wx-me.x);me.atkCd=1/(G.S.atkRate*(G.mev[7]||1));net({t:'atk',a:Math.round(a*100)/100});
-  if(CLASSES[G.ch.cls].basic.kind==='melee'){const dur=clamp(0.3*1.25/(G.S.atkRate*(G.mev[7]||1)),0.12,0.36);me.atkKind='swing';me.atkAngle=a;me.atkDur=dur;me.atkAnim=dur;me.face=Math.cos(a)<0?-1:1;effects.push({type:'slash',pid:myId,a,t:0,d:dur,max:dur+0.08});sfx('swing');}}
+function tryAttack(){if(!G.ch||!G.S||meDowned()||me.atkCd>0)return;const a=Math.atan2(mouse.wy-(me.y-6),mouse.wx-me.x);me.atkCd=1/SH.atkSpd(G.ch.cls,G.S.atkRate,G.mev[7]||1);net({t:'atk',a:Math.round(a*100)/100});
+  if(CLASSES[G.ch.cls].basic.kind==='melee'){const dur=clamp(0.3*1.25/SH.atkSpd(G.ch.cls,G.S.atkRate,G.mev[7]||1),0.12,0.36);me.atkKind='swing';me.atkAngle=a;me.atkDur=dur;me.atkAnim=dur;me.face=Math.cos(a)<0?-1:1;effects.push({type:'slash',pid:myId,a,t:0,d:dur,max:dur+0.08});sfx('swing');}}
 function updateMe(dt){
   me.animT+=dt;me.flash=Math.max(0,me.flash-dt);const rdt=RAWDT||dt;me.atkCd-=rdt;me.dodgeCd-=rdt;potCd-=rdt;if(me.atkAnim>0)me.atkAnim-=dt;if(me.spin>0)me.spin-=dt;
   const frozen=meDowned()||arenaFrozen()||(inDungeon()&&(G.paused||G.selfPause||G.trans>0&&G.trans<0.3))||!G.map||!G.S;
@@ -2693,7 +2693,7 @@ function artDraw(img,sx,sy,sw,sh,dx,dy,dw,dh){ctx.imageSmoothingEnabled=true;ctx
 function bossSprDraw(types,cx,by,sc){const n=types.length;types.forEach((t,k)=>{const i=RB_ORDER.indexOf(t);const f=RSPR&&RSPR[i]&&RSPR[i][((time*3)|0)%4];if(!f)return;const s=f.r;const x=cx+(k-(n-1)/2)*s.w*sc*0.7;ctx.drawImage(s.c,Math.round((x-s.w*sc/2)*SC),Math.round((by-s.h*sc)*SC),s.w*sc*SC,s.h*sc*SC);});}
 /* 레이드 석판 선택 칸 (유물 가방 선택 G.rsel 과 이름이 겹쳐, 유물을 고른 채 석판을 열면 창이 깨지던 버그 → 따로 씀) */function raidSelIdx(){const ch=G.ch;if(!(G.raidSel>=0&&G.raidSel<SH.RAIDS.length)){let k=0;SH.RAIDS.forEach((r,i)=>{if(ch&&ch.lvl>=r.lvl)k=i;});G.raidSel=k;}return G.raidSel;}
 function drawRaidPanel(){const ch=G.ch;if(!ch)return;const pt=G.party;const lead=!pt||pt.leader===myId;const n=pt?pt.members.length:1;
-  const i=raidSelIdx(),r=SH.RAIDS[i],c=BCARD[r.id]||{ep:'',q:'',spr:[]};const lvOk=ch.lvl>=r.lvl,got=false;/* 보상 횟수 제한 없음 */
+  const i=raidSelIdx(),r=SH.RAIDS[i],c=BCARD[r.id]||{ep:'',q:'',spr:[]};const lvOk=ch.lvl>=r.lvl,left=SH.raidLeft(ch,r.id),got=left<=0;/* 보상은 레이드마다 하루 3회 */
   const y0=36,bh=198,t=Math.min(1,(time-(G.facT||0))/0.25);
   pr(0,0,W,H,`rgba(0,0,0,${0.55*t})`);uiRects.push({x:0,y:0,w:W,h:H,block:true});
   ctx.save();ctx.beginPath();ctx.rect(0,y0*SC,W*SC,bh*SC);ctx.clip();
@@ -2709,11 +2709,11 @@ function drawRaidPanel(){const ch=G.ch;if(!ch)return;const pt=G.party;const lead
   const tx=24;txt(`${r.n} · ${r.lvl}`,tx,y0+44,20,'#9e937a',null,'serif');pr(tx,y0+53,16,1,'#e0574a');
   const nm=r.boss,ns=nm.length>9?38:52;txt(nm,tx-1,y0+76,ns,'#f2eadb',null,'serif');
   txt(c.ep,tx,y0+104,22,'#ffd35a',null,'serif');txt(c.q,tx,y0+123,18,'#c9a0e8',null,'serif');
-  txt(`1~4인 · 약 ${r.id==='moon'?'15~20':'10~15'}분 · 데스 3 · 단체 기믹 실패 시 전멸 · 파티 ${n}명${r.id==='moon'?' · 절망':''}`,tx,y0+143,17,'#c9c1b2');
+  txt(`1~8인 · 약 ${r.id==='moon'?'15~20':'10~15'}분 · 데스 3 · 단체 기믹 실패 시 전멸 · 파티 ${n}명${r.id==='moon'?' · 절망':''}`,tx,y0+143,17,'#c9c1b2');
   {const rc=SH.raidCP(r.id,false),rh=SH.raidCP(r.id,true),my=G.cp!=null?G.cp:SH.power(ch);const col=my>=rc?'#7fd05a':my>=rc*0.8?'#ffd35a':'#ff6a5a';txt(`권장 전투력 ${rc.toLocaleString()} (하드 ${rh.toLocaleString()})  ·  내 전투력 ${my.toLocaleString()}`,tx,y0+33,13,col);uiRects.push({x:tx,y:y0+27,w:300,h:13,tip:()=>[['권장 전투력','#ffd35a',12],['파티원 한 명 기준이에요. 이보다 낮으면 보스 공격을 버티기 힘들어요','#e6dcc3',11],['초록: 충분 · 노랑: 빠듯 · 빨강: 부족','#9e937a',11]]});}
   const dis=!lvOk||!lead;
   [['normal','노말'],['hard','하드'],['practice','연습']].forEach(([m,l],k)=>button(tx+k*54,y0+154,50,18,l,()=>{net({t:'raidenter',id:r.id,mode:m});closeFac();},{size:13,main:m==='normal',dis,tip:()=>[[`${r.n} · ${l}`,'#ffd35a',12],[m==='hard'?'보스 체력·피해 증가, 기믹 판정이 엄격함 · 신화 8%':m==='practice'?'데스 카운트 무제한 · 보상과 경매 없음':'기본 난이도 · 신화 5%','#e6dcc3',11],!lvOk?[`레벨 ${r.lvl} 이상 필요`,'#e0574a',11]:!lead?['파티장만 열 수 있어요','#e0574a',11]:['파티원 모두 레벨 조건을 채워야 해요','#9e937a',11]]}));
-  txt(!lvOk?`레벨 ${r.lvl}부터 입장`:!lead?'파티장만 열 수 있어요':got?'':'클리어할 때마다 보상',tx+166,y0+163,16,!lvOk||!lead?'#e0574a':got?'#9e937a':'#7fd05a');
+  txt(!lvOk?`레벨 ${r.lvl}부터 입장`:!lead?'파티장만 열 수 있어요':got?'오늘 보상 3회 모두 받음 · 보상 없이 입장':`오늘 남은 보상 ${left}/${SH.RAID_DAILY}회`,tx+166,y0+163,got?13:16,!lvOk||!lead?'#e0574a':got?'#ff9a5a':'#7fd05a');
   txt('클리어하면 전리품 경매 (전설 1개 확정, 낮은 확률로 신화)',tx,y0+186,15,'#8a7f99');
   button(W-44,y0+8,36,15,'닫기',closeFac,{size:12});}
 function raidSelKey(c){if(G.fac!=='raid')return false;const n=SH.RAIDS.length;if(c==='ArrowLeft'||c==='ArrowRight'){G.raidSel=(raidSelIdx()+(c==='ArrowLeft'?-1:1)+n)%n;G.facT=time;return true;}return false;}
