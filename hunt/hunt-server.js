@@ -9,6 +9,8 @@ module.exports=function attachHunt(server,WebSocketServer){
   const send=(u,o)=>{if(u&&u.ws.readyState===1)u.ws.send(typeof o==='string'?o:JSON.stringify(o));};
   const clean=(s,n)=>String(s==null?'':s).replace(/[<>&"'`\u0000-\u001f]/g,'').trim().slice(0,n);
   const pub=u=>({id:u.id,name:u.name,sex:u.sex});
+  const cleanT=(t,n)=>String(t==null?'':t).replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,n);
+  function gone(id){const s=JSON.stringify({t:'lgone',id});for(const v of lobbyUsers())if(v.id!==id)send(v,s);}
   function partyInfo(p){return {id:p.id,name:p.name,leader:p.leader,open:p.open,hunting:!!p.room,members:p.members.map(id=>pub(users.get(id)))};}
   function lobbyUsers(){return [...users.values()].filter(u=>!u.room);}
   function pushParties(){const s=JSON.stringify({t:'parties',list:[...parties.values()].map(partyInfo)});for(const u of lobbyUsers())send(u,s);}
@@ -36,7 +38,7 @@ module.exports=function attachHunt(server,WebSocketServer){
       case 'pleave':if(!u.room)leaveParty(u);break;
       case 'pstart':{const p=parties.get(u.party);if(!p||p.leader!==u.id||p.room)return;
         const room={id:nextRoom++,party:p.id,host:u.id,quest:clean(o.quest,20)||'soot',members:[...p.members]};rooms.set(room.id,room);p.room=room.id;
-        for(const id of room.members){const m=users.get(id);m.room=room.id;}
+        for(const id of room.members){const m=users.get(id);m.room=room.id;gone(id);}
         for(const id of room.members)send(users.get(id),{t:'start',room:room.id,host:room.host,quest:room.quest,me:id,peers:room.members.filter(x=>x!==id).map(x=>pub(users.get(x)))});
         pushParties();break;}
       case 'solo':break;
@@ -46,15 +48,20 @@ module.exports=function attachHunt(server,WebSocketServer){
       case 'hit':if(!r||r.host===u.id)return;o.f=u.id;send(users.get(r.host),o);break;
       case 'end':if(!r||r.host!==u.id)return;endRoom(r,clean(o.result,8));break;
       case 'back':if(r){leaveRoom(u);const p=parties.get(u.party);if(p)partyUpdate(p);else pushParties();}break;
-      // 로비(마을) 위치 공유 — 3단계에서 사용
-      case 'lst':if(u.room)return;o.f=u.id;{const s=JSON.stringify(o);for(const v of lobbyUsers())if(v!==u)send(v,s);}break;
+      // 마을: 위치 공유 (방에 들어가지 않은 사람끼리)
+      case 'lst':if(u.room)return;o.f=u.id;o.n=u.name;{const s=JSON.stringify(o);for(const v of lobbyUsers())if(v!==u)send(v,s);}break;
+      // 채팅: 마을(방 밖 모두) · 파티(파티원, 사냥 중이면 같은 방)
+      case 'chat':{const m=cleanT(o.m,120);if(!m)return;const t=Date.now();if(t-(u.chatT||0)<400)return;u.chatT=t;const ch=o.ch==='party'||u.room?'party':'town';
+        const s=JSON.stringify({t:'chat',ch,f:u.id,n:u.name,m});
+        if(ch==='party'){const p=parties.get(u.party);const ids=r?r.members:(p?p.members:[u.id]);for(const id of ids)send(users.get(id),s);}
+        else for(const v of lobbyUsers())send(v,s);break;}
     }}
   wss.on('connection',ws=>{
     const u={id:nextId++,ws,name:'사냥꾼',sex:'m',party:null,room:null,alive:true,n:0,t0:Date.now()};users.set(u.id,u);
     ws.on('message',m=>{const now=Date.now();if(now-u.t0>1000){u.t0=now;u.n=0;}if(++u.n>90)return; // 초당 90개 넘으면 무시
       let o;try{o=JSON.parse(m);}catch(e){return;}if(!o||typeof o.t!=='string')return;try{handle(u,o,m);}catch(e){console.error('hunt',e);}});
     ws.on('pong',()=>{u.alive=true;});
-    ws.on('close',()=>{leaveRoom(u);if(u.party)leaveParty(u);users.delete(u.id);pushParties();});
+    ws.on('close',()=>{const wasLobby=!u.room;leaveRoom(u);if(u.party)leaveParty(u);users.delete(u.id);if(wasLobby)gone(u.id);pushParties();});
     send(u,{t:'hello',id:u.id});});
   setInterval(()=>{for(const u of users.values()){if(!u.alive){try{u.ws.terminate();}catch(e){}continue;}u.alive=false;try{u.ws.ping();}catch(e){}}},25000);
   console.log('거대 사냥 중계 서버 준비 · /hunt-ws');
