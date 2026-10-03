@@ -775,7 +775,7 @@ document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockEl
 document.addEventListener('pointerlockerror',lockFail);
 const boundCodes=()=>new Set(Object.values(BIND));
 function onPress(code){if(game.state==='title')return;const acts=KEYDEF.filter(k=>BIND[k[0]]===code).map(k=>k[0]);
-  if(NET.paused)return;if(acts.includes('restart')&&WORLD.cur==='hunt'){if(NET.inHunt){toast('파티 사냥 중에는 처음부터 다시 할 수 없어요',1.6);return;}if(game.state!=='keys')restart();return;}if(game.state!=='play'){if(game.state==='win'&&acts.includes('interact'))doInteract();return;}
+  if(NET.paused)return;if(acts.includes('restart')&&WORLD.cur==='hunt'){if(NET.inHunt){toast('파티 사냥 중에는 처음부터 다시 할 수 없어요',1.6);return;}if(game.state!=='keys')restart();return;}if(game.state!=='play'&&game.state!=='win')return;
   for(const a of acts){
     if(a==='light')press(held('special')&&P.drawn?'spL':'light');
     else if(a==='heavy')press(held('special')&&P.drawn?'spR':'heavy');
@@ -787,11 +787,11 @@ function onPress(code){if(game.state==='title')return;const acts=KEYDEF.filter(k
 addEventListener('keydown',e=>{const c=e.code;if(keyCapture){e.preventDefault();e.stopPropagation();finishCapture(c==='Escape'?null:c);return;}
   if(CHAT.open){if(c==='Escape'){e.preventDefault();closeChat();}else if(c==='Tab'){e.preventDefault();chatSwitch();}else if(c==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();sendChat();}return;}
   if(game.state==='panel'){if(c==='Escape'){e.preventDefault();closePanel();}return;}
-  if(game.state==='title')return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab','AltLeft','AltRight'].includes(c)||(game.state==='play'&&boundCodes().has(c)))e.preventDefault();
+  if(game.state==='title')return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab','AltLeft','AltRight'].includes(c)||((game.state==='play'||game.state==='win')&&boundCodes().has(c)))e.preventDefault();
   input.keys.add(c);if(e.repeat)return;onPress(c);},true);
 addEventListener('keyup',e=>{input.keys.delete(e.code);if(e.code==='AltLeft'||e.code==='AltRight')e.preventDefault();});
 addEventListener('blur',()=>{input.keys.clear();});
-canvas.addEventListener('mousedown',e=>{if(CHAT.open){closeChat();e.preventDefault();return;}if(game.state!=='play')return;if(lockSupported&&!locked){requestLock();return;}e.preventDefault();const c='Mouse'+e.button;input.keys.add(c);onPress(c);});
+canvas.addEventListener('mousedown',e=>{if(CHAT.open){closeChat();e.preventDefault();return;}if(game.state!=='play'&&game.state!=='win')return;if(lockSupported&&!locked){requestLock();return;}e.preventDefault();const c='Mouse'+e.button;input.keys.add(c);onPress(c);});
 addEventListener('mouseup',e=>{input.keys.delete('Mouse'+e.button);if(e.button===3||e.button===4)e.preventDefault();});
 addEventListener('auxclick',e=>{if(e.button!==0)e.preventDefault();});
 /* 키 바꾸기 */
@@ -808,7 +808,7 @@ function finishCapture(code){const K=keyCapture;keyCapture=null;removeEventListe
     if(/^Control/.test(code))msg+=(msg?' ':'')+'Ctrl을 누른 채 W를 누르면 브라우저가 탭을 닫을 수 있어요.';}
   showOverlay('keys');const w=document.getElementById('bindWarn');if(w)w.textContent=msg;}
 addEventListener('contextmenu',e=>e.preventDefault());
-addEventListener('mousemove',e=>{if(game.state!=='play')return;if(locked||!lockSupported){camYaw=wrapA(camYaw-(e.movementX||0)*0.0028);camPitch=clamp(camPitch+(e.movementY||0)*0.0022,-0.12,1.1);}});
+addEventListener('mousemove',e=>{if(game.state!=='play'&&game.state!=='win')return;if(locked||!lockSupported){camYaw=wrapA(camYaw-(e.movementX||0)*0.0028);camPitch=clamp(camPitch+(e.movementY||0)*0.0022,-0.12,1.1);}});
 
 /* ---------- 사냥꾼 행동 ---------- */
 function startAction(name){const d=DEF[name],snap=Object.assign({},P.cur);snap.hipsRx=wrapA(snap.hipsRx);P.cur.hipsRx=snap.hipsRx;
@@ -1601,7 +1601,7 @@ function updateTrail(sdt){
 /* ---------- 카메라 ---------- */
 function addTrauma(x){trauma=Math.min(1,trauma+x*(reduceMotion?0.35:1));}
 function updateCamera(rdt){
-  const k=input.keys;if(game.state==='play'){if(k.has('ArrowLeft'))camYaw=wrapA(camYaw+2.2*rdt);if(k.has('ArrowRight'))camYaw=wrapA(camYaw-2.2*rdt);if(k.has('ArrowUp'))camPitch=clamp(camPitch-1.2*rdt,-0.12,1.1);if(k.has('ArrowDown'))camPitch=clamp(camPitch+1.2*rdt,-0.12,1.1);}
+  const k=input.keys;if(game.state==='play'||game.state==='win'){if(k.has('ArrowLeft'))camYaw=wrapA(camYaw+2.2*rdt);if(k.has('ArrowRight'))camYaw=wrapA(camYaw-2.2*rdt);if(k.has('ArrowUp'))camPitch=clamp(camPitch-1.2*rdt,-0.12,1.1);if(k.has('ArrowDown'))camPitch=clamp(camPitch+1.2*rdt,-0.12,1.1);}
   _a.set(P.pos.x,1.6+P.cur.hipsY*0.5,P.pos.z);camTarget.lerp(_a,1-Math.exp(-10*rdt));
   if(lockOn&&M.state!=='dead'){camYaw=dampA(camYaw,Math.atan2(M.pos.x-P.pos.x,M.pos.z-P.pos.z),4.5,rdt);_b.copy(B.body.position);_b.y*=0.75;look.copy(camTarget).lerp(_b,0.22);}else look.copy(camTarget);
   camDist=damp(camDist,6.6+(P.drawn?0.4:0)+(lockOn?0.8:0),3,rdt);
