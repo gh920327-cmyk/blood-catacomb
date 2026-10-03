@@ -89,6 +89,10 @@ body{margin:0;background:var(--night);color:var(--bone);font-family:var(--body);
 .slot button:disabled{opacity:.42;cursor:not-allowed}
 .quest{display:grid;gap:5px;padding:12px 14px;background:rgba(255,255,255,.04);border-left:3px solid var(--ember)}
 .quest b{font-family:var(--display);font-size:21px;font-weight:700}
+.slot .need{flex-basis:100%;font-size:12px;color:var(--ash)}.ok{color:#cfe6b0}.no{color:var(--ash)}.need .no{color:#c98f84}
+.slot button.craft{background:rgba(255,154,74,.14);color:var(--ember);box-shadow:inset 0 0 0 1px var(--ember-deep)}
+.gstat{display:flex;gap:22px;flex-wrap:wrap;font-size:13px;align-items:flex-start}.gstat b{font-family:var(--num);font-weight:400;font-size:26px;margin:0 6px}.gstat .lab{font-size:12px;letter-spacing:.14em;color:var(--ash)}
+.loot{display:flex;gap:8px 12px;flex-wrap:wrap;align-items:center;font-size:14px}.loot .lab{font-size:12px;letter-spacing:.14em;color:var(--ash)}.loot b{font-weight:600;padding:3px 10px;background:rgba(255,154,74,.12);border:1px solid var(--ember-deep)}
 #overlay{position:fixed;inset:0;display:grid;place-items:center;padding-block:16px;padding-inline:16px;background:radial-gradient(ellipse at 50% 60%,rgba(8,9,14,.3),rgba(8,9,14,.9));z-index:5;overflow:auto}
 .card{width:min(560px,100%);display:grid;gap:16px}
 .eyebrow{font-size:12px;letter-spacing:.18em;color:var(--ember)}
@@ -419,6 +423,7 @@ const DEF={
   sheathe:{dur:0.75,keys:[[0.36,REACH_D,'out'],[0.75,SHEATH,'io']],ev:[[0.36,()=>{attachSword(false);P.drawn=false;}]],canMove:2.2,walk:true},
   draw:{dur:0.5,keys:[[0.2,REACH_S,'out'],[0.5,DRAWN,'io']],ev:[[0.2,()=>{attachSword(true);P.drawn=true;}]],canMove:1.8},
   potion:{dur:1.7,keys:[[0.3,POT,'out'],[1.35,POT,'lin'],[1.7,SHEATH,'io']],ev:[[0.08,()=>{H.bottle.visible=true;}],[0.5,()=>{P.potions--;P.healPool+=50;sfx.drink();}],[1.45,()=>{H.bottle.visible=false;}]],canMove:1.8,walk:true,cancel:0.1},
+  carve:{dur:1.3,keys:()=>[[0.25,pose(KNEEL,{rShX:-0.9,rEl:-0.6,headRx:0.25}),'out'],[0.55,pose(KNEEL,{rShX:-0.5,rEl:-0.9,headRx:0.3}),'io'],[0.8,pose(KNEEL,{rShX:-0.95,rEl:-0.55,headRx:0.25}),'io'],[1.3,baseP(),'io']],ev:[[0.85,a=>finishCarve(a)]]},
   hurt:{dur:0.55,keys:()=>[[0.12,HURT,'out'],[0.55,baseP(),'io']]},
   down:{dur:2.05,keys:()=>[[0.08,DOWN_HIT,'out'],[0.42,DOWN_FLY,'lin'],[0.56,DOWN_LAND,'in'],[0.66,pose(DOWN_LAND,{legL:-0.85,kneeL:0.7,headRx:0.3}),'out'],[0.78,DOWN_LAND,'in'],[1.08,DOWN_LAND,'lin'],[1.38,DOWN_SIT,'io'],[1.68,KNEEL,'io'],[2.05,baseP(),'io']],iframe:[0.06,1.95],air:[[0.06,0.56,0.55],[0.56,0.7,0.07]],cancel:1.45,onEnd:()=>{P.iframeExtra=0.25;P.pos.y=0;}},
   roared:{dur:1.5,keys:()=>[[0.15,EARS,'out'],[1.2,EARS,'lin'],[1.5,baseP(),'io']]},
@@ -703,7 +708,7 @@ function dustBurst(p,n){for(let i=0;i<n;i++){const a=Math.random()*TAU,s=rand(3,
 const PART_MULT={head:1.35,neck:1.0,body:0.8,leg:0.95,tail:1.05};
 const PART_MAT=()=>({head:B.mHead,neck:B.mHead,body:B.mBody,leg:B.mLeg,tail:B.mTail});
 function damageMonster(part,base,point,level){
-  if(M.state==='dead')return;
+  if(M.state==='dead')return;if(M.enraged&&EQ_STAT.soot>=4)base*=1.1;
   const mult=PART_MULT[part],dmg=Math.max(1,Math.round(base*mult*(0.94+Math.random()*0.12))),weak=mult>=1.3;
   game.dealt+=dmg;
   spawnNum(dmg,point,weak,level>=2||dmg>=120);
@@ -729,7 +734,7 @@ function applyMonsterDamage(part,dmg,remote){if(M.state==='dead')return;M.hp-=dm
 function doFlinch(){if(netClient()&&!NET.applying)return;if(M.airborne||M.state==='topple'||M.state==='dead')return;M.state='flinch';M.st=0;M.atk=null;M.flSide=Math.random()<.5?1:-1;warn.hide();sfx.growl();}
 function doTopple(){if(netClient()&&!NET.applying)return;M.state='topple';M.st=0;M.atk=null;M.topSide=Math.random()<.5?1:-1;warn.hide();sfx.growl();sfx.slam(0.6);showBanner('넘어졌다');addTrauma(0.35);dustBurst(M.pos,18);}
 function killMonster(){if(netClient()&&!NET.applying)return;M.state='dead';M.st=0;M.atk=null;M.topSide=Math.random()<.5?1:-1;warn.hide();slowT=1.6;hitstop=0.2;sfx.slam(1);sfx.growl();addTrauma(0.7);
-  game.state='win';game.endAt=game.elapsed;game.endTimer=0;lockOn=false;setTimeout(()=>sfx.win(),900);showBanner('토벌 완료');}
+  game.state='win';game.endAt=game.elapsed;game.endTimer=0;lockOn=false;grantQuestRewards();setTimeout(()=>sfx.win(),900);showBanner('토벌 완료');}
 function spawnPiece(src,vx,vy,vz){src.updateMatrixWorld(true);const g=new THREE.Group();src.matrixWorld.decompose(g.position,g.quaternion,g.scale);const c=new THREE.Mesh(src.geometry,src.material);c.castShadow=true;g.add(c);HUNTW.add(g);
   debris.push({obj:g,vel:new THREE.Vector3(vx,vy,vz),floor:0.15,spin:rand(4,9),axis:new THREE.Vector3(rand(-1,1),rand(-1,1),rand(-1,1)).normalize(),rest:false});}
 function breakHorns(){if(netClient()&&!NET.applying)return;M.hornBroken=true;for(const h of B.horns){if(!h.visible)continue;spawnPiece(h,rand(-3,3),rand(4,7),rand(-3,3));h.visible=false;}
@@ -740,7 +745,7 @@ function cutTail(){if(netClient()&&!NET.applying)return;B.tailCutDone=true;const
   const grp=new THREE.Group();grp.add(piece);B.tailTip.updateMatrixWorld(true);const tip=new THREE.Mesh(B.tailTip.geometry,B.ember);B.tailTip.matrixWorld.decompose(tip.position,tip.quaternion,tip.scale);grp.add(tip);
   let minY=1e9;for(let i=c;i<=T.N;i++)minY=Math.min(minY,T.pts[i].y);
   HUNTW.add(grp);debris.push({obj:grp,vel:new THREE.Vector3(rand(-2,2),3,rand(-2,2)),floor:-(minY-0.35),spin:0,rest:false});
-  T.active=c;
+  T.active=c;B.tailCarve={obj:grp,base:T.pts[Math.min(T.N,c+3)].clone()};game.carveTail=1;
   for(let i=0;i<30;i++)embers.spawn(T.pts[c],rand(-3,3),rand(1,5),rand(-3,3),rand(0.6,1.4),1,0.4,0.1,2);
   showBanner('꼬리 절단!');sfx.brk();hitstop=Math.max(hitstop,0.16);addTrauma(0.3);doFlinch();}
 
@@ -770,14 +775,14 @@ document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockEl
 document.addEventListener('pointerlockerror',lockFail);
 const boundCodes=()=>new Set(Object.values(BIND));
 function onPress(code){if(game.state==='title')return;const acts=KEYDEF.filter(k=>BIND[k[0]]===code).map(k=>k[0]);
-  if(NET.paused)return;if(acts.includes('restart')&&WORLD.cur==='hunt'){if(NET.inHunt){toast('파티 사냥 중에는 처음부터 다시 할 수 없어요',1.6);return;}if(game.state!=='keys')restart();return;}if(game.state!=='play')return;
+  if(NET.paused)return;if(acts.includes('restart')&&WORLD.cur==='hunt'){if(NET.inHunt){toast('파티 사냥 중에는 처음부터 다시 할 수 없어요',1.6);return;}if(game.state!=='keys')restart();return;}if(game.state!=='play'){if(game.state==='win'&&acts.includes('interact'))doInteract();return;}
   for(const a of acts){
     if(a==='light')press(held('special')&&P.drawn?'spL':'light');
     else if(a==='heavy')press(held('special')&&P.drawn?'spR':'heavy');
     else if(a==='roll'||a==='sheathe'||a==='potion')press(a);
     else if(a==='lock'){if(WORLD.cur==='hunt'&&M.state!=='dead')lockOn=!lockOn;}
     else if(a==='hp'){if(WORLD.cur==='hunt')debugOn=!debugOn;}
-    else if(a==='interact'){if(WORLD.cur==='town')townInteract();}
+    else if(a==='interact')doInteract();
     else if(a==='chat'){openChat();return;}}}
 addEventListener('keydown',e=>{const c=e.code;if(keyCapture){e.preventDefault();e.stopPropagation();finishCapture(c==='Escape'?null:c);return;}
   if(CHAT.open){if(c==='Escape'){e.preventDefault();closeChat();}else if(c==='Tab'){e.preventDefault();chatSwitch();}else if(c==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();sendChat();}return;}
@@ -819,7 +824,7 @@ function startRoll(){const dir=inputDir();if(dir)P.yaw=Math.atan2(dir.x,dir.z);P
 function onChargeLevel(lv){sfx.charge(lv);H.steel.emissiveIntensity=1.6+lv*0.4;addTrauma(0.04+lv*0.03);P.lastLevel=lv;
   _b.set(0,0,2.0);H.sword.localToWorld(_b);for(let i=0;i<8+lv*6;i++)sparks.spawn(_b,rand(-2,2),rand(0,3),rand(-2,2),rand(0.2,0.5),1,0.75,0.45,4);}
 function updateAction(dt){const a=P.act,d=a.d;
-  if(P.charging){P.chargeT+=dt;const lv=P.chargeT>=1.65?3:P.chargeT>=1.1?2:P.chargeT>=0.55?1:0;if(lv>P.level){P.level=lv;onChargeLevel(lv);}
+  if(P.charging){P.chargeT+=dt*(EQ_STAT.soot>=2?1.25:1);const lv=P.chargeT>=1.65?3:P.chargeT>=1.1?2:P.chargeT>=0.55?1:0;if(lv>P.level){P.level=lv;onChargeLevel(lv);}
     const dir=inputDir();if(dir){const df=wrapA(Math.atan2(dir.x,dir.z)-P.yaw);P.yaw=wrapA(P.yaw+clamp(df,-2.0*dt,2.0*dt));}
     if(!held('heavy')||P.chargeT>=2.3){if(P.chargeT>=2.3)P.level=Math.min(P.level,2);P.charging=false;P.releasedAt=now;P.lastLevel=P.level;}
     else{evalKeys(a.keys,a.t,P.cur);const tr=P.level*0.012;P.cur.spineRz+=Math.sin(time*60)*tr;P.cur.rShX+=Math.sin(time*53)*tr;
@@ -992,10 +997,11 @@ function paint(leaf,mat,x,y,z,out){const b=hex(mat.c);let s=1;
   const pat=leaf.pat||mat.pat;
   s*=0.9+0.2*n1;
   if(pat==='cloth'){s*=0.94+0.12*n2;}
-  else if(pat==='leather'){s*=0.85+0.25*fbm(x*55,y*55,z*55,3);if(leaf.plates){const v=(y-leaf.plates[0])/leaf.plates[1];const f=v-Math.floor(v);if(f<0.09)s*=0.55;else if(f<0.2)s*=1.12;}}
+  else if(pat==='leather'){s*=0.85+0.25*fbm(x*55,y*55,z*55,3);}
   else if(pat==='metal'){s*=0.92+0.16*n2;}
   else if(pat==='skin'){s*=0.97+0.06*n1;}
   else if(pat==='hair'){const st=fbm(x*30,y*160,z*30,2);s*=0.75+0.5*st;}
+  if(leaf.plates){const v=(y-leaf.plates[0])/leaf.plates[1];const f=v-Math.floor(v);if(f<0.09)s*=0.55;else if(f<0.2)s*=1.12;}
   if(leaf.shade)s*=leaf.shade;
   out[0]=b[0]*s;out[1]=b[1]*s;out[2]=b[2]*s;}
 /* ---------- 생성 ---------- */
@@ -1043,7 +1049,14 @@ const PAL={
   f:{under:0x30303a,pants:0x3b3732,sleeve:0x403d48,coat:0x2a3c60,coatD:0x18233a,leather:0x7b5236,leatherD:0x33261d,boot:0x45302a,glove:0x30261f,metal:0xa5abb2,metalD:0x5c626a,trim:0xd6c08c,hair:0x3a2520,glow:0xffc070}};
 function mats(p){return {under:{c:p.under,r:0.95,pat:'quilt'},pants:{c:p.pants,r:0.96,pat:'cloth'},coat:{c:p.coat,r:0.95,pat:'cloth'},sleeve:{c:p.sleeve,r:0.95,pat:'quilt'},coatD:{c:p.coatD,r:0.95,pat:'cloth'},
   leather:{c:p.leather,r:0.78,pat:'leather'},leatherD:{c:p.leatherD,r:0.76,pat:'leather'},boot:{c:p.boot,r:0.74,pat:'leather'},glove:{c:p.glove,r:0.8,pat:'leather'},
-  metal:{c:p.metal,r:0.58,m:0.65,pat:'metal'},metalD:{c:p.metalD,r:0.64,m:0.6,pat:'metal'},trim:{c:p.trim,r:0.5,m:0.7,pat:'trim'},hair:{c:p.hair,r:0.75,pat:'hair'}};}
+  metal:{c:p.metal,r:0.58,m:0.65,pat:'metal'},metalD:{c:p.metalD,r:0.64,m:0.6,pat:'metal'},trim:{c:p.trim,r:0.5,m:0.7,pat:'trim'},hair:{c:p.hair,r:0.75,pat:'hair'},
+  /* 그을음송곳니 세트: 검은 털가죽, 그을린 판금, 잉걸빛 테두리, 상아색 송곳니·뿔 */
+  fur:{c:0x433a34,r:0.98,pat:'hair'},furL:{c:0x5e5046,r:0.98,pat:'hair'},sootJ:{c:0x242226,r:0.95,pat:'cloth'},sootSl:{c:0x222127,r:0.95,pat:'quilt'},sootL:{c:0x1f1b19,r:0.8,pat:'leather'},sootP:{c:0x232124,r:0.96,pat:'cloth'},
+  plate:{c:0x313136,r:0.52,m:0.55,pat:'metal'},plateD:{c:0x232327,r:0.58,m:0.5,pat:'metal'},ember:{c:0xd9621c,r:0.42,m:0.55,pat:'trim'},bone:{c:0xd2c5a6,r:0.62,m:0,pat:'leather'}};}
+/* 기본 장비 모양을 그대로 쓰고 재질만 그을음송곳니 것으로 바꿈 (몸에 딱 맞는 모양 유지) */
+const SOOT_MAP={coat:'sootJ',coatD:'fur',sleeve:'sootSl',trim:'ember',leather:'plate',leatherD:'sootL',metal:'plate',metalD:'plateD',pants:'sootP',boot:'plate'};
+function remap(t,map){const o=JSON.parse(JSON.stringify(t));(function walk(n){if(!n||typeof n!=='object')return;if(Array.isArray(n)){n.forEach(walk);return;}
+  for(const k in n){const v=n[k];if((k==='mat'||k==='trim')&&typeof v==='string'&&map[v])n[k]=map[v];else if(k==='edge'&&Array.isArray(v)){for(const e of v)if(map[e[3]])e[3]=map[e[3]];}else if(typeof v==='object')walk(v);}})(o);return o;}
 function make(sex){
   const F=sex==='f';const s=F?0.94:1;const Y=v=>v*s;const w=F?0.88:1;
   const P={hipY:Y(0.95),legX:F?0.09:0.098,kneeY:Y(0.495),ankleY:Y(0.092),shX:F?0.178:0.205,shY:Y(1.445),armA:F?0.64:0.68,upL:F?0.27:0.29,foL:F?0.245:0.262,neckY:Y(1.49),headY:Y(1.60)};
@@ -1186,6 +1199,37 @@ function make(sex){
   const visor={y:hc+(F?0.008:0.01),R:F?0.088:0.094,w:F?0.105:0.118,hgt:F?0.0095:0.011,cz:-0.006};
   const pony=F?{root:[0,hc+0.075,-0.1],len:0.38,r0:0.03,r1:0.006,seg:8}:null;
   rigid.push(...skirt);
+  for(const L of layers)L.set='basic';for(const L of rigid)L.set='basic';
+  /* ===== 그을음송곳니 세트 ===== */
+  const sl=[],sr=[];
+  for(const L of layers){if(L.part==='base')continue;sl.push(Object.assign({},L,{name:'soot_'+L.name,set:'soot',tree:remap(L.tree,SOOT_MAP)}));}
+  for(const L of rigid)sr.push(Object.assign({},L,{name:'soot_'+L.name,set:'soot',tree:remap(L.tree,SOOT_MAP)}));
+  const fs=F?0.86:1;
+  // 털 목도리 (어깨를 덮는 두툼한 털)
+  sl.push({name:'soot_fur',part:'chest',set:'soot',h:0.007,tree:S(0.035,
+    E([0,Y(1.455),-0.075],[0.15*w,0.062,0.075],{mat:'fur',wr:[0.006,46,30,46]}),
+    ...sd.map(d=>E([0.125*d*w,Y(1.47),-0.012],[0.085,0.058,0.1],{rot:[0,0,-0.35*d],mat:'fur',wr:[0.006,46,30,46]})),
+    ...sd.map(d=>E([0.07*d*w,Y(1.445),0.075],[0.06,0.045,0.04],{mat:'furL',wr:[0.005,46,30,46]})))});
+  // 투구 뿔
+  {const h=sr.find(L=>L.name==='soot_helm');const horns=[];
+    for(const d of sd){const pts=[[0.082*d,hc+0.07,-0.02],[0.13*d,hc+0.13,-0.06],[0.155*d,hc+0.2,-0.13],[0.15*d,hc+0.25,-0.215],[0.125*d,hc+0.262,-0.29]].map(p=>[p[0]*fs+(1-fs)*0,hc+(p[1]-hc)*fs,p[2]*fs]);
+      const rr=[0.03,0.024,0.017,0.01,0.004].map(r=>r*fs);for(let i=0;i<pts.length-1;i++)horns.push(C(pts[i],pts[i+1],rr[i],rr[i+1],{mat:'bone'}));
+      horns.push(T([0.086*d,hc+0.076,-0.024],0.026*fs,0.006,{rot:[0.5,0,0.9*d],mat:'ember'}));}
+    h.tree=U(h.tree,...horns);}
+  // 어깨갑 송곳니
+  for(const k of ['l','r']){const L=sr.find(x=>x.name==='soot_'+k+'Pauldron'),Sh=arm[k].Sh,d=arm[k].d;
+    L.tree=U(L.tree,C(add(Sh,[0.045*d,0.075,-0.005]),add(Sh,[0.095*d,0.16*fs,-0.02]),0.017*fs,0.0025,{mat:'bone'}),
+      C(add(Sh,[0.09*d,0.045,0.02]),add(Sh,[0.15*d,0.1*fs,0.025]),0.012*fs,0.002,{mat:'bone'}));}
+  // 허리 송곳니 장식
+  {const L=sl.find(x=>x.name==='soot_belt');L.tree=U(L.tree,C([0,hy+0.04,(F?0.137:0.143)],[0,hy-0.035,(F?0.15:0.156)],0.012,0.003,{mat:'bone'}),
+    ...sd.map(d=>C([0.03*d,hy+0.045,(F?0.133:0.139)],[0.042*d,hy-0.005,(F?0.143:0.149)],0.008,0.002,{mat:'bone'})));}
+  // 건틀릿 등 지느러미
+  {const L=sl.find(x=>x.name==='soot_gaunt');const fins=[];for(const k of ['l','r']){const A=arm[k],d=A.d,dir=A.dir;const outv=[Math.cos(P.armA)*d,Math.sin(P.armA),0.3];
+      fins.push(C(add(add(A.El,mul(dir,0.14)),mul(outv,0.045)),add(add(A.El,mul(dir,0.05)),mul(outv,0.085)),0.012,0.002,{mat:'bone'}));}
+    L.tree=U(L.tree,...fins);}
+  // 무릎 뿔
+  for(const k of ['l','r']){const L=sr.find(x=>x.name==='soot_'+k+'Knee'),Kn=leg[k].Kn;L.tree=U(L.tree,C(add(Kn,[0,0.03,0.07]),add(Kn,[0,0.085,0.1]),0.012,0.002,{mat:'bone'}));}
+  layers.push(...sl);rigid.push(...sr);
   return {sex,P,bind,arm,leg,layers,rigid,body,visor,pony,mats:mats(PAL[sex]),pal:PAL[sex],bones:BONES,parent:PARENT,headC:hc};}
 return {make,BONES,PARENT};
 })();
@@ -1251,10 +1295,10 @@ function* buildG(THREE,HG,sp,opt){opt=opt||{};
   for(const n of sp.bones){const p=sp.parent[n],b=bones[n],bp=sp.bind[n];if(p){const q=sp.bind[p];b.position.set(bp[0]-q[0],bp[1]-q[1],bp[2]-q[2]);bones[p].add(b);}else{b.position.set(bp[0],bp[1],bp[2]);root.add(b);}}
   root.updateMatrixWorld(true);const skel=new THREE.Skeleton(list);
   const WL=HG.prepLeaves(sp.body);const parts={};const meshes=[];const skirts=[];
-  const all=sp.layers.concat(sp.rigid);let done=0;
+  const all=sp.layers.concat(sp.rigid).filter(L=>L.part==='base'||!opt.sets||opt.sets[L.set||'basic']);let done=0;
   for(const L of all){
-    let G=opt.cache&&opt.cache[L.name];
-    if(!G){const g=yield* HG.generateG(L.tree,{h:L.h*(opt.hs||1),bones:sp.bones,mats:sp.mats,weightLeaves:WL,rigid:L.bone,minY:L.minY});
+    let G=opt.cache&&opt.cache[L.name],made=false;
+    if(!G){made=true;const g=yield* HG.generateG(L.tree,{h:L.h*(opt.hs||1),bones:sp.bones,mats:sp.mats,weightLeaves:WL,rigid:L.bone,minY:L.minY});
       if(!L.bone){G=geo(THREE,g);G.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(g.sI,4));G.setAttribute('skinWeight',new THREE.BufferAttribute(g.sW,4));}
       else if(L.pivot){const pv=L.pivot,pp=pv.p,c=Math.cos(-pv.m),s=Math.sin(-pv.m);G=geo(THREE,g,(x,y,z,nx,ny,nz)=>{const dx=x-pp[0],dy=y-pp[1],dz=z-pp[2];return [c*dx+s*dz,dy,-s*dx+c*dz,c*nx+s*nz,ny,-s*nx+c*nz];});}
       else{const bp=sp.bind[L.bone];G=geo(THREE,g,(x,y,z,nx,ny,nz)=>[x-bp[0],y-bp[1],z-bp[2],nx,ny,nz]);}
@@ -1264,12 +1308,11 @@ function* buildG(THREE,HG,sp,opt){opt=opt||{};
     else if(L.pivot){const pv=L.pivot,pp=pv.p;const pivot=new THREE.Object3D();pivot.rotation.order='YXZ';const hb=sp.bind[L.bone];pivot.position.set(pp[0]-hb[0],pp[1]-hb[1],pp[2]-hb[2]);pivot.rotation.y=pv.m;bones[L.bone].add(pivot);
       m=new THREE.Mesh(G,mats.cl);pivot.add(m);skirts.push({pivot,m:pv.m,tilt:0.05,v:0});}
     else{m=new THREE.Mesh(G,mats.rg);bones[L.bone].add(m);}
-    m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;m.name=L.name;meshes.push(m);(parts[L.part]=parts[L.part]||[]).push(m);
-    done++;if(opt.progress)opt.progress(done/all.length);if(!opt.cache||!opt.cache.done)yield 0;}
-  if(opt.cache)opt.cache.done=true;
+    m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;m.name=L.name;m.userData.part=L.part;m.userData.set=L.set||'basic';meshes.push(m);(parts[L.part]=parts[L.part]||[]).push(m);
+    done++;if(opt.progress)opt.progress(done/all.length);if(made)yield 0;}
   /* 투구 눈 틈의 빛 */
   {const v=sp.visor,ang=v.w/v.R,hb=sp.bind.head;const gm=new THREE.CylinderGeometry(v.R,v.R,v.hgt,20,1,true,-ang/2,ang);
-    const glow=new THREE.Mesh(gm,new THREE.MeshBasicMaterial({color:sp.pal.glow,side:THREE.DoubleSide}));glow.position.set(0,v.y-hb[1],v.cz);bones.head.add(glow);(parts.head=parts.head||[]).push(glow);}
+    const glow=new THREE.Mesh(gm,new THREE.MeshBasicMaterial({color:sp.pal.glow,side:THREE.DoubleSide}));glow.position.set(0,v.y-hb[1],v.cz);bones.head.add(glow);glow.userData.set='any';(parts.head=parts.head||[]).push(glow);}
   /* A자세 → 팔 내린 자세 보정 */
   const Q=THREE.Quaternion,Ez=new THREE.Euler(),q1=new Q(),X=new THREE.Vector3(1,0,0),Zv=new THREE.Vector3(0,0,1);
   const A={l:new Q().setFromAxisAngle(Zv,-sp.P.armA),r:new Q().setFromAxisAngle(Zv,sp.P.armA)};const Ai={l:A.l.clone().invert(),r:A.r.clone().invert()};
@@ -1303,8 +1346,8 @@ function* buildG(THREE,HG,sp,opt){opt=opt||{};
     const hc=HG.hex(sp.pal.hair);for(let i=0;i<nv;i++){const t=Math.floor(i/(RS+1))/N;col[i*3]=hc[0]*(1-0.15*t);col[i*3+1]=hc[1]*(1-0.15*t);col[i*3+2]=hc[2]*(1-0.15*t);rm[i*3]=0.75;rm[i*3+1]=0;rm[i*3+2]=7;}
     for(let i=0;i<N;i++)for(let j=0;j<RS;j++){const a=i*(RS+1)+j,b=a+RS+1;idx.push(a,b,a+1,b,b+1,a+1);}
     G.setAttribute('position',new THREE.BufferAttribute(pos,3));G.setAttribute('normal',new THREE.BufferAttribute(nor,3));G.setAttribute('color',new THREE.BufferAttribute(col,3));G.setAttribute('rm',new THREE.BufferAttribute(rm,3));G.setIndex(idx);
-    const mesh=new THREE.Mesh(G,mats.rg);mesh.frustumCulled=false;mesh.castShadow=true;root.add(mesh);(parts.head=parts.head||[]).push(mesh);
-    const tie=new THREE.Mesh(new THREE.TorusGeometry(pn.r0*0.85,0.006,6,14),new THREE.MeshStandardMaterial({color:sp.pal.trim,metalness:0.7,roughness:0.5}));tie.position.copy(anchor.position);tie.rotation.x=1.2;bones.head.add(tie);(parts.head).push(tie);
+    const mesh=new THREE.Mesh(G,mats.rg);mesh.frustumCulled=false;mesh.castShadow=true;mesh.userData.set='any';root.add(mesh);(parts.head=parts.head||[]).push(mesh);
+    const tie=new THREE.Mesh(new THREE.TorusGeometry(pn.r0*0.85,0.006,6,14),new THREE.MeshStandardMaterial({color:sp.pal.trim,metalness:0.7,roughness:0.5}));tie.position.copy(anchor.position);tie.rotation.x=1.2;tie.userData.set='any';bones.head.add(tie);(parts.head).push(tie);
     const pts=[],prv=[];for(let i=0;i<=N;i++){pts.push(new THREE.Vector3());prv.push(new THREE.Vector3());}
     pony={anchor,mesh,pts,prv,N,seg,RS,r0:pn.r0,r1:pn.r1,init:false};}
   const _a=new THREE.Vector3(),_b=new THREE.Vector3(),_t=new THREE.Vector3(),_n=new THREE.Vector3(),_bn=new THREE.Vector3(),_hc=new THREE.Vector3(),_bk=new THREE.Vector3(),_m=new THREE.Matrix4();
@@ -1333,9 +1376,15 @@ function* buildG(THREE,HG,sp,opt){opt=opt||{};
       tgt=Math.max(-0.02,Math.min(1.2,tgt));s.v+=((tgt-s.tilt)*110-s.v*12)*dt;s.tilt+=s.v*dt;s.pivot.rotation.x=-s.tilt;}
     if(pony&&dt>0)updPony(dt);}
   function setPart(part,vis){for(const m of parts[part]||[])m.visible=vis;}
-  return {root,bones,skel,apply,ground,update,sock,parts,setPart,meshes,sex:sp.sex};}
+  /* 부위별 장비: eq={head:'basic'|'soot',...} 에 맞는 세트만 보이게 */
+  const sets={};for(const m of meshes)sets[m.userData.set]=1;
+  function equip(eq){for(const part in parts)for(const m of parts[part]){const st=m.userData.set;m.visible=part==='base'||st==='any'||((eq&&eq[part])||'basic')===st;}}
+  equip(opt.equip||null);
+  return {root,bones,skel,apply,ground,update,sock,parts,setPart,equip,sets,meshes,sex:sp.sex};}
+/* 이 세트들을 바로 만들 수 있는지 (모양이 모두 만들어져 있는지) */
+function ready(sp,cache,sets){if(!cache)return false;for(const L of sp.layers.concat(sp.rigid))if((L.part==='base'||sets[L.set||'basic'])&&!cache[L.name])return false;return true;}
 function build(THREE,HG,sp,opt){const g=buildG(THREE,HG,sp,opt);let r;while(!(r=g.next()).done);return r.value;}
-return {buildG,build,makeMats};
+return {buildG,build,makeMats,ready};
 })();
 
 
@@ -1349,7 +1398,15 @@ function skinEnv(){if(SKIN.env)return SKIN.env;
   const t=new THREE.CanvasTexture(c);t.mapping=THREE.EquirectangularReflectionMapping;t.encoding=THREE.sRGBEncoding;
   try{const pm=new THREE.PMREMGenerator(renderer);SKIN.env=pm.fromEquirectangular(t).texture;pm.dispose();t.dispose();}catch(e){SKIN.env=t;}
   return SKIN.env;}
-function skinNoteText(){const w=SKIN.want;if(SKIN.on&&SKIN.cur.sex===w)return SKIN_NAME[w];if(SKIN.failed[w])return '사냥꾼을 만들지 못해 기본 모습으로 진행해요';return SKIN_NAME[w]+' 만드는 중… '+Math.round(SKIN.pct*100)+'%';}
+const SPEC={};const specOf=sx=>SPEC[sx]||(SPEC[sx]=HSPEC.make(sx));
+const EQ_KEYS=['head','chest','arms','waist','legs'],EQ_FROM={b:'basic',s:'soot'};
+function eqSets(eq){const o={basic:1};for(const k of EQ_KEYS)o[(eq&&eq[k])||'basic']=1;return o;}
+function eqCode(eq){return EQ_KEYS.map(k=>((eq&&eq[k])||'basic')[0]).join('');}
+function eqParse(c){const o={};EQ_KEYS.forEach((k,i)=>o[k]=EQ_FROM[String(c||'')[i]]||'basic');return o;}
+function hasSets(S,sets){for(const k in sets)if(!S.sets||!S.sets[k])return false;return true;}
+function skinKey(sx,sets){return sx+':'+Object.keys(sets).sort().join(',');}
+function skinNoteText(){const w=SKIN.want;if(SKIN.on&&SKIN.cur.sex===w&&hasSets(SKIN.cur,eqSets(EQUIP)))return SKIN_NAME[w];if(SKIN.failed[w])return '사냥꾼을 만들지 못해 기본 모습으로 진행해요';
+  const J=SKIN.job,gear=SKIN.on&&SKIN.cur.sex===w;return (gear?'그을음송곳니 장비 만드는 중… ':SKIN_NAME[w]+' 만드는 중… ')+Math.round(SKIN.pct*100)+'%';}
 function updateSkinNote(){const n=document.getElementById('skinNote');if(n)n.textContent=skinNoteText();}
 function useSkin(S){if(SKIN.cur&&SKIN.cur.root.parent)SKIN.cur.root.parent.remove(SKIN.cur.root);
   if(!SKIN.posed){SKIN.posed=true;Object.assign(POT,{spineRx:-0.1,headRx:-0.35,rShX:-1,rShY:0.8,rShZ:0,rEl:-1.8,rWr:0.4});}
@@ -1358,19 +1415,23 @@ function useSkin(S){if(SKIN.cur&&SKIN.cur.root.parent)SKIN.cur.root.parent.remov
   S.sock.hand.add(H.bottle);H.bottle.position.set(0,0,0.06);placeSword(!!H.swordInHand);applyEquip(S);applyPose();updateSkinNote();}
 /* 사냥꾼 만들기: 프레임마다 조금씩 나눠 계산해서 화면이 멈추지 않게 */
 function pickSkin(which){SKIN.want=which;try{localStorage.setItem('sootfang.skin',which);}catch(e){}
-  if(SKIN.cache[which]){useSkin(SKIN.cache[which]);return;}
-  if(SKIN.job&&SKIN.job.which===which){updateSkinNote();return;}
+  const sets=eqSets(EQUIP),key=skinKey(which,sets);
+  if(SKIN.cache[key]){if(SKIN.cur!==SKIN.cache[key])useSkin(SKIN.cache[key]);else applyEquip();return;}
+  if(SKIN.job&&SKIN.job.key===key){updateSkinNote();return;}
   if(SKIN.failed[which]){updateSkinNote();return;}
-  SKIN.pct=0;
-  if(GEO[which].done){try{SKIN.cache[which]=HBUILD.build(THREE,HGEN,HSPEC.make(which),{env:skinEnv(),cache:GEO[which]});useSkin(SKIN.cache[which]);return;}catch(e){}}
-  try{const sp=HSPEC.make(which);SKIN.job={which,gen:HBUILD.buildG(THREE,HGEN,sp,{env:skinEnv(),cache:GEO[which],progress:v=>{SKIN.pct=v;}})};}catch(e){SKIN.failed[which]=true;SKIN.job=null;}
+  const sp=specOf(which);
+  if(HBUILD.ready(sp,GEO[which],sets)){try{const S=HBUILD.build(THREE,HGEN,sp,{env:skinEnv(),cache:GEO[which],sets});SKIN.cache[key]=S;useSkin(S);return;}catch(e){}}
+  if(SKIN.job&&SKIN.job.geoOnly)SKIN.need.add(SKIN.job.key);
+  SKIN.pct=0;try{SKIN.job={which,key,sets,gen:HBUILD.buildG(THREE,HGEN,sp,{env:skinEnv(),cache:GEO[which],sets,progress:v=>{SKIN.pct=v;}})};}catch(e){SKIN.failed[which]=true;SKIN.job=null;}
   updateSkinNote();}
 let skinNoteT=0;
-function stepSkinJob(){if(!SKIN.job){for(const sx of ['m','f'])if(SKIN.need.has(sx)&&!GEO[sx].done){SKIN.need.delete(sx);try{SKIN.job={which:sx,geoOnly:true,gen:HBUILD.buildG(THREE,HGEN,HSPEC.make(sx),{env:skinEnv(),cache:GEO[sx]})};}catch(e){}break;}}
+function stepSkinJob(){if(!SKIN.job){for(const nk of SKIN.need){SKIN.need.delete(nk);const [sx,ss]=nk.split(':');const sets={};ss.split(',').forEach(x=>{sets[x]=1;});const sp=specOf(sx);
+      if(HBUILD.ready(sp,GEO[sx],sets)){for(const pr of NET.peers.values())netEnsureModel(pr);continue;}
+      try{SKIN.job={which:sx,key:nk,sets,geoOnly:true,gen:HBUILD.buildG(THREE,HGEN,sp,{env:skinEnv(),cache:GEO[sx],sets})};}catch(e){}break;}}
   const J=SKIN.job;if(!J)return;const t0=performance.now();
-  try{while(performance.now()-t0<11){const r=J.gen.next();if(r.done){SKIN.job=null;if(!J.geoOnly)SKIN.cache[J.which]=r.value;else r.value.root.parent&&r.value.root.parent.remove(r.value.root);
-    for(const pr of NET.peers.values())if(!pr.model&&pr.sex===J.which)netEnsureModel(pr);
-    if(!J.geoOnly){if(SKIN.want===J.which)useSkin(r.value);else pickSkin(SKIN.want);}return;}}}
+  try{while(performance.now()-t0<11){const r=J.gen.next();if(r.done){SKIN.job=null;if(!J.geoOnly)SKIN.cache[J.key]=r.value;else r.value.root.parent&&r.value.root.parent.remove(r.value.root);
+    for(const pr of NET.peers.values())netEnsureModel(pr);
+    if(!J.geoOnly){if(skinKey(SKIN.want,eqSets(EQUIP))===J.key)useSkin(r.value);else pickSkin(SKIN.want);}return;}}}
   catch(e){SKIN.job=null;SKIN.failed[J.which]=true;if(window.console)console.error(e);updateSkinNote();return;}
   if(performance.now()-skinNoteT>200){skinNoteT=performance.now();updateSkinNote();}}
 
@@ -1432,19 +1493,22 @@ function netEvent(o){if(!NET.inHunt)return;
   else if(o.k==='faints'){NET.faints=o.n;showBanner('기절 '+o.n+'/3');}
   else if(o.k==='fail')netFail();}
 /* 다른 사냥꾼 */
-function netAddPeer(p){const r={id:p.id,name:p.name,sex:p.sex==='f'?'f':'m',pos:new THREE.Vector3(0,0,-22),tpos:new THREE.Vector3(0,0,-22),vel:new THREE.Vector3(),yaw:0,tyaw:0,cur:Object.assign({},SHEATH),tc:Object.assign({},SHEATH),dead:false,sw:false,bottle:false,speed:0,got:false,
+function netAddPeer(p){const r={id:p.id,name:p.name,sex:p.sex==='f'?'f':'m',pos:new THREE.Vector3(0,0,-22),tpos:new THREE.Vector3(0,0,-22),vel:new THREE.Vector3(),yaw:0,tyaw:0,cur:Object.assign({},SHEATH),tc:Object.assign({},SHEATH),dead:false,sw:false,bottle:false,speed:0,got:false,eq:eqParse(''),eqc:'bbbbb',
     root:new THREE.Group(),model:null,ph:null,sword:H.sword.clone(true),lan:H.lantern.clone(true),tag:document.createElement('div')};
   r.ph=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.3,1.75,12),new THREE.MeshStandardMaterial({color:0x6a5a50,roughness:0.9}));r.ph.position.y=0.88;r.root.add(r.ph);
   r.tag.className='ntag';r.say='';setTag(r);hud.appendChild(r.tag);scene.add(r.root);NET.peers.set(r.id,r);netEnsureModel(r);}
-function netEnsureModel(r){if(r.model)return;const G=GEO[r.sex];
-  if(!G.done){SKIN.need.add(r.sex);return;}
-  try{const S=HBUILD.build(THREE,HGEN,HSPEC.make(r.sex),{env:skinEnv(),cache:G});r.model=S;r.root.remove(r.ph);r.root.add(S.root);S.sock.hip.add(r.lan);r.lan.position.set(0,0,0);r.lan.rotation.set(0,0,0);r.sword.position.set(0,0,0);r.sword.rotation.set(0,0,0);(r.sw?S.sock.hand:S.sock.back).add(r.sword);}catch(e){}}
+function netEnsureModel(r){const sets=eqSets(r.eq),sp=specOf(r.sex);
+  if(r.model&&r.model.sex===r.sex&&hasSets(r.model,sets)){r.model.equip(r.eq);return;}
+  if(!HBUILD.ready(sp,GEO[r.sex],sets)){SKIN.need.add(skinKey(r.sex,sets));if(r.model&&r.model.sex===r.sex)r.model.equip(eqClamp(r.eq,r.model));return;}
+  try{const S=HBUILD.build(THREE,HGEN,sp,{env:skinEnv(),cache:GEO[r.sex],sets,equip:r.eq});if(r.model)r.root.remove(r.model.root);else r.root.remove(r.ph);
+    r.model=S;r.root.add(S.root);S.sock.hip.add(r.lan);r.lan.position.set(0,0,0);r.lan.rotation.set(0,0,0);r.sword.position.set(0,0,0);r.sword.rotation.set(0,0,0);(r.sw?S.sock.hand:S.sock.back).add(r.sword);}catch(e){}}
 function netRemovePeer(id){const r=NET.peers.get(id);if(!r)return;scene.remove(r.root);r.tag.remove();NET.peers.delete(id);if(NET.tgtId===id)NET.tgtId=0;}
 function netPeerState(o){const r=NET.peers.get(o.f);if(!r||!Array.isArray(o.p)||!Array.isArray(o.c))return;const nowS=performance.now()/1000;
   const nx=+o.p[0]||0,nz=+o.p[2]||0;if(r.got){const d=Math.max(0.03,nowS-r.lastT);r.vel.set((nx-r.tpos.x)/d,0,(nz-r.tpos.z)/d);}r.lastT=nowS;
   r.tpos.set(nx,+o.p[1]||0,nz);r.tyaw=+o.y||0;for(let i=0;i<CH.length;i++)r.tc[CH[i]]=+o.c[i]||0;r.dead=!!o.dead;r.speed=+o.sp||0;r.bottle=!!o.b;
   if(!r.got){r.got=true;r.pos.copy(r.tpos);r.yaw=r.tyaw;Object.assign(r.cur,r.tc);}
   const sw=!!o.w;if(sw!==r.sw){r.sw=sw;if(r.model){r.model.sock[sw?'hand':'back'].add(r.sword);r.sword.position.set(0,0,0);r.sword.rotation.set(0,0,0);}}
+  if(typeof o.e==='string'&&o.e!==r.eqc){r.eqc=o.e.slice(0,5);r.eq=eqParse(r.eqc);netEnsureModel(r);}
   if(o.x&&o.x!==r.sex&&(o.x==='m'||o.x==='f')){r.sex=o.x;if(r.model){r.root.remove(r.model.root);r.model=null;r.root.add(r.ph);}netEnsureModel(r);}}
 const _nv=new THREE.Vector3();
 function netUpdatePeers(dt){for(const r of NET.peers.values()){if(!r.got)continue;if(r.say&&performance.now()/1000>r.sayT){r.say='';setTag(r);}
@@ -1456,7 +1520,7 @@ function netUpdatePeers(dt){for(const r of NET.peers.values()){if(!r.got)continu
 /* 매 프레임: 내 상태 보내기, 파티장은 몬스터 보내기, 쓰러진 뒤 캠프에서 부활 */
 const r2=v=>Math.round(v*100)/100,r3=v=>Math.round(v*1000)/1000;
 function netTick(rdt,sdt){NET.sendT+=rdt;NET.monT+=rdt;
-  if(NET.sendT>=1/15){NET.sendT=0;netSend({t:'st',p:[r2(P.pos.x),r2(P.pos.y),r2(P.pos.z)],y:r3(P.yaw),c:CH.map(k=>r3(P.cur[k])),w:H.swordInHand?1:0,b:H.bottle.visible?1:0,dead:P.dead?1:0,sp:r2(P.moveSpeed||0),x:SKIN.want});}
+  if(NET.sendT>=1/15){NET.sendT=0;netSend({t:'st',p:[r2(P.pos.x),r2(P.pos.y),r2(P.pos.z)],y:r3(P.yaw),c:CH.map(k=>r3(P.cur[k])),w:H.swordInHand?1:0,b:H.bottle.visible?1:0,dead:P.dead?1:0,sp:r2(P.moveSpeed||0),x:SKIN.want,e:eqCode(EQUIP)});}
   if(NET.host&&NET.monT>=1/12){NET.monT=0;const a=M.atk,T=netTarget(0);
     netSend({t:'mon',p:[r2(M.pos.x),r2(M.pos.z)],v:[r2(M.vel.x),r2(M.vel.z)],y:r3(M.yaw),s:M.state,st:r2(M.st),a:a?[a.type,r3(a.t),a.id,a.dir,a.enrage?1:0]:0,hp:Math.round(M.hp),e:M.enraged?1:0,hb:M.hornBroken?1:0,tc:B.tailCutDone?1:0,fs:M.flSide||1,ts:M.topSide||1,tp:[r2(T.pos.x),r2(T.pos.z)],tv:[r2(T.vel.x),r2(T.vel.z)]});}
   if(P.dead&&game.state==='play'&&now>=NET.respawnAt&&NET.respawnAt>0){NET.respawnAt=0;
@@ -1497,7 +1561,7 @@ function updatePlayer(dt){const px=P.pos.x,pz=P.pos.z;
   const idt=Math.max(dt,1e-4);P.vel.set((P.pos.x-px)/idt,0,(P.pos.z-pz)/idt);
   applyPose();if(SKIN.on)SKIN.cur.update(dt,P.cur,P.moveSpeed);
   const sustain=P.charging?0.15+P.level*0.38:0;H.steel.emissiveIntensity=Math.max(sustain,H.steel.emissiveIntensity-dt*(P.charging?2.5:4));}
-function hurtPlayer(dmg,type,src){if(P.dead)return;const id=M.atk?M.atk.id:-1;if(id===P.lastHitId)return;
+function hurtPlayer(dmg,type,src){if(P.dead)return;dmg=Math.max(1,Math.round(dmg*EQ_STAT.mult));const id=M.atk?M.atk.id:-1;if(id===P.lastHitId)return;
   if(P.inv){if(P.dodgedId!==id){P.dodgedId=id;floatInfo('회피');}return;}
   {const a=P.act;if(a&&a.d.armor&&a.t>=a.d.armor[0]&&a.t<=a.d.armor[1]){P.lastHitId=id;P.hp-=Math.round(dmg*0.7);sfx.hurt();hitstop=Math.max(hitstop,0.06);addTrauma(0.3);vig=Math.min(1,vig+0.4);floatInfo('버팀');if(P.hp<=0){P.hp=0;die();}return;}}
   P.lastHitId=id;const ang=Math.atan2(src.x-P.pos.x,src.z-P.pos.z);
@@ -1604,7 +1668,7 @@ function ctrlHTML(){const K=a=>'<kbd>'+keyName(BIND[a])+'</kbd>';const mv=[BIND.
   return '<div class="ctrl"><kbd>'+mv+'</kbd><span>이동</span><kbd>마우스</kbd><span>카메라</span>'+K('light')+'<span>약공격: 가로베기 → 올려베기 연속</span>'+K('heavy')+'<span>강공격: 길게 눌러 모으기. 내려베기 → 강 내려베기 → 참 모아베기</span>'+
   '<kbd>'+keyName(BIND.special)+' + '+keyName(BIND.light)+'</kbd><span>어깨치기: 맞아도 버팀. 이어서 강공격하면 참 모아베기</span><kbd>'+keyName(BIND.special)+' + '+keyName(BIND.heavy)+'</kbd><span>대지 가르기: 뛰어올라 내려찍기 (스태미나 많이 씀)</span>'+
   K('guard')+'<span>가드: 몬스터를 자동으로 바라봄. 막 올렸을 때 막으면 완벽 가드</span>'+K('roll')+'<span>구르기, 짧은 무적 시간</span>'+K('sprint')+'<span>달리기 (무기를 넣었을 때)</span>'+K('sheathe')+'<span>무기 꺼내기 · 넣기</span>'+
-  K('potion')+'<span>회복약 (무기를 넣었을 때). 걸으며 마실 수 있고, 구르기로 끊을 수 있음</span>'+K('lock')+'<span>락온</span>'+K('restart')+'<span>처음부터 다시</span>'+K('interact')+'<span>마을: 게시판 · 장비 천막 · 모닥불</span>'+K('chat')+'<span>채팅 (입력 중 Tab: 마을 ↔ 파티)</span></div>';}
+  K('potion')+'<span>회복약 (무기를 넣었을 때). 걸으며 마실 수 있고, 구르기로 끊을 수 있음</span>'+K('lock')+'<span>락온</span>'+K('restart')+'<span>처음부터 다시</span>'+K('interact')+'<span>마을: 게시판 · 장비 천막 · 모닥불 / 토벌 후: 갈무리</span>'+K('chat')+'<span>채팅 (입력 중 Tab: 마을 ↔ 파티)</span></div>';}
 function updateKeysHint(){const el=document.getElementById('keysHint');if(!el)return;const K=a=>keyName(BIND[a]);TOWN.pk='';
   if(WORLD.cur==='town'){el.innerHTML='<span><b>'+K('interact')+'</b>상호작용</span><span><b>'+K('chat')+'</b>채팅</span><span><b>'+K('sprint')+'</b>달리기</span><span><b>'+K('sheathe')+'</b>발도 · 수련장에서 허수아비 치기</span>';return;}
   el.innerHTML='<span><b>'+K('light')+'</b>약공격</span><span><b>'+K('heavy')+'</b>강공격 · 모으기</span><span><b>'+K('special')+'+공격</b>특수기술</span><span><b>'+K('guard')+'</b>가드</span><span><b>'+K('roll')+'</b>구르기</span><span><b>'+K('sheathe')+'</b>발도·납도</span><span><b>'+K('potion')+'</b>회복약</span><span><b>'+K('lock')+'</b>락온</span>';}
@@ -1617,9 +1681,9 @@ function showOverlay(mode){let h='';const T=WORLD.cur==='town';
   else if(mode==='pause'){if(T)h='<div class="eyebrow">마을</div><h1>잠시 쉬기</h1><p>다른 사냥꾼들에게는 그대로 보여요.</p>'+ctrlHTML()+'<div class="actions"><button data-act="resume">계속하기</button><button class="ghost" data-act="keys">조작 설정</button><button class="ghost" data-act="toTitle">타이틀로</button></div>';
     else if(NET.inHunt)h='<div class="eyebrow">파티 사냥 중</div><h1>숨 고르기</h1><p>파티 사냥은 멈추지 않아요. 몬스터는 계속 움직여요.</p>'+ctrlHTML()+'<div class="actions"><button data-act="resume">계속하기</button><button class="ghost" data-act="keys">조작 설정</button><button class="ghost" data-act="netLeave">사냥 떠나기 · 마을로</button></div>';
     else h='<div class="eyebrow">일시정지</div><h1>숨 고르기</h1><p>사냥은 멈춰 있어요.</p>'+ctrlHTML()+'<div class="actions"><button data-act="resume">계속하기</button><button class="ghost" data-act="keys">조작 설정</button><button class="ghost" data-act="abandon">사냥 포기 · 마을로</button><span class="note">'+keyName(BIND.restart)+' 키로 처음부터 다시</span></div>';}
-  else if(mode==='win'&&NET.inHunt)h='<div class="eyebrow">토벌 완료</div><h1>그을음송곳니를 쓰러뜨렸다</h1><p>파티 사냥 성공! 기절 '+NET.faints+'/3</p><div class="actions"><button data-act="netBack">마을로 돌아가기</button></div>';
+  else if(mode==='win'&&NET.inHunt)h='<div class="eyebrow">토벌 완료</div><h1>그을음송곳니를 쓰러뜨렸다</h1><p>파티 사냥 성공! 기절 '+NET.faints+'/3</p>'+lootHTML()+'<div class="actions"><button data-act="netBack">마을로 돌아가기</button></div>';
   else if(mode==='lose'&&NET.inHunt)h='<div class="eyebrow">사냥 실패</div><h1>파티가 세 번 쓰러졌습니다</h1><p>그을음송곳니의 남은 체력은 약 '+Math.ceil(M.hp/M.maxHp*100)+'%였어요.</p><div class="actions"><button data-act="netBack">마을로 돌아가기</button></div>';
-  else if(mode==='win')h='<div class="eyebrow">토벌 완료</div><h1>그을음송곳니를 쓰러뜨렸다</h1><div class="stat"><div><strong>'+fmt(game.endAt)+'</strong>소요 시간</div><div><strong>'+game.dealt+'</strong>입힌 피해</div><div><strong>'+(10-P.potions)+'</strong>회복약 사용</div></div><p>꼬리 '+(B.tailCutDone?'절단 성공':'절단 실패')+' · 뿔 '+(M.hornBroken?'파괴 성공':'파괴 실패')+'</p><div class="actions"><button data-act="town">마을로 돌아가기</button><button class="ghost" data-act="restart">다시 사냥</button></div>';
+  else if(mode==='win')h='<div class="eyebrow">토벌 완료</div><h1>그을음송곳니를 쓰러뜨렸다</h1><div class="stat"><div><strong>'+fmt(game.endAt)+'</strong>소요 시간</div><div><strong>'+game.dealt+'</strong>입힌 피해</div><div><strong>'+(10-P.potions)+'</strong>회복약 사용</div></div><p>꼬리 '+(B.tailCutDone?'절단 성공':'절단 실패')+' · 뿔 '+(M.hornBroken?'파괴 성공':'파괴 실패')+'</p>'+lootHTML()+'<div class="actions"><button data-act="town">마을로 돌아가기</button><button class="ghost" data-act="restart">다시 사냥</button></div>';
   else if(mode==='keys')h='<div class="eyebrow">조작 설정</div><h1>키 바꾸기</h1><p>바꿀 항목을 누른 뒤 원하는 키나 마우스 버튼을 누르세요. Esc를 누르면 취소돼요. 다른 항목에 쓰던 키를 고르면 서로 바뀌어요.</p><div class="binds">'+KEYDEF.map(k=>'<span>'+k[1]+'</span><button class="bind" data-bind="'+k[0]+'">'+keyName(BIND[k[0]])+'</button>').join('')+'</div><p class="note" id="bindWarn"></p><div class="actions"><button data-act="keysBack">돌아가기</button><button class="ghost" data-act="keysReset">기본값으로</button></div>';
   else if(mode==='board')h=boardHTML();
   else if(mode==='equip')h=equipHTML();
@@ -1627,7 +1691,7 @@ function showOverlay(mode){let h='';const T=WORLD.cur==='town';
   overlay.innerHTML='<div class="card">'+h+'</div>';overlay.hidden=false;hud.hidden=mode==='title'||(mode==='keys'&&keysFrom==='title');overlay.classList.toggle('title',mode==='title');overlay.classList.toggle('side',mode==='board'||mode==='equip');
   for(const sb of overlay.querySelectorAll('[data-skin]'))sb.addEventListener('click',()=>{pickSkin(sb.dataset.skin);if(mode==='equip'){showOverlay('equip');return;}for(const o of overlay.querySelectorAll('[data-skin]'))o.setAttribute('aria-pressed',String(o===sb));});
   const ni=document.getElementById('netName');if(ni){ni.addEventListener('change',()=>{NET.name=ni.value.trim().slice(0,12);try{localStorage.setItem('sootfang.name',NET.name);}catch(e){}netSend({t:'hi',name:NET.name||'사냥꾼',sex:SKIN.want});});ni.addEventListener('keydown',e=>{if(e.key==='Enter')ni.blur();});}
-  if(mode==='board')renderLobby();
+  if(mode==='board')renderLobby();if(mode==='equip')bindEquipPanel();
   for(const sl of overlay.querySelectorAll('[data-slot]'))sl.addEventListener('click',()=>{EQUIP[sl.dataset.slot]=sl.dataset.set;saveEquip();applyEquip();showOverlay('equip');});
   for(const bb of overlay.querySelectorAll('[data-bind]'))bb.addEventListener('click',()=>{if(!keyCapture)startCapture(bb.dataset.bind,bb);});
   const bs=overlay.querySelectorAll('[data-act]');bs.forEach(b=>b.addEventListener('click',()=>{const act=b.dataset.act;
@@ -1659,7 +1723,7 @@ function resetAll(){
   for(const L of B.legs){homeOf(L,L.foot);L.stepping=false;}
   _b.set(0,0.35,-2.5);B.body.localToWorld(_b);fwdOf(M.yaw,_e);for(let i=0;i<=B.tail.N;i++)B.tail.pts[i].set(_b.x-_e.x*B.tail.seg*i,Math.max(0.3,_b.y-i*0.22),_b.z-_e.z*B.tail.seg*i);
   updateBeastVisual(0.016);applyPose();computeBlade();computeBlade();
-  Object.assign(game,{elapsed:0,endAt:0,dealt:0,endTimer:0});lockOn=false;camYaw=0;camPitch=0.3;trauma=0;hitstop=0;slowT=0;vig=0;trS.length=0;trailOn=false;hpLagV=150;
+  Object.assign(game,{elapsed:0,endAt:0,dealt:0,endTimer:0,loot:[],rewarded:false,carveMon:0,carveTail:0});B.tailCarve=null;lockOn=false;camYaw=0;camPitch=0.3;trauma=0;hitstop=0;slowT=0;vig=0;trS.length=0;trailOn=false;hpLagV=150;
   for(const k in buf)buf[k]=null;camTarget.set(0,1.6,-22);}
 
 /* ---------- 마을: 사냥꾼들이 모이는 달 없는 밤의 마을 (모닥불 · 목책 · 오두막 · 게시판 · 장비 천막 · 수련장) ---------- */
@@ -1966,7 +2030,7 @@ function updateTownFx(rdt){const wt=performance.now()/1000;
 const promptEl=$('prompt');
 function townSpot(){if(game.state!=='play'||CHAT.open||P.act||P.dead)return null;let best=null,bd=1;for(const s of TOWN.spots){const d=Math.hypot(P.pos.x-s.x,P.pos.z-s.z)/s.r;if(d<bd){bd=d;best=s;}}
   if(best&&best.id==='fire'&&P.sitting)return null;return best;}
-function updatePrompt(){const s=WORLD.cur==='town'?townSpot():null;TOWN.near=s;const k=s?s.id:'';if(k!==TOWN.pk){TOWN.pk=k;promptEl.hidden=!s;if(s)promptEl.innerHTML='<kbd>'+esc(keyName(BIND.interact))+'</kbd>'+esc(s.label);}}
+function updatePrompt(){const s=WORLD.cur==='town'?townSpot():huntSpot();TOWN.near=s;const k=s?s.id:'';if(k!==TOWN.pk){TOWN.pk=k;promptEl.hidden=!s;if(s)promptEl.innerHTML='<kbd>'+esc(keyName(BIND.interact))+'</kbd>'+esc(s.label);}}
 function townInteract(){const s=TOWN.near;if(!s)return;if(s.id==='fire'){if(P.drawn){toast('무기를 넣어야 앉을 수 있어요 ('+keyName(BIND.sheathe)+')',1.6);return;}P.sitting=true;P.sitYaw=Math.atan2(-P.pos.x,-P.pos.z);return;}
   if(s.id==='equip')openPanel('equip');else openPanel('board',s.id);}
 function openPanel(kind,from){TOWN.panel=kind;TOWN.from=from||kind;game.state='panel';input.keys.clear();P.sitting=false;closeChat();promptEl.hidden=true;TOWN.pk='';
@@ -1979,18 +2043,62 @@ function showCamera(rdt){const want=Math.atan2(P.pos.x+10.5,P.pos.z-3);if(!P.act
 
 /* 장비: 부위별 슬롯 (지금은 기본 사냥복, 나중에 세트 추가) */
 const SLOTS=[['head','머리'],['chest','몸통'],['arms','팔'],['waist','허리'],['legs','다리']];
-const ARMOR={basic:{m:'진홍 사냥복',f:'남색 사냥복'}};
+/* 소재 */
+const ITEMS={hide:'그을음 가죽',fang:'그을음 송곳니',horn:'잿빛 뿔',tail:'불씨 꼬리털',orb:'잉걸 보주'};
+const INV={hide:0,fang:0,horn:0,tail:0,orb:0};
+try{const o=JSON.parse(localStorage.getItem('sootfang.inv')||'{}');for(const k in INV)if(o[k]>0)INV[k]=Math.min(999,o[k]|0);}catch(e){}
+function saveInv(){try{localStorage.setItem('sootfang.inv',JSON.stringify(INV));}catch(e){}}
+/* 장비: 부위별로 따로 낌. basic=처음 받은 사냥복, soot=그을음송곳니 세트 */
+const ARMOR={basic:{name:{m:'진홍 사냥복',f:'남색 사냥복'},def:4},
+  soot:{def:12,names:{head:'그을음 뿔투구',chest:'그을음 털갑옷',arms:'그을음 손갑',waist:'그을음 허리띠',legs:'그을음 정강이갑'},
+    recipe:{head:{horn:1,hide:2,fang:1},chest:{hide:4,fang:2,orb:1},arms:{hide:2,fang:2},waist:{hide:3,tail:1},legs:{hide:3,fang:1}}}};
+const OWN={};try{const o=JSON.parse(localStorage.getItem('sootfang.own')||'{}');for(const k in o)if(o[k])OWN[k]=1;}catch(e){}
+function saveOwn(){try{localStorage.setItem('sootfang.own',JSON.stringify(OWN));}catch(e){}}
+const owns=(set,slot)=>set==='basic'||!!OWN[set+'.'+slot];
 const EQUIP={head:'basic',chest:'basic',arms:'basic',waist:'basic',legs:'basic'};
-try{const o=JSON.parse(localStorage.getItem('sootfang.equip')||'{}');for(const [k] of SLOTS)if(o[k]&&ARMOR[o[k]])EQUIP[k]=o[k];}catch(e){}
+try{const o=JSON.parse(localStorage.getItem('sootfang.equip')||'{}');for(const [k] of SLOTS)if(o[k]&&ARMOR[o[k]]&&owns(o[k],k))EQUIP[k]=o[k];}catch(e){}
 function saveEquip(){try{localStorage.setItem('sootfang.equip',JSON.stringify(EQUIP));}catch(e){}}
-function applyEquip(S){S=S||SKIN.cur;if(!S||!S.setPart)return;for(const [k] of SLOTS)S.setPart(k,!!ARMOR[EQUIP[k]]);}
+const EQ_STAT={def:20,mult:1,soot:0};
+function recalcEquip(){let d=0,n=0;for(const [k] of SLOTS){d+=ARMOR[EQUIP[k]].def;if(EQUIP[k]==='soot')n++;}EQ_STAT.def=d;EQ_STAT.mult=120/(100+d);EQ_STAT.soot=n;}
+recalcEquip();
+/* 모델에 아직 없는 세트는 만들어질 때까지 기본 사냥복으로 보여 줌 */
+function eqClamp(eq,S){const o={};for(const [k] of SLOTS){const v=(eq&&eq[k])||'basic';o[k]=S&&S.sets&&S.sets[v]?v:'basic';}return o;}
+function applyEquip(S){recalcEquip();S=S||SKIN.cur;if(!S||!S.equip)return;
+  if(!hasSets(S,eqSets(EQUIP))){S.equip(eqClamp(EQUIP,S));if(S===SKIN.cur)pickSkin(SKIN.want);return;}S.equip(EQUIP);}
+function canCraft(slot){const r=ARMOR.soot.recipe[slot];for(const k in r)if(INV[k]<r[k])return false;return true;}
+function craft(slot){if(OWN['soot.'+slot]||!canCraft(slot))return;const r=ARMOR.soot.recipe[slot];for(const k in r)INV[k]-=r[k];OWN['soot.'+slot]=1;saveInv();saveOwn();
+  EQUIP[slot]='soot';saveEquip();applyEquip();sfx.get();toast(ARMOR.soot.names[slot]+'을(를) 만들었어요',2);}
+function recipeText(slot){const r=ARMOR.soot.recipe[slot];return Object.keys(r).map(k=>'<span class="'+(INV[k]>=r[k]?'ok':'no')+'">'+ITEMS[k]+' '+INV[k]+'/'+r[k]+'</span>').join(' · ');}
+function setBonusText(){const n=EQ_STAT.soot;return '<span class="'+(n>=2?'ok':'no')+'">2부위: 모아베기 모으는 속도 +25%</span><br><span class="'+(n>=4?'ok':'no')+'">4부위: 분노한 몬스터에게 공격력 +10%</span>';}
+/* 갈무리 · 토벌 보상 */
+function pickW(t){let s=0;for(const k in t)s+=t[k];let r=Math.random()*s;for(const k in t){r-=t[k];if(r<=0)return k;}return Object.keys(t)[0];}
+function gainItem(k,n,why){n=n||1;INV[k]=Math.min(999,INV[k]+n);saveInv();game.loot.push([k,n,why||'']);}
+function grantQuestRewards(){if(game.rewarded)return;game.rewarded=true;
+  gainItem('hide',2,'보상');gainItem('fang',1,'보상');if(Math.random()<0.15)gainItem('orb',1,'보상');
+  if(M.hornBroken)gainItem('horn',1,'부위 파괴');if(B.tailCutDone)gainItem('tail',1,'부위 파괴');
+  game.carveMon=3;setTimeout(()=>{if(game.state==='win'&&WORLD.cur==='hunt')toast(keyName(BIND.interact)+' 키로 그을음송곳니를 갈무리하세요 (3번)',3.5);},2600);}
+function tailCarvePos(out){const T=B.tailCarve;if(!T)return null;return out.copy(T.base).add(T.obj.position);}
+const _tcp=V();
+function huntSpot(){if(WORLD.cur!=='hunt'||M.state!=='dead'||P.act||P.dead||(game.state!=='win'&&game.state!=='play'))return null;
+  if(game.carveMon>0&&Math.hypot(P.pos.x-M.pos.x,P.pos.z-M.pos.z)<5.4)return {id:'carve',label:'갈무리 ('+game.carveMon+'번 남음)'};
+  if(game.carveTail>0&&tailCarvePos(_tcp)&&Math.hypot(P.pos.x-_tcp.x,P.pos.z-_tcp.z)<2.8)return {id:'carveTail',label:'잘린 꼬리 갈무리'};return null;}
+function doInteract(){if(WORLD.cur==='town'){townInteract();return;}const s=TOWN.near;if(!s||P.act)return;
+  if(s.id==='carve'){game.carveMon--;startAction('carve');P.act.kind='mon';}else if(s.id==='carveTail'){game.carveTail--;startAction('carve');P.act.kind='tail';}}
+function finishCarve(a){const k=a.kind==='tail'?pickW({tail:70,hide:25,orb:5}):pickW({hide:50,fang:35,tail:10,orb:5});gainItem(k,1,'갈무리');floatInfo(ITEMS[k]+' 획득');sfx.get();}
+function lootHTML(){if(!game.loot||!game.loot.length)return '';const sum={};for(const [k,n] of game.loot)sum[k]=(sum[k]||0)+n;
+  return '<div class="loot"><span class="lab">얻은 소재</span>'+Object.keys(sum).map(k=>'<b>'+ITEMS[k]+' ×'+sum[k]+'</b>').join('')+'</div>';}
+sfx.get=()=>{osc('triangle',880,0,0.08,0.005,0.25);setTimeout(()=>osc('triangle',1320,0,0.07,0.005,0.3),90);};
 function nameFieldHTML(){return '<div class="pick"><span class="lab">이름</span><input id="netName" maxlength="12" value="'+esc(NET.name)+'" placeholder="사냥꾼 이름" aria-label="사냥꾼 이름"></div>';}
-function equipHTML(){const sx=SKIN.want;return '<div class="eyebrow">장비 천막</div><h1>사냥꾼 장비</h1>'+nameFieldHTML()+
+function equipHTML(){const sx=SKIN.want;const inv=Object.keys(ITEMS).map(k=>ITEMS[k]+' '+INV[k]).join(' · ');
+  return '<div class="eyebrow">장비 천막</div><h1>사냥꾼 장비</h1>'+nameFieldHTML()+
   '<div class="pick" role="group" aria-label="사냥꾼 선택"><span class="lab">사냥꾼</span><button data-skin="m" aria-pressed="'+(sx==='m')+'">남자</button><button data-skin="f" aria-pressed="'+(sx==='f')+'">여자</button><span class="note" id="skinNote">'+skinNoteText()+'</span></div>'+
-  '<div class="slots">'+SLOTS.map(([k,lab])=>'<span class="lab">'+lab+'</span><div class="slot"><button data-slot="'+k+'" data-set="basic" aria-pressed="'+(EQUIP[k]==='basic')+'">'+ARMOR.basic[sx]+'</button><button disabled>그을음송곳니 · 준비 중</button></div>').join('')+'</div>'+
-  '<p class="note">부위마다 따로 바꿔 낄 수 있어요. 그을음송곳니 장비는 소재 모으기와 함께 열려요.</p><div class="actions"><button data-act="close">닫기</button><span class="note">Esc로도 닫혀요</span></div>';}
+  '<div class="slots">'+SLOTS.map(([k,lab])=>{const own=owns('soot',k);const sb=own?'<button data-slot="'+k+'" data-set="soot" aria-pressed="'+(EQUIP[k]==='soot')+'">'+ARMOR.soot.names[k]+'</button>':'<button class="craft" data-craft="'+k+'"'+(canCraft(k)?'':' disabled')+'>'+ARMOR.soot.names[k]+' 만들기</button>';
+    return '<span class="lab">'+lab+'</span><div class="slot"><button data-slot="'+k+'" data-set="basic" aria-pressed="'+(EQUIP[k]==='basic')+'">'+ARMOR.basic.name[sx]+'</button>'+sb+(own?'':'<span class="need">'+recipeText(k)+'</span>')+'</div>';}).join('')+'</div>'+
+  '<div class="gstat"><span><span class="lab">방어력</span><b>'+EQ_STAT.def+'</b> <span class="note">받는 피해 '+Math.round((1-EQ_STAT.mult)*100)+'% 줄임</span></span><span class="note">그을음송곳니 세트 '+EQ_STAT.soot+'/5<br>'+setBonusText()+'</span></div>'+
+  '<p class="note">가진 소재: '+inv+'</p><div class="actions"><button data-act="close">닫기</button><span class="note">Esc로도 닫혀요</span></div>';}
+function bindEquipPanel(){for(const b of overlay.querySelectorAll('[data-craft]'))b.addEventListener('click',()=>{craft(b.dataset.craft);showOverlay('equip');});}
 function boardHTML(){return '<div class="eyebrow">'+(TOWN.from==='gate'?'출발 문':'퀘스트 게시판')+'</div><h1>토벌 의뢰</h1>'+
-  '<div class="quest"><b>그을음송곳니 토벌</b><span class="note">숯처럼 검은 털의 거대 수인종. 머리는 약점, 다리를 노리면 넘어지고, 꼬리는 자를 수 있다.</span><span class="note">사냥터: 잿빛 분지 · 혼자 또는 최대 4명 · 파티는 세 번 쓰러지면 실패</span></div>'+
+  '<div class="quest"><b>그을음송곳니 토벌</b><span class="note">숯처럼 검은 털의 거대 수인종. 머리는 약점, 다리를 노리면 넘어지고, 꼬리는 자를 수 있다.</span><span class="note">사냥터: 잿빛 분지 · 혼자 또는 최대 4명 · 파티는 세 번 쓰러지면 실패 · 인원이 많을수록 몬스터가 강해짐</span><span class="note">보상: 그을음 가죽 · 송곳니, 뿔 파괴 시 잿빛 뿔, 꼬리 절단 시 불씨 꼬리털, 드물게 잉걸 보주. 토벌 후 '+keyName(BIND.interact)+' 키로 갈무리</span></div>'+
   '<div id="lobbyBody"></div>'+nameFieldHTML()+'<div class="actions"><button class="ghost" data-act="close">닫기</button><span class="note">Esc로도 닫혀요</span></div>';}
 
 /* 채팅 (마을 · 파티) */
@@ -2012,7 +2120,7 @@ function setTag(r){r.tag.innerHTML=(r.say?'<i>'+esc(r.say)+'</i>':'')+esc(r.name
 
 /* 마을 동시 접속: 위치를 초당 10번 보내고, 4초 동안 소식이 없으면 지움 */
 function netTownTick(rdt){const ns=performance.now()/1000;if(NET.state==='on'&&!NET.inHunt){if(ns-(NET.lstAt||0)>=0.1){NET.lstAt=ns;
-    netSend({t:'lst',p:[r2(P.pos.x),r2(P.pos.y),r2(P.pos.z)],y:r3(P.yaw),c:CH.map(k=>r3(P.cur[k])),w:H.swordInHand?1:0,b:H.bottle.visible?1:0,dead:0,sp:r2(P.moveSpeed||0),x:SKIN.want});}}
+    netSend({t:'lst',p:[r2(P.pos.x),r2(P.pos.y),r2(P.pos.z)],y:r3(P.yaw),c:CH.map(k=>r3(P.cur[k])),w:H.swordInHand?1:0,b:H.bottle.visible?1:0,dead:0,sp:r2(P.moveSpeed||0),x:SKIN.want,e:eqCode(EQUIP)});}}
   for(const r of [...NET.peers.values()])if(r.lastT&&ns-r.lastT>5)netRemovePeer(r.id);
   netUpdatePeers(rdt);}
 function netTownState(o){if(NET.inHunt||WORLD.cur!=='town'||o.f===NET.id||!Array.isArray(o.p)||!Array.isArray(o.c))return;let r=NET.peers.get(o.f);
@@ -2038,10 +2146,11 @@ function frame(){requestAnimationFrame(frame);stepSkinJob();const t=performance.
   else if(st==='play'||st==='win'||st==='lose'){let sdt=rdt;if(hitstop>0){hitstop-=rdt;sdt=rdt*0.035;}if(slowT>0){slowT-=rdt;sdt*=0.3;}time+=sdt;if(st==='play')game.elapsed+=rdt;
     if(NET.inHunt)netTick(rdt,sdt);
     updatePlayer(sdt);updateMonster(sdt);computeBlade();checkPlayerHit();updateTrail(sdt);updateFx(sdt,rdt);updateCamera(rdt);updateHUD(rdt);
-    if(st!=='play'){game.endTimer+=rdt;if(game.endTimer>2.6&&overlay.hidden){showOverlay(st);if(document.exitPointerLock&&locked)document.exitPointerLock();}}}
+    updatePrompt();
+    if(st!=='play'){game.endTimer+=rdt;const carving=st==='win'&&(game.carveMon>0||game.carveTail>0||(P.act&&P.act.name==='carve'))&&game.endTimer<45;if(game.endTimer>2.6&&!carving&&overlay.hidden){showOverlay(st);if(document.exitPointerLock&&locked)document.exitPointerLock();}}}
   else if(st==='title'||(st==='keys'&&game.prevState==='title')){time+=rdt;updatePlayer(rdt);updateMonster(rdt);updateFx(rdt,rdt);titleCamera();}
   renderer.render(scene,camera);}
-if(window.__HUNT_TEST)window.__hunt={NET,netConnect,netSend,M,P,game,applyMonsterDamage,goTown,leaveTown,startSoloHunt,openPanel,closePanel,TOWN,WORLD,CHAT,openChat,sendChat,addChat,EQUIP,input,BIND,townInteract,camera,netEndHunt,setCam:(y,p)=>{camYaw=y;camPitch=p;},skinNow:()=>{for(let i=0;i<20000&&(SKIN.job||SKIN.need.size);i++)stepSkinJob();return SKIN.on;},tick:(n,dt)=>{for(let i=0;i<n;i++){time+=dt||1/60;if(WORLD.cur==='town')townFrame(dt||1/60);}}};
+if(window.__HUNT_TEST)window.__hunt={NET,netConnect,netSend,M,P,game,applyMonsterDamage,goTown,leaveTown,startSoloHunt,openPanel,closePanel,TOWN,WORLD,CHAT,openChat,sendChat,addChat,EQUIP,input,BIND,townInteract,camera,netEndHunt,INV,OWN,craft,M,killMonster:()=>{M.hp=0;applyMonsterDamage('head',1,false);},doInteract,setCam:(y,p)=>{camYaw=y;camPitch=p;},skinNow:()=>{for(let i=0;i<20000&&(SKIN.job||SKIN.need.size);i++)stepSkinJob();return SKIN.on;},tick:(n,dt)=>{for(let i=0;i<n;i++){const d=dt||1/60;time+=d;if(WORLD.cur==='town')townFrame(d);else{updatePlayer(d);updateMonster(d);computeBlade();checkPlayerHit();updateTrail(d);updateFx(d,d);updateCamera(d);updateHUD(d);updatePrompt();}}}};
 resetAll();pickSkin(SKIN.want);updateKeysHint();showOverlay('title');requestAnimationFrame(frame);
 })();
 </script>
